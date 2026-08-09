@@ -2363,7 +2363,8 @@ kbd {
 
     <footer class="appfoot">
       <b>BullionEdge Pro · not financial advice.</b>
-      This is an educational planning, risk-management and journaling tool. It is not a signal service, it does not
+      This is a planning, risk-management and journaling tool, built to improve the decisions you make before you
+      click. It is not a signal service, it does not
       predict prices, and it cannot guarantee a profit. The buy/sell zone and the trade score are rules-based logic
       applied to levels you enter or load — the app has no view on where price is going.
       <b>About the live price:</b> gold spot comes from a free public feed and the candles come from the PAXG/USD
@@ -3726,7 +3727,7 @@ function buildPlan(input) {
     plan.message = `Position rounds to 0.00 lot. A ${Math.round(plan.slPips)}-pip stop risking ${riskPct}% of ${fmtUsd(capital)} is smaller than the 0.01-lot minimum. Tighten the stop, raise risk %, or grow the account.`;
   } else if (capital <= 100) {
     plan.severity = 'warn';
-    plan.message = `Starter account: at ${fmtUsd(capital)} even one 0.01-lot trade risks a large share of the balance on a normal stop. Treat this tier as demo and learning — position size, not prediction, is what compounds.`;
+    plan.message = `Starter account: at ${fmtUsd(capital)} even one 0.01-lot trade risks a large share of the balance on a normal stop. Treat this as capital you can afford to lose outright — position size, not prediction, is what compounds.`;
   } else if (plan.actualRisk > riskAmount * 1.5) {
     plan.severity = 'warn';
     plan.message = `Lot rounding pushes real risk to ${fmtUsd(plan.actualRisk)} against a ${fmtUsd(riskAmount)} budget. Tighten the stop or accept the overshoot deliberately.`;
@@ -5511,7 +5512,7 @@ function markup() {
           <span class="lp-i-ios">Add to Home Screen</span>
         </button>
       </div>
-      <p class="lp-micro">Educational software · not financial advice · you can lose money trading gold</p>
+      <p class="lp-micro">Built to improve your odds · not financial advice · you can lose money trading gold</p>
     </div>
   </header>
 
@@ -5717,11 +5718,11 @@ function markup() {
       <h2>Straight answers.</h2>
       <div class="lp-faq">
         ${faq('Is this financial advice or a signal service?',
-          'No. It is educational planning and risk software. Setups are rules-based ideas you confirm yourself. It has no view on where price is going, and it cannot know.')}
+          'No. It is analysis and risk software: it runs the maths, you make the call. Setups are rules-based ideas you confirm on your own platform. It has no view on where price is going, and it cannot know.')}
         ${faq('Which market does it cover?',
           'XAU/USD (gold), by design. One market, mastered, beats spreading yourself thin across ten.')}
         ${faq('Do you guarantee profits?',
-          'No honest tool can, and anyone who does is lying to you. What this provides is structure, timing, risk control and discipline — the things that keep traders in the game long enough to learn.')}
+          'No honest tool can, and anyone who does is lying to you. What it does is tighten every factor you actually control: a position size that cannot quietly exceed the risk you set, a score that has to be earned before you get a green light, and the exact win rate each plan needs to break even — so you know what you are aiming at before you risk anything. Most accounts are lost to oversizing and revenge trades, not to bad entries.')}
         ${faq('Where is my data stored?',
           'In your browser, on your device. There is no account server and nothing syncs. That means it is private, and it also means clearing site data deletes it — so use the backup export.')}
         ${faq('How do I pay and get access?',
@@ -5740,12 +5741,12 @@ function markup() {
 
     <footer class="lp-foot">
       <p><b>Risk warning &amp; full disclaimer.</b>
-      BullionEdge Pro is educational and analytical software for the XAU/USD (gold) market. It is not financial,
+      BullionEdge Pro is analytical and risk-management software for the XAU/USD (gold) market. It is not financial,
       investment, tax or legal advice; it is not a broker, fund or account-management service; and it is not a signal
       service that guarantees any outcome. Trading gold and leveraged instruments is high-risk — prices move quickly
       and you can lose some or all of your capital, including on news gaps that jump straight past your stop. Never
       trade with money you cannot afford to lose. Any setups, levels or examples are automatically generated,
-      rules-based ideas for education only, not personal recommendations to buy or sell, and no profit, income or
+      rules-based ideas for your own analysis, not personal recommendations to buy or sell, and no profit, income or
       specific win rate is promised or implied. Hypothetical, simulated or past performance never guarantees future
       results. You are solely responsible for your own trading decisions and for complying with the laws and broker
       regulations in your country, where access to leveraged trading may be restricted. A subscription grants access
@@ -5830,7 +5831,7 @@ const FEATURES = [
   { slug: 'guide', icon: '◎', title: 'A guided walkthrough',
     body: 'Eight steps that end where they should — with you placing the trade on your own platform, deliberately.' },
   { slug: 'modes', icon: '◧', title: 'Beginner &amp; Pro modes',
-    body: 'Plain-English explanations on everything while you learn — then a denser, faster desk when you don\'t need them.' },
+    body: 'Plain-English explanations on every number — then a denser, faster desk once you stop needing them.' },
   { slug: 'offline', icon: '⌾', title: 'Works with no network',
     body: 'Feed down, network gone — it still scores, still sizes, still tells you the truth about the trade.' },
   { slug: 'privacy', icon: '▨', title: 'Your data stays yours',
@@ -10207,7 +10208,7 @@ __exports.default = {
 
           <!-- ============ Beginner explainer ============ -->
           <div class="card reveal beginner-only">
-            <p class="eyebrow">Learning mode</p>
+            <p class="eyebrow">Plain English</p>
             <h2>What does this all mean?</h2>
             <div class="stack" id="explain-host"></div>
           </div>
@@ -12512,7 +12513,7 @@ const STEPS = [
     warn: 'Never widen a stop. Trailing it to lock in profit is fine; moving it away to avoid being wrong is how a small loss becomes the one that matters.',
   },
   {
-    n: 8, title: 'Log it, then let the record teach you',
+    n: 8, title: 'Log it — the record is where your edge shows up',
     lead: 'The journal is what turns the score from a guess into a calibration. After twenty closed trades it starts using your own numbers.',
     fig: figJournal,
     body: [
