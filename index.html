@@ -12,9 +12,14 @@
 <meta name="description" content="BullionEdge Pro — an AI-guided pre-trade checklist, risk manager and psychology coach for intraday gold and FX.">
 <title>BullionEdge Pro — AI pre-trade assistant</title>
 
-<!-- Inline SVG icon: no extra request, no 404, and it survives the single-file
-     build intact. The mark is the assistant's diamond in brand gold. -->
+<!-- The brand mark, then an inline SVG fallback.
+     Order matters: a browser takes the last icon it can use, so the SVG is
+     declared first and the PNG overrides it wherever the file is reachable.
+     That keeps a lone, double-clicked BullionEdge_Pro.html showing a proper
+     icon even with no assets folder beside it — the SVG costs no request and
+     cannot 404. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A1214'/%3E%3Cpath d='M16 5.5 L26.5 16 L16 26.5 L5.5 16 Z' fill='%23E0A63C'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
 
 <!-- Installable as an app. Android and iOS both read these; with the service
      worker registered below, "Add to Home Screen" gives a real launcher icon
@@ -446,6 +451,21 @@ html[data-mode="pro"] .card h2 { font-size: var(--fs-md); }
   display: flex; align-items: center; gap: 6px;
   font-size: var(--fs-xs); color: var(--muted); margin-bottom: 6px;
 }
+
+/* A settled value shown where a control used to be. Sized and spaced to match
+   the inputs beside it so the row still lines up, but visibly not editable:
+   no border, no focus ring, nothing that invites a click that would do
+   nothing. */
+.fixedval {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding: 11px 0 10px;
+  font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--gold);
+  letter-spacing: .01em;
+}
+.fixedval .fixednote {
+  font-family: var(--font-body); font-size: var(--fs-2xs); color: var(--muted);
+  letter-spacing: .04em; text-transform: uppercase;
+}
 .field input, .field select, .field textarea {
   width: 100%;
   background: rgba(0,0,0,.32);
@@ -770,6 +790,27 @@ tr:last-child td { border-bottom: none; }
   content: ''; position: absolute; inset: 0 0 auto 0; height: 1px; border-radius: inherit;
   background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: .6;
 }
+/* The brand mark above the wordmark on the sign-in cards.
+   `alt` is the product name and the wordmark repeats it, so it is hidden from
+   screen readers rather than announced twice. If the file is missing — the
+   single-file build opened with no assets folder beside it — the alt text would
+   sit there as stray words, so the element collapses instead and the wordmark
+   below carries the branding on its own. */
+.brandmark {
+  display: block; margin: 0 auto var(--sp-3);
+  width: 112px; height: 112px; object-fit: contain;
+  /* The artwork is rendered on a dark radial glow rather than on transparency,
+     so it arrives as a square tile with visible edges against the card.
+     A `screen` blend does not fix it — the glow is lighter than the card, so
+     screening makes the tile brighter rather than invisible.
+     Masking does: the shield and its banner reach ~78% of the way to each edge,
+     so the mask stays solid to 80% and fades out by 96%, dissolving the corners
+     into the surface while clipping none of the mark. */
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 80%, transparent 96%);
+  mask-image: radial-gradient(circle closest-side, #000 80%, transparent 96%);
+}
+.brandmark:not([src]), .brandmark[src=''] { display: none; }
+
 .wordmark { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-2xl); letter-spacing: -.025em; }
 .wordmark .b { color: var(--gold); }
 .prochip {
@@ -1512,6 +1553,19 @@ kbd {
   border-bottom: 1px solid var(--line-2);
 }
 
+/* Mark and wordmark travel together, so the pair never wraps apart when the nav
+   is squeezed. `min-width: 0` because a flex item defaults to its content width
+   and would otherwise refuse to shrink, pushing the buttons off a phone. */
+.lp-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+/* Masked for the same reason as .brandmark — the artwork's dark backing would
+   otherwise show as a square tile, which is especially obvious over a
+   translucent, blurred nav bar. */
+.lp-logo {
+  width: 40px; height: 40px; object-fit: contain; flex: none;
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 80%, transparent 96%);
+  mask-image: radial-gradient(circle closest-side, #000 80%, transparent 96%);
+}
+
 .lp-navbtns { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
 
 .lp-link {
@@ -2232,6 +2286,7 @@ kbd {
 <!-- ==================== Access gate ==================== -->
 <div class="authscreen" id="gate" style="display:none">
   <div class="authcard">
+    <img class="brandmark" src="assets/icons/brand-mark.png" alt="" aria-hidden="true" width="112" height="112" onerror="this.remove()">
     <div class="wordmark"><span class="b">Bullion</span>Edge<span class="prochip">PRO</span></div>
     <div class="atag">AI-guided pre-trade analysis for high-probability setups.</div>
     <p class="asub">Owner sign-in. Opens the desk directly — no access key needed.</p>
@@ -2261,6 +2316,7 @@ kbd {
 <!-- ==================== Member profiles ==================== -->
 <div class="authscreen" id="auth" style="display:none">
   <div class="authcard">
+    <img class="brandmark" src="assets/icons/brand-mark.png" alt="" aria-hidden="true" width="112" height="112" onerror="this.remove()">
     <div class="wordmark"><span class="b">Bullion</span>Edge<span class="prochip">PRO</span></div>
     <div class="atag">AI-guided pre-trade analysis for high-probability setups.</div>
     <p class="asub">Members only. Log in with your User ID, or activate the licence key from your subscription email.</p>
@@ -3778,34 +3834,31 @@ __def("src/domain/instruments.js", function (__exports, __req) {
  * for one standard lot. Gold is 100 (a 100 oz contract), which reproduces the
  * original build's `GOLD_POINT = 100` exactly.
  *
- * Contract sizes differ between brokers. The UI says so, and every spec here
- * is overridable from Settings.
+ * ONE INSTRUMENT, ON PURPOSE.
  *
- * `standard` marks how much to trust the default:
+ * This used to carry nine: silver, four FX majors, two indices and BTC. They
+ * have been removed, because the rest of the product is gold and only gold. The
+ * live feed is gold. The auto-setup rules are tuned to gold's volatility. The
+ * session windows are the ones that move gold. The landing page says "XAU/USD
+ * only — one market, mastered".
  *
- *   true  — the contract is an industry convention. Gold is 100 oz, an FX lot is
- *           100,000 units. Almost every broker matches, so the default is safe.
- *   false — the contract is broker-specific and the value here is a plain
- *           1 unit per index point, which is only a plausible starting point.
- *           Indices and crypto CFDs vary enormously: one broker's "1 lot" of
- *           NAS100 can be ten times another's. Sizing these without checking
- *           your own contract spec will be wrong, and wrong by a multiple
- *           rather than a rounding error.
+ * Offering NAS100 in the analyser alongside all of that was not a feature, it
+ * was a trap: the score, the stop suggestion and the session read would all have
+ * been computed with gold's assumptions and presented as though they applied.
+ * Sizing was worse still — an index CFD's contract varies enormously between
+ * brokers, so one broker's "1 lot" of NAS100 can be ten times another's, and a
+ * position size that is wrong by a multiple is not a rounding error.
  *
- * The live desk covers gold only — see domain/market.js. Everything else here
- * is available in the analyser, where you supply the prices yourself.
+ * The shape here stays a map rather than collapsing to a single constant. The
+ * sizing engine is genuinely instrument-agnostic and tested as such, and this
+ * is the seam where a second market would arrive if one ever earned its place.
+ *
+ * Contract sizes still differ between brokers, so the spec remains overridable
+ * from Settings and the UI still says so.
  */
 
 const INSTRUMENTS = {
-  XAUUSD: { label: 'XAU/USD · Gold',      pip: 0.1,    dp: 2, valuePerPricePerLot: 100,    typicalSpreadPips: 2.5,  group: 'Metals',    standard: true  },
-  XAGUSD: { label: 'XAG/USD · Silver',    pip: 0.01,   dp: 3, valuePerPricePerLot: 5000,   typicalSpreadPips: 3,    group: 'Metals',    standard: true  },
-  EURUSD: { label: 'EUR/USD',             pip: 0.0001, dp: 5, valuePerPricePerLot: 100000, typicalSpreadPips: 1,    group: 'FX Majors', standard: true  },
-  GBPUSD: { label: 'GBP/USD',             pip: 0.0001, dp: 5, valuePerPricePerLot: 100000, typicalSpreadPips: 1.4,  group: 'FX Majors', standard: true  },
-  USDJPY: { label: 'USD/JPY',             pip: 0.01,   dp: 3, valuePerPricePerLot: 1000,   typicalSpreadPips: 1.2,  group: 'FX Majors', standard: true  },
-  AUDUSD: { label: 'AUD/USD',             pip: 0.0001, dp: 5, valuePerPricePerLot: 100000, typicalSpreadPips: 1.2,  group: 'FX Majors', standard: true  },
-  US30:   { label: 'US30 · Dow',          pip: 1,      dp: 1, valuePerPricePerLot: 1,      typicalSpreadPips: 3,    group: 'Indices',   standard: false },
-  NAS100: { label: 'NAS100 · Nasdaq',     pip: 1,      dp: 1, valuePerPricePerLot: 1,      typicalSpreadPips: 2,    group: 'Indices',   standard: false },
-  BTCUSD: { label: 'BTC/USD',             pip: 1,      dp: 2, valuePerPricePerLot: 1,      typicalSpreadPips: 20,   group: 'Crypto',    standard: false },
+  XAUUSD: { label: 'XAU/USD · Gold', pip: 0.1, dp: 2, valuePerPricePerLot: 100, typicalSpreadPips: 2.5, group: 'Metals', standard: true },
 };
 
 const DEFAULT_INSTRUMENT = 'XAUUSD';
@@ -3814,7 +3867,14 @@ function getInstrument(symbol) {
   return INSTRUMENTS[symbol] || INSTRUMENTS[DEFAULT_INSTRUMENT];
 }
 
-/** Grouped list for a <select>, so the picker reads sensibly. */
+/**
+ * Grouped list for a <select>.
+ *
+ * Nothing calls this while there is one instrument — the Analyse view prints a
+ * fixed label instead of a picker. It is kept because it is the other half of
+ * the seam described above: a second market means restoring a dropdown, and
+ * this is the function that would fill it.
+ */
 function instrumentGroups() {
   const groups = new Map();
   for (const [symbol, spec] of Object.entries(INSTRUMENTS)) {
@@ -5499,7 +5559,11 @@ function hideLanding() {
 function markup() {
   return `
   <div class="lp-nav">
-    <div class="wordmark"><span class="b">Bullion</span>Edge<span class="prochip">PRO</span></div>
+    <div class="lp-brand">
+      <img class="lp-logo" src="assets/icons/brand-mark.png" alt="" aria-hidden="true"
+           width="40" height="40" onerror="this.remove()">
+      <div class="wordmark"><span class="b">Bullion</span>Edge<span class="prochip">PRO</span></div>
+    </div>
     <nav class="lp-navbtns" aria-label="Page sections">
       <button class="lp-link" data-to="lp-how">How it works</button>
       <button class="lp-link" data-to="lp-features">Features</button>
@@ -5790,10 +5854,6 @@ function markup() {
       results. You are solely responsible for your own trading decisions and for complying with the laws and broker
       regulations in your country, where access to leveraged trading may be restricted. A subscription grants access
       to the software only — it is not a managed account and confers no right to any return.</p>
-      <p><b>About reviews.</b> This page carries none. It shipped with three invented ones as layout placeholders and
-      they have been removed — a fabricated endorsement beside a payment button is an advertising offence in most
-      jurisdictions, and a disclaimer underneath does not cure it. Any testimonial added here in future will be a real
-      member's own words, used with their written permission.</p>
       <p><b>About the access system.</b> Access keys are verified inside your browser, not on a server. This deters
       casual sharing; it is not a licensing system and should not be relied on to protect revenue at scale.</p>
     </footer>
@@ -6501,10 +6561,12 @@ const REVIEWS = [];
  */
 const CLAIMS = [
   {
-    t: 'It never tells you what to buy',
-    b: 'There are no signals here. The desk scores a plan you typed in against a published rulebook, and the '
-     + 'generated setups are starting points to confirm — which is why a counter-trend one is still shown to you '
-     + 'rather than quietly filtered out.',
+    t: 'Your idea, or one it built — same standard either way',
+    b: 'Two ways to work. Type in your own levels and have them scored, or start from a rules-based setup the desk '
+     + 'generates every two hours for scalping, day, swing or position trading. Neither is a signal: both go through '
+     + 'the same published rulebook and the same veto list, so a setup the desk produced gets no easier ride than one '
+     + 'you brought. A counter-trend one is still put in front of you rather than quietly filtered out — you decide '
+     + 'whether to take it.',
   },
   {
     t: 'The probability figure is your own record',
@@ -9903,17 +9965,19 @@ function syncButtons(root) {
 }
 
 /**
- * The live desk is gold, and only gold — the feed is hard-wired to a XAU/USD
- * spot source and a PAXG proxy for candles. The analyser, by contrast, sizes
- * nine instruments.
+ * A belt-and-braces guard, kept deliberately after the catalogue was cut to
+ * gold alone.
  *
- * That gap is a real trap: with EUR/USD selected, loading the live price would
- * drop a ~4,000 gold quote into a plan priced around 1.08, and the position size
- * that came back would be nonsense with no obvious sign anything was wrong.
+ * It exists because the two halves used to disagree: the feed is hard-wired to
+ * XAU/USD, while the analyser once offered nine instruments. With EUR/USD
+ * selected, loading the live price dropped a ~4,000 gold quote into a plan
+ * priced around 1.08, and the size that came back was nonsense with no visible
+ * sign anything was wrong.
  *
- * So loading anything from this view switches the analyser to XAU/USD first,
- * with the matching pip size, and the toast says it happened. Switching the
- * instrument is surprising; silently sizing a gold price as EUR/USD is worse.
+ * There is now nothing else to select, so this should never fire. It stays
+ * because a profile saved by an older build can still name a market that no
+ * longer exists, and because it costs one comparison to make a whole class of
+ * silently-wrong position sizes impossible.
  *
  * @returns {boolean} whether a switch was needed
  */
@@ -10493,7 +10557,7 @@ const { price, money, pct, pips, rr: fmtRR, EM } = __req("src/core/format.js");
 const { state, patch } = __req("src/core/state.js");
 const { emit, EV } = __req("src/core/bus.js");
 const { FACTORS } = __req("src/domain/scoring.js");
-const { instrumentGroups, getInstrument, pipOptions } = __req("src/domain/instruments.js");
+const { getInstrument, pipOptions, DEFAULT_INSTRUMENT } = __req("src/domain/instruments.js");
 const { suggestStop } = __req("src/domain/sizing.js");
 const { tip, callout, statCell, verdictBlock, verdictDetail, flowBar, warningList, scoreBreakdown, targetRow, confidenceGauge, icons } = __req("src/ui/components.js");
 const { toast, confirm } = __req("src/ui/overlays.js");
@@ -10525,16 +10589,15 @@ __exports.default = {
             <p class="eyebrow">Step 1 · Market</p>
             <h2>What are you trading?</h2>
             <div class="row">
+              <!-- Not a picker. There is one market, and a dropdown holding a
+                   single option only invites the question of what else there
+                   might be. -->
               <div class="field">
-                <label for="in-instrument">Instrument ${tip('Contract size drives position sizing. Gold is quoted per ounce on a 100 oz contract — a 1.00 price move is $100 per standard lot.')}</label>
-                <div class="selwrap">
-                  <select id="in-instrument">
-                    ${instrumentGroups().map(([group, items]) => `
-                      <optgroup label="${esc(group)}">
-                        ${items.map(([sym, label]) => `<option value="${sym}" ${sym === s.settings.instrument ? 'selected' : ''}>${esc(label)}</option>`).join('')}
-                      </optgroup>`).join('')}
-                  </select>
-                </div>
+                <label>Instrument ${tip('Contract size drives position sizing. Gold is quoted per ounce on a 100 oz contract — a 1.00 price move is $100 per standard lot. Override it in Settings if your broker differs.')}</label>
+                <p class="fixedval" id="in-instrument" data-value="${esc(s.settings.instrument)}">
+                  ${esc(spec.label)}
+                  <span class="fixednote">one market, mastered</span>
+                </p>
               </div>
               <div class="field">
                 <label for="in-timeframe">Entry timeframe ${tip('The chart you are actually taking the entry from. Lower timeframes give tighter stops but far more noise.')}</label>
@@ -10781,18 +10844,13 @@ __exports.default = {
     renderChecklist(root);
 
     /* ---- Selects and segments --------------------------------------- */
-    on(root, 'change', '#in-instrument', (e) => {
-      const instrument = e.target.value;
-      const spec = getInstrument(instrument);
-      patch({ settings: { instrument, pipSize: spec.pip } });
-      // Pip options depend on the instrument, so rebuild that one control.
-      const sel = byId('in-pipsize');
-      if (sel) {
-        sel.innerHTML = pipOptions(instrument)
-          .map((o) => `<option value="${o.value}" ${o.value === spec.pip ? 'selected' : ''}>${esc(o.label)}</option>`).join('');
-      }
-      recompute(root);
-    });
+    // The instrument is fixed, so there is no change handler for it. A profile
+    // saved by an older build may still name a market that no longer exists,
+    // though, and leaving that in place would size the trade against a contract
+    // spec the app can no longer describe. Put it back to gold, once, quietly.
+    if (state.settings.instrument !== DEFAULT_INSTRUMENT) {
+      patch({ settings: { instrument: DEFAULT_INSTRUMENT, pipSize: getInstrument(DEFAULT_INSTRUMENT).pip } });
+    }
 
     on(root, 'change', '#in-timeframe',  (e) => { patch({ setup: { timeframe: e.target.value } }); recompute(root); });
     on(root, 'change', '#in-structure',  (e) => { patch({ setup: { structure: e.target.value } }); recompute(root); });
@@ -11033,11 +11091,11 @@ __exports.default = {
     `);
     setHtml('targets-host', targetRow(plan, dp));
 
-    // Indices and crypto CFDs have no industry-standard contract size — one
-    // broker's "1 lot" of NAS100 can be ten times another's. For those the
-    // default here is a plausible starting point, not a fact, and getting it
-    // wrong is wrong by a multiple rather than a rounding error. Say so loudly
-    // for exactly those instruments rather than burying it in a general note.
+    // Gold's 100 oz contract is an industry convention, so the default is safe
+    // for almost everyone — but "almost" is doing real work here, and a contract
+    // size that is wrong makes every position size below it wrong. The `standard`
+    // flag stays because it is the spec's own claim about itself, not a fact
+    // about the current catalogue.
     const specNote = spec.standard
       ? 'Confirm your broker uses the same pip size and contract size.'
       : `<b class="t-short">Check this one before you trade it.</b> ${esc(spec.label)} has no standard contract
