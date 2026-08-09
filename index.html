@@ -2263,11 +2263,11 @@ kbd {
   <div class="authcard">
     <div class="wordmark"><span class="b">Bullion</span>Edge<span class="prochip">PRO</span></div>
     <div class="atag">AI-guided pre-trade analysis for high-probability setups.</div>
-    <p class="asub">Members only. Log in with your User ID, or activate the access key from your subscription.</p>
+    <p class="asub">Members only. Log in with your User ID, or activate the licence key from your subscription email.</p>
 
     <div class="authtabs" role="tablist">
       <button id="tab-login" class="on" role="tab">Log in</button>
-      <button id="tab-create" role="tab">Activate key</button>
+      <button id="tab-create" role="tab">Activate licence</button>
     </div>
 
     <div id="pane-login" role="tabpanel">
@@ -2286,9 +2286,10 @@ kbd {
 
     <div id="pane-create" role="tabpanel" style="display:none">
       <div class="field">
-        <label for="create-key">Access key</label>
+        <label for="create-key">Licence key</label>
         <input id="create-key" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
-               class="mono" style="text-transform:uppercase" placeholder="BE-XX-XXXXX">
+               class="mono" style="text-transform:uppercase"
+               placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX">
       </div>
       <div class="field">
         <label for="create-user">Choose a User ID</label>
@@ -2306,18 +2307,19 @@ kbd {
       <div class="autherr" id="create-err" role="alert"></div>
       <button class="btn block magnetic" id="create-btn">Activate &amp; enter</button>
       <p class="authhint">
-        Your access period starts <b>now</b>, the moment you activate — 7, 90 or 365 days depending on your key.
-        Your User ID and passkey are bound to that key so you log straight in next time.
+        Your licence key is in the email from your purchase. Activating binds it to this device and creates your
+        profile, so you log straight in next time. Your subscription is confirmed with the payment provider now and
+        again about once a week — in between, the desk works with no connection at all.
       </p>
     </div>
 
     <button class="linkbtn" id="auth-back">← Back to the site</button>
 
     <p class="authnote">
-      <b>This is a local account, not a secure cloud login.</b> Your credentials and access period are stored in this
-      browser on this device so you stay logged in across refreshes. Nothing is encrypted and nothing syncs to another
-      device. Never reuse a real banking or broker password here. Lost your key, or need it on another device? Contact
-      your administrator.
+      <b>Your profile is local; your subscription is not.</b> The User ID, passkey, settings and journal live in this
+      browser on this device — nothing syncs, and clearing site data deletes them, so use the backup export. Whether
+      your subscription is paid for is checked with the payment provider, which is why cancelling closes the desk and
+      renewing reopens it with your journal intact. Never reuse a real banking or broker password here.
       <button class="linkbtn inline" id="admin-link">Owner sign-in</button>
     </p>
   </div>
@@ -5142,8 +5144,9 @@ const { state, patch, hydrate } = __req("src/core/state.js");
 const { emit, EV } = __req("src/core/bus.js");
 const { initLanding, hideLanding } = __req("src/ui/landing.js");
 const { resetRouter } = __req("src/ui/router.js");
-const { activate, login, startSession, endSession, resumeSession, ensureOwner } = __req("src/ui/accounts.js");
-const { planLabel, daysLeft, isExpired } = __req("src/domain/licensing.js");
+const { activate, login, startSession, endSession, resumeSession, ensureOwner, revalidate } = __req("src/ui/accounts.js");
+const { planLabel } = __req("src/domain/licensing.js");
+const { readEntitlement, shouldRevalidate, STATE } = __req("src/domain/entitlement.js");
 
 /* ===================================================================
    OWNER SIGN-IN — change these before sharing the file.
@@ -5166,6 +5169,15 @@ const WATCHDOG_MS = 30000;
 let onEnter = null;
 let current = null;
 let watchdog = null;
+
+/**
+ * The signed-in account, or null.
+ *
+ * Exposed so a view can show what someone is paying for without keeping its own
+ * copy — a second copy would go stale the moment a revalidation updated this
+ * one, and the Settings card would then show a plan the member had cancelled.
+ */
+const currentAccount = () => current;
 
 async function initAuth(enterCallback) {
   onEnter = enterCallback;
@@ -5342,36 +5354,63 @@ async function enter(account) {
   if (onEnter) await onEnter(account);
 }
 
-/* ------------------------------------------------------------------ Expiry */
+/* ------------------------------------------------------------- Entitlement */
 
 function paintPlanBadge() {
   const badge = byId('plan-badge');
   if (!badge || !current) return;
 
+  badge.style.display = '';
+
   // "Annual · 36,500 days left" would be absurd. The owner has no term.
   if (current.owner) {
     badge.textContent = 'Owner · full access';
     badge.classList.remove('warn');
-    badge.style.display = '';
     return;
   }
 
-  const left = daysLeft(current);
-  badge.textContent = `${planLabel(current.days)} · ${left} day${left === 1 ? '' : 's'} left`;
-  badge.classList.toggle('warn', left <= 3);
-  badge.style.display = '';
+  const e = readEntitlement(current);
+
+  // A subscription that keeps renewing has no end date, so counting down to one
+  // would be inventing a deadline the member was never given.
+  if (e.daysLeft == null) {
+    const label = current.planName || planLabel(current.days || 30);
+    badge.textContent = e.state === STATE.STALE ? `${label} · confirming…` : `${label} · renews`;
+    badge.classList.toggle('warn', e.state === STATE.STALE);
+    badge.title = e.message || 'Your subscription renews automatically. Cancel any time.';
+    return;
+  }
+
+  badge.textContent = `${current.planName || planLabel(current.days)} · ${e.daysLeft} day${e.daysLeft === 1 ? '' : 's'} left`;
+  badge.classList.toggle('warn', e.daysLeft <= 3 || e.state === STATE.STALE);
+  badge.title = e.message || '';
 }
 
 /**
- * If the term runs out mid-session, end it cleanly rather than letting someone
+ * If entitlement lapses mid-session, end it cleanly rather than letting someone
  * keep working in a desk that has technically closed.
+ *
+ * The timer also drives the seven-day recheck. Doing it here rather than at
+ * sign-in matters for the way this app is actually used: the desk is left open
+ * for days at a time, so a member who never signs out would otherwise never be
+ * re-checked at all.
  */
 function startWatchdog() {
   stopWatchdog();
-  watchdog = setInterval(() => {
+  watchdog = setInterval(async () => {
     if (!current) return;
+
+    if (shouldRevalidate(current)) {
+      const { account } = await revalidate(current);
+      // Only adopt the result if we are still signed in as the same person —
+      // an await means logout could have happened while the request was open.
+      if (current && account && account.id === current.id) current = account;
+    }
+
     paintPlanBadge();
-    if (!isExpired(current)) return;
+
+    const e = readEntitlement(current);
+    if (e.open) return;
 
     stopWatchdog();
     current = null;
@@ -5379,7 +5418,7 @@ function startWatchdog() {
     resetRouter();                       // same reason as logout — stop the view, do not just hide it
     byId('app').classList.remove('ready');
     showLogin();
-    byId('login-err').textContent = 'Your access period has ended. Contact your administrator to renew.';
+    byId('login-err').textContent = e.message;
   }, WATCHDOG_MS);
 }
 
@@ -5410,7 +5449,7 @@ async function withBusy(btn, fn) {
 
 
 /* --- exports --- */
-Object.assign(__exports, { ACCESS, initAuth });
+Object.assign(__exports, { ACCESS, currentAccount, initAuth });
 
 });
 
@@ -5430,7 +5469,7 @@ __def("src/ui/landing.js", function (__exports, __req) {
  */
 
 const { byId, esc, on } = __req("src/core/dom.js");
-const { PLANS, REVIEWS, CLAIMS, PAY, planById, TELEGRAM, BROKER, PROMO } = __req("src/domain/licensing.js");
+const { PLANS, REVIEWS, CLAIMS, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl } = __req("src/domain/licensing.js");
 // The method section quotes real numbers, so it computes them with the real
 // engine rather than hard-coding figures that could silently go stale.
 const { buildPlan, breakevenWinRate, expectancyR } = __req("src/domain/sizing.js");
@@ -5606,13 +5645,9 @@ function markup() {
 
     <section class="lp-sec" id="lp-pricing">
       <h2>Plans &amp; pricing.</h2>
-      <p class="lp-lead">One desk, one market, no tiers of feature-withholding. Longer access simply costs less per day.</p>
+      <p class="lp-lead">One desk, one market, no tiers of feature-withholding. Every plan unlocks exactly the same software — the only difference is how long you keep it, and every longer term costs less per day. The daily rate is printed on each card so you can check the maths yourself.</p>
       <div class="lp-price" id="plan-cards"></div>
-      <p class="lp-note">
-        Pay by PayPal or crypto, email your receipt to <b>${esc(PAY.email)}</b>, and once payment is confirmed we send
-        your access key. Activate it on the login screen to start your access period — the clock starts at activation,
-        not at purchase. Digital-access fees are generally non-refundable once credentials are issued.
-      </p>
+      <p class="lp-note" id="pricing-note"></p>
     </section>
 
     <section class="lp-sec" id="lp-method">
@@ -5726,7 +5761,11 @@ function markup() {
         ${faq('Where is my data stored?',
           'In your browser, on your device. There is no account server and nothing syncs. That means it is private, and it also means clearing site data deletes it — so use the backup export.')}
         ${faq('How do I pay and get access?',
-          'Choose a plan, pay by PayPal or crypto, then email your receipt. You will receive an access key to activate on the login screen.')}
+          CHECKOUT.enabled
+            ? 'Choose a plan and pay at the checkout — card, PayPal or Apple/Google Pay. Your licence key is emailed the moment payment clears, and you activate it on the login screen. Nobody has to be awake for this; it works at 3am.'
+            : 'Choose a plan, pay by PayPal or crypto, then email your receipt. You will receive a licence key to activate on the login screen.')}
+        ${faq('Can I cancel, and what happens if I do?',
+          'Cancel in one click from your account page, any time. It stops the next payment and you keep access to the end of the period you have already paid for. Your journal, settings and history stay on your device either way — resubscribe later and they are still there.')}
       </div>
     </section>
 
@@ -6031,7 +6070,7 @@ function wire(host) {
     byId(btn.dataset.to)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  on(host, 'click', '[data-plan]', (_e, btn) => openSubscribe(btn.dataset.plan));
+  on(host, 'click', '[data-plan]', (_e, btn) => startSubscribe(btn.dataset.plan));
 
   byId('sub-close').onclick = closeSubscribe;
   byId('sub-modal').onclick = (e) => { if (e.target.id === 'sub-modal') closeSubscribe(); };
@@ -6078,6 +6117,8 @@ function selectText(node) {
 }
 
 function renderPlans() {
+  const live = CHECKOUT.enabled;
+
   byId('plan-cards').innerHTML = PLANS.map((p) => `
     <article class="lp-plan ${p.pop ? 'pop' : ''}">
       ${p.pop ? '<span class="lp-badge">Most popular</span>' : ''}
@@ -6087,8 +6128,24 @@ function renderPlans() {
       <p class="per">${esc(p.per)}</p>
       ${p.saved ? `<p class="saved">${esc(p.saved)}</p>` : ''}
       <ul>${p.feats.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
-      <button class="btn block magnetic" data-plan="${p.id}">Subscribe</button>
+      <button class="btn block magnetic" data-plan="${p.id}">
+        Subscribe${live && checkoutUrl(p.id) ? '' : ' — pay manually'}
+      </button>
     </article>`).join('');
+
+  // The note has to describe the flow the buyer will actually get, so it is
+  // written from the config rather than hardcoded. Promising an instant key
+  // while checkout is still unconfigured would be a promise the page cannot
+  // keep, and the buyer would find out only after paying.
+  byId('pricing-note').innerHTML = live
+    ? `Checkout is handled by <b>Lemon Squeezy</b>, our authorised reseller — card, PayPal and Apple/Google Pay, with
+       any local tax calculated at checkout. Your licence key is emailed the moment payment clears; activate it on the
+       login screen. <b>It renews automatically at the same price</b> until you cancel, which you can do in one click
+       from <a href="${esc(CHECKOUT.portal)}" target="_blank" rel="noopener">your account page</a> at any time.
+       Cancelling stops the next payment and leaves you access to the end of the period you have paid for.`
+    : `Pay by PayPal or crypto, email your receipt to <b>${esc(PAY.email)}</b>, and once payment is confirmed we send
+       your licence key. Activate it on the login screen to start your access period — the clock starts at activation,
+       not at purchase. Digital-access fees are generally non-refundable once credentials are issued.`;
 }
 
 /**
@@ -6122,6 +6179,29 @@ function renderReviews() {
 }
 
 /* ---------------------------------------------------------------- Subscribe */
+
+/**
+ * Buy a plan.
+ *
+ * Two paths, and which one runs depends only on whether checkout has been
+ * configured. With a Lemon Squeezy link the buyer goes straight to a hosted
+ * checkout and their licence key is emailed the moment payment clears — no
+ * human in the loop.
+ *
+ * Without one, the old pay-and-email-a-receipt flow is still there. That
+ * fallback is the difference between "the owner has not finished setting up
+ * payments" and "the storefront is broken": the page keeps selling either way,
+ * and nobody lands on a dead button.
+ */
+function startSubscribe(id) {
+  const url = checkoutUrl(id);
+  if (CHECKOUT.enabled && url) {
+    // noopener: the checkout page must never get a handle on this window.
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  openSubscribe(id);
+}
 
 function openSubscribe(id) {
   const plan = planById(id);
@@ -6166,119 +6246,78 @@ Object.assign(__exports, { initLanding, hideLanding });
 
 __def("src/domain/licensing.js", function (__exports, __req) {
 /**
- * domain/licensing.js — access keys, plans and the commercial catalogue.
+ * domain/licensing.js — plans, checkout and the commercial catalogue.
  *
  * No DOM, no storage. Pure data and pure predicates; the account records that
  * use them live in ui/accounts.js.
  *
  * ===================================================================
- * HONEST SECURITY NOTE — read this before selling anything.
+ * WHAT CHANGED, AND WHY IT MATTERED
  *
- * The key table below ships inside the page. Anyone who opens "View
- * source" can read every key, and anyone who can read the keys can
- * activate one. Client-side expiry is equally soft: the clock being
- * checked is the visitor's own, and clearing site data resets the
- * install.
+ * This file used to carry 200 access keys as a literal table. Every
+ * one of them was readable by anyone who opened "View source" — which
+ * meant that the moment a paid checkout existed, the cheapest way in
+ * was to read a key off the page rather than buy one. Adding a
+ * checkout without removing that table would have been selling a lock
+ * whose keys were taped to the door.
  *
- * This is a deterrent against casual sharing, not an entitlement
- * system. It is honest for a hand-issued key you email to a buyer you
- * have already taken payment from. It is NOT a licence server, and it
- * must not be relied on to protect revenue at any scale. For that, the
- * key has to be verified by a server you control, on each launch.
+ * Entitlement is now verified against Lemon Squeezy, which knows
+ * whether a subscription is actually paid for and, crucially, whether
+ * it has been cancelled since. Nothing secret ships in the page: the
+ * three licence endpoints take no API token, so the buyer's own key is
+ * the only credential involved. See integrations/lemonsqueezy.js.
  *
- * To rotate: replace the strings. To revoke: remove the row and
- * reissue.
+ * What is still soft: the clock being read is the visitor's own, and
+ * clearing site data resets the local install. Neither matters much
+ * when the provider is asked again every seven days.
  * ===================================================================
  */
 
 const DAY_MS = 86400000;
 
-/** Issued access keys. `days` starts counting at activation, not at purchase. */
-const LICENSES = [
-  // 150 single-use keys: 50 per plan term. Regenerate with tools/keygen.mjs.
-  // The alphabet omits 0/O, 1/I/L, 5/S and 8/B so a key cannot be misread
-  // when it is dictated, photographed or retyped from an email.
-  /* ---- 30-day - Starter ---- */
-  { k: 'BE-MO-A36D67', days: 30 }, { k: 'BE-MO-U94ARA', days: 30 }, { k: 'BE-MO-DUQD6H', days: 30 },
-  { k: 'BE-MO-U7D4DF', days: 30 }, { k: 'BE-MO-CUWWUJ', days: 30 }, { k: 'BE-MO-QNPT9U', days: 30 },
-  { k: 'BE-MO-DKFR6E', days: 30 }, { k: 'BE-MO-V7JPCE', days: 30 }, { k: 'BE-MO-DT38VU', days: 30 },
-  { k: 'BE-MO-NJDMRW', days: 30 }, { k: 'BE-MO-YEUKJG', days: 30 }, { k: 'BE-MO-Y8C6U6', days: 30 },
-  { k: 'BE-MO-QTA88Y', days: 30 }, { k: 'BE-MO-G8F28N', days: 30 }, { k: 'BE-MO-AURAG7', days: 30 },
-  { k: 'BE-MO-F2CG3Y', days: 30 }, { k: 'BE-MO-EPCDEU', days: 30 }, { k: 'BE-MO-A8XRJ6', days: 30 },
-  { k: 'BE-MO-KGAC6E', days: 30 }, { k: 'BE-MO-3NKUGE', days: 30 }, { k: 'BE-MO-CQ92C9', days: 30 },
-  { k: 'BE-MO-FA9F4C', days: 30 }, { k: 'BE-MO-C82YGF', days: 30 }, { k: 'BE-MO-Q8VHP2', days: 30 },
-  { k: 'BE-MO-HAU4FP', days: 30 }, { k: 'BE-MO-2TYR6P', days: 30 }, { k: 'BE-MO-F9QHED', days: 30 },
-  { k: 'BE-MO-2KDF87', days: 30 }, { k: 'BE-MO-NCDG4G', days: 30 }, { k: 'BE-MO-KT6X9Y', days: 30 },
-  { k: 'BE-MO-MYNXDN', days: 30 }, { k: 'BE-MO-MMJQJR', days: 30 }, { k: 'BE-MO-K2E9JV', days: 30 },
-  { k: 'BE-MO-HG7NVX', days: 30 }, { k: 'BE-MO-2XQDQV', days: 30 }, { k: 'BE-MO-Q7WMHN', days: 30 },
-  { k: 'BE-MO-GPWT29', days: 30 }, { k: 'BE-MO-DPYFMA', days: 30 }, { k: 'BE-MO-F643JD', days: 30 },
-  { k: 'BE-MO-F2P2JD', days: 30 }, { k: 'BE-MO-KU4Y3P', days: 30 }, { k: 'BE-MO-JPRH9Y', days: 30 },
-  { k: 'BE-MO-D48ADY', days: 30 }, { k: 'BE-MO-FGJF9N', days: 30 }, { k: 'BE-MO-EXDCRP', days: 30 },
-  { k: 'BE-MO-FHKGDH', days: 30 }, { k: 'BE-MO-FTHFDV', days: 30 }, { k: 'BE-MO-DMCUVA', days: 30 },
-  { k: 'BE-MO-Y88VEA', days: 30 }, { k: 'BE-MO-4YDCFT', days: 30 },
-  /* ---- 90-day - Pro ---- */
-  { k: 'BE-QT-9VEYR6', days: 90 }, { k: 'BE-QT-UYVVMD', days: 90 }, { k: 'BE-QT-Y46QDC', days: 90 },
-  { k: 'BE-QT-YJWRGP', days: 90 }, { k: 'BE-QT-UCR7R8', days: 90 }, { k: 'BE-QT-3UFEX8', days: 90 },
-  { k: 'BE-QT-6RCV34', days: 90 }, { k: 'BE-QT-DKDNTN', days: 90 }, { k: 'BE-QT-3XFMGJ', days: 90 },
-  { k: 'BE-QT-U93N2J', days: 90 }, { k: 'BE-QT-R22AT2', days: 90 }, { k: 'BE-QT-ANG6V4', days: 90 },
-  { k: 'BE-QT-XF9X2C', days: 90 }, { k: 'BE-QT-EQ6JTF', days: 90 }, { k: 'BE-QT-ECY3FG', days: 90 },
-  { k: 'BE-QT-CPNQ97', days: 90 }, { k: 'BE-QT-VCRY2P', days: 90 }, { k: 'BE-QT-U9V7VJ', days: 90 },
-  { k: 'BE-QT-6JY7N4', days: 90 }, { k: 'BE-QT-JJ2KQE', days: 90 }, { k: 'BE-QT-2ATX6E', days: 90 },
-  { k: 'BE-QT-XPDMHF', days: 90 }, { k: 'BE-QT-P8RYT4', days: 90 }, { k: 'BE-QT-A4MRH4', days: 90 },
-  { k: 'BE-QT-CREX3R', days: 90 }, { k: 'BE-QT-KQHP28', days: 90 }, { k: 'BE-QT-8EVXVM', days: 90 },
-  { k: 'BE-QT-NJYG37', days: 90 }, { k: 'BE-QT-DUXUFG', days: 90 }, { k: 'BE-QT-882JEU', days: 90 },
-  { k: 'BE-QT-MMTG4H', days: 90 }, { k: 'BE-QT-RRPFTP', days: 90 }, { k: 'BE-QT-GMU6XF', days: 90 },
-  { k: 'BE-QT-VWE8JN', days: 90 }, { k: 'BE-QT-8764UP', days: 90 }, { k: 'BE-QT-6U2YTU', days: 90 },
-  { k: 'BE-QT-DRJMXR', days: 90 }, { k: 'BE-QT-WE2KC2', days: 90 }, { k: 'BE-QT-DDJAGH', days: 90 },
-  { k: 'BE-QT-WJN7YT', days: 90 }, { k: 'BE-QT-M3P4XF', days: 90 }, { k: 'BE-QT-UPX2NJ', days: 90 },
-  { k: 'BE-QT-7TETFM', days: 90 }, { k: 'BE-QT-DG63PH', days: 90 }, { k: 'BE-QT-EFP3M3', days: 90 },
-  { k: 'BE-QT-MK6HA8', days: 90 }, { k: 'BE-QT-4QT473', days: 90 }, { k: 'BE-QT-P9R8AN', days: 90 },
-  { k: 'BE-QT-WTP4A6', days: 90 }, { k: 'BE-QT-PTDGGE', days: 90 },
-  /* ---- 365-day - Elite ---- */
-  { k: 'BE-YR-4WFUWR', days: 365 }, { k: 'BE-YR-2RC2A8', days: 365 }, { k: 'BE-YR-DD629E', days: 365 },
-  { k: 'BE-YR-NJ7CJ8', days: 365 }, { k: 'BE-YR-63MG7A', days: 365 }, { k: 'BE-YR-MQEMT4', days: 365 },
-  { k: 'BE-YR-C2WWQ6', days: 365 }, { k: 'BE-YR-FGV4YJ', days: 365 }, { k: 'BE-YR-GKVVN3', days: 365 },
-  { k: 'BE-YR-VW8A2J', days: 365 }, { k: 'BE-YR-NY2Y9C', days: 365 }, { k: 'BE-YR-D3T7MC', days: 365 },
-  { k: 'BE-YR-6UFHE9', days: 365 }, { k: 'BE-YR-996QPC', days: 365 }, { k: 'BE-YR-P7YD3C', days: 365 },
-  { k: 'BE-YR-V9KD6R', days: 365 }, { k: 'BE-YR-23W79U', days: 365 }, { k: 'BE-YR-VGF47M', days: 365 },
-  { k: 'BE-YR-8F6K4E', days: 365 }, { k: 'BE-YR-9WXKXP', days: 365 }, { k: 'BE-YR-VM872K', days: 365 },
-  { k: 'BE-YR-HUXU2N', days: 365 }, { k: 'BE-YR-MU4UK8', days: 365 }, { k: 'BE-YR-DNJWCU', days: 365 },
-  { k: 'BE-YR-7PFXHH', days: 365 }, { k: 'BE-YR-AG67CH', days: 365 }, { k: 'BE-YR-K9HJ28', days: 365 },
-  { k: 'BE-YR-EATET2', days: 365 }, { k: 'BE-YR-RCY9JQ', days: 365 }, { k: 'BE-YR-GQE83G', days: 365 },
-  { k: 'BE-YR-PCGUK7', days: 365 }, { k: 'BE-YR-FG4DFA', days: 365 }, { k: 'BE-YR-FXWU7P', days: 365 },
-  { k: 'BE-YR-MPJGNR', days: 365 }, { k: 'BE-YR-UCGX2F', days: 365 }, { k: 'BE-YR-AER284', days: 365 },
-  { k: 'BE-YR-CY9AT4', days: 365 }, { k: 'BE-YR-D8REJX', days: 365 }, { k: 'BE-YR-PT6QQH', days: 365 },
-  { k: 'BE-YR-WA3TMN', days: 365 }, { k: 'BE-YR-CNFTPK', days: 365 }, { k: 'BE-YR-VX2HMG', days: 365 },
-  { k: 'BE-YR-D7VHYU', days: 365 }, { k: 'BE-YR-TE87EM', days: 365 }, { k: 'BE-YR-DMKRCQ', days: 365 },
-  { k: 'BE-YR-KNJ7P3', days: 365 }, { k: 'BE-YR-AND9Q9', days: 365 }, { k: 'BE-YR-U6DARF', days: 365 },
-  { k: 'BE-YR-F23XUP', days: 365 }, { k: 'BE-YR-ARGRVT', days: 365 },
-  /* ---- 7-day - XM referral promo ---- */
-  { k: 'BE-WK-3CXEMC', days: 7 }, { k: 'BE-WK-HRXH8C', days: 7 }, { k: 'BE-WK-8M2DEP', days: 7 },
-  { k: 'BE-WK-6E24ED', days: 7 }, { k: 'BE-WK-PJXUWW', days: 7 }, { k: 'BE-WK-9F8JJD', days: 7 },
-  { k: 'BE-WK-WUQ83N', days: 7 }, { k: 'BE-WK-DQXTGU', days: 7 }, { k: 'BE-WK-6WDUTM', days: 7 },
-  { k: 'BE-WK-38R7XV', days: 7 }, { k: 'BE-WK-M6GHRN', days: 7 }, { k: 'BE-WK-RUQWRR', days: 7 },
-  { k: 'BE-WK-P2VNC6', days: 7 }, { k: 'BE-WK-8TDHGR', days: 7 }, { k: 'BE-WK-87CFFY', days: 7 },
-  { k: 'BE-WK-7Y49TG', days: 7 }, { k: 'BE-WK-UANATK', days: 7 }, { k: 'BE-WK-7H6JPD', days: 7 },
-  { k: 'BE-WK-7W87D6', days: 7 }, { k: 'BE-WK-MK8YY8', days: 7 }, { k: 'BE-WK-PMEER4', days: 7 },
-  { k: 'BE-WK-7AMM99', days: 7 }, { k: 'BE-WK-KYJHG7', days: 7 }, { k: 'BE-WK-8UKU7D', days: 7 },
-  { k: 'BE-WK-FY8HKW', days: 7 }, { k: 'BE-WK-4VUAKW', days: 7 }, { k: 'BE-WK-9TFU8Y', days: 7 },
-  { k: 'BE-WK-2NA4A2', days: 7 }, { k: 'BE-WK-JFNJWY', days: 7 }, { k: 'BE-WK-R47HFR', days: 7 },
-  { k: 'BE-WK-QAW894', days: 7 }, { k: 'BE-WK-NQPEW6', days: 7 }, { k: 'BE-WK-C9U3N4', days: 7 },
-  { k: 'BE-WK-YW8TVT', days: 7 }, { k: 'BE-WK-68UQ3A', days: 7 }, { k: 'BE-WK-2UFFDX', days: 7 },
-  { k: 'BE-WK-F3QD7K', days: 7 }, { k: 'BE-WK-KUV79Y', days: 7 }, { k: 'BE-WK-GT4NG6', days: 7 },
-  { k: 'BE-WK-RTKEEW', days: 7 }, { k: 'BE-WK-T4MDTY', days: 7 }, { k: 'BE-WK-CPQUG2', days: 7 },
-  { k: 'BE-WK-AUCKHK', days: 7 }, { k: 'BE-WK-9MVAN9', days: 7 }, { k: 'BE-WK-TGJJNM', days: 7 },
-  { k: 'BE-WK-RRH7MQ', days: 7 }, { k: 'BE-WK-HRX9FM', days: 7 }, { k: 'BE-WK-JMQYNA', days: 7 },
-  { k: 'BE-WK-U9WRCJ', days: 7 }, { k: 'BE-WK-8KPDGW', days: 7 },
-];
+/**
+ * OWNER: fill these in from your Lemon Squeezy dashboard before selling.
+ * Nothing here is secret — the store id and variant ids appear in every
+ * checkout URL, and the licence endpoints take no API token.
+ *
+ * See docs/PAYMENTS.md for where each value lives in the dashboard.
+ *
+ * `enabled` stays false until `storeId` is set, so a half-configured build
+ * refuses activation with a clear message instead of failing obscurely.
+ */
+const CHECKOUT = {
+  /** Your store id, from Settings → Stores. Used to refuse keys from other stores. */
+  storeId: '',
 
-const findLicense = (key) => {
-  const k = String(key || '').trim().toUpperCase();
-  return LICENSES.find((l) => l.k === k) || null;
+  /** Where a member manages or cancels their own subscription. */
+  portal: 'https://app.lemonsqueezy.com/my-orders',
+
+  /**
+   * One row per plan. `variantId` maps a purchase back to a plan; `url` is the
+   * checkout link from Products → your product → Share.
+   */
+  plans: [
+    { id: 'week',    name: 'Week Pass', days: 7,   variantId: '', url: '' },
+    { id: 'starter', name: 'Starter',   days: 30,  variantId: '', url: '' },
+    { id: 'pro',     name: 'Pro',       days: 90,  variantId: '', url: '' },
+    { id: 'elite',   name: 'Elite',     days: 180, variantId: '', url: '' },
+  ],
+
+  get enabled() { return Boolean(this.storeId); },
 };
 
-const planLabel = (days) =>
-  (days >= 365 ? 'Annual' : days >= 90 ? 'Quarterly' : days >= 30 ? 'Monthly' : `${days}-day`);
+/** The checkout URL for a plan id, or null while checkout is unconfigured. */
+const checkoutUrl = (planId) =>
+  CHECKOUT.plans.find((p) => p.id === planId)?.url || null;
+
+/**
+ * The term, named. Exact rather than bucketed: with 7, 30, 90 and 180 all on
+ * sale, a range like "90 or more = Quarterly" would print "Quarterly" on a
+ * 180-day plan and quietly mislabel what someone bought.
+ */
+const TERM_NAMES = { 7: 'Weekly', 30: 'Monthly', 90: 'Quarterly', 180: 'Half-year', 365: 'Annual' };
+
+const planLabel = (days) => TERM_NAMES[days] || `${days}-day`;
 
 const daysLeft = (account) =>
   Math.max(0, Math.ceil((account.expiresAt - Date.now()) / DAY_MS));
@@ -6335,10 +6374,18 @@ const BROKER = {
  *    is close enough to an inducement to trade that the wording has to be
  *    unambiguous, and `terms` below says so plainly.
  *  - It never claims we can verify a deposit automatically. We cannot see anyone's
- *    broker account, so this is manual: they send proof, a human checks it, a key
+ *    broker account, so this is manual: they send proof, a human checks it, a code
  *    is issued. Promising instant access would be a promise we cannot keep.
  *
- * Keys come from the BE-WK- (7-day) batch, which exists only for this offer.
+ * The reward is a discount code that makes the first week of a Starter
+ * subscription free, redeemed at the normal checkout. That means the member gets
+ * a real licence key automatically, exactly like a paying buyer, instead of a
+ * hand-issued key from a list that no longer exists.
+ *
+ * It also means the trial rolls into a paid subscription unless they cancel —
+ * which is a perfectly ordinary arrangement and a dishonest one if it is not
+ * said out loud. So `terms` says it first, in plain words, rather than leaving
+ * it to be discovered on a bank statement.
  */
 const PROMO = {
   id: 'xm-100',
@@ -6350,46 +6397,78 @@ const PROMO = {
     'Open an XM account through the link on this page — it has to be that link, or the referral is not attributed to us and we cannot see it.',
     'Fund it with $100 or more.',
     'Email your account number and a deposit screenshot to {email}.',
-    'We check it by hand and send a 7-day access key, usually within a day.',
+    'We check it by hand and send a code that makes your first week free at checkout, usually within a day.',
   ],
   terms: [
+    'After the free week it becomes a paid Starter subscription unless you cancel first. Cancel in one click from your account page, any time during the week, and you are charged nothing.',
     'Your deposit is not a payment to us. It stays in your own brokerage account, and it is at risk the moment you trade it.',
     'One key per person, for new XM accounts only.',
-    'The 7 days start when you activate the key, not when you deposit.',
+    'The 7 days start when you redeem the code, not when you deposit.',
     'We verify manually and can decline anything we cannot confirm.',
     'This is a promotion for the software. It is not trading advice, and it is not a reason to fund an account you were not already going to open.',
   ],
 };
 
+/**
+ * The plans, as sold.
+ *
+ * Every `per` and `saved` figure below is arithmetic on `price` and `days` —
+ * never a marketing number typed in by hand. A test recomputes each one from
+ * the price, because a stale "$0.67 / day" left over from an old price is a
+ * false statement sitting beside a payment button.
+ *
+ * The ladder holds: every longer term is cheaper per day than the one below it,
+ * which is what the pricing page claims and what a test enforces.
+ *
+ *       7 days    $9.99   = $1.43 / day
+ *      30 days   $31.99   = $1.07 / day
+ *      90 days   $89.99   = $1.00 / day
+ *     180 days  $159.99   = $0.89 / day
+ *
+ * It briefly did not. At $99.99 the 90-day plan worked out at $1.11 a day, so
+ * three months of the monthly plan came to $95.97 and beat it — a buyer doing
+ * the sum would have found the "bigger" plan was the worse deal. Worth keeping
+ * in mind when any of these move: the check that catches it is in risk.test.mjs.
+ */
 const PLANS = [
   {
-    id: 'starter', name: 'Starter', price: 20, days: 30, per: '$0.67 / day',
+    id: 'week', name: 'Week Pass', price: 9.99, days: 7, per: '$1.43 / day',
     save: '', saved: '', pop: false,
     feats: [
       'Full BullionEdge Pro desk',
       'Live XAU/USD price & interactive chart',
       'Auto setups every 2h — all 4 styles',
-      'Risk-first sizing, journal & psychology coach',
+      'Try the whole process on one week of trades',
     ],
   },
   {
-    id: 'pro', name: 'Pro', price: 50, days: 90, per: '$0.56 / day',
-    save: 'Save 17%', saved: 'You save $10 vs the monthly rate', pop: true,
+    id: 'starter', name: 'Starter', price: 31.99, days: 30, per: '$1.07 / day',
+    save: 'Save 25%', saved: 'You save $10.82 vs the weekly rate', pop: true,
+    feats: [
+      'Everything in the Week Pass',
+      'A full month of access',
+      'Risk-first sizing, journal & psychology coach',
+      'Long enough to build a real journal',
+    ],
+  },
+  {
+    id: 'pro', name: 'Pro', price: 89.99, days: 90, per: '$1.00 / day',
+    save: 'Save 6%', saved: 'You save $5.98 vs the monthly rate', pop: false,
     feats: [
       'Everything in Starter',
       '90 days uninterrupted access',
       'Setup history & HTF-agreement flags',
-      'Best for consistent traders',
+      'Enough closed trades to calibrate your score',
     ],
   },
   {
-    id: 'elite', name: 'Elite', price: 100, days: 365, per: '$0.27 / day',
-    save: 'Save 58%', saved: 'You save $140 vs the monthly rate', pop: false,
+    id: 'elite', name: 'Elite', price: 159.99, days: 180, per: '$0.89 / day',
+    save: 'Save 17%', saved: 'You save $31.95 vs the monthly rate', pop: false,
     feats: [
       'Everything in Pro',
-      'A full year of access',
+      'Six months of access',
       'Lowest daily cost — best value',
-      'Price locked for 12 months',
+      'Price locked for the whole term',
     ],
   },
 ];
@@ -6442,7 +6521,7 @@ const CLAIMS = [
 
 
 /* --- exports --- */
-Object.assign(__exports, { DAY_MS, LICENSES, findLicense, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, CLAIMS });
+Object.assign(__exports, { DAY_MS, CHECKOUT, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, CLAIMS });
 
 });
 
@@ -7064,18 +7143,23 @@ Object.assign(__exports, { hasChartJs, destroy, destroyAll, render });
 
 __def("src/ui/accounts.js", function (__exports, __req) {
 /**
- * ui/accounts.js — member accounts, backed by an access key.
+ * ui/accounts.js — member accounts, backed by a subscription.
  *
  * An account is two things at once, and it is worth being clear about which is
  * which:
  *
- *  1. An ENTITLEMENT — the access key and the expiry date it started. This is
- *     checked in the browser, so it deters casual sharing and nothing more.
- *     See the note at the top of domain/licensing.js.
+ *  1. An ENTITLEMENT — the licence key, the device binding it created, and the
+ *     date we last heard from Lemon Squeezy that it was paid for. The decision
+ *     itself lives in domain/entitlement.js; this file only stores the facts
+ *     and refreshes them.
  *
  *  2. A PROFILE — the partition that scopes settings, journal and history to
  *     one person on a shared device. This part is genuinely useful and is what
  *     the rest of the app actually consumes, via `state.profileId`.
+ *
+ * Keeping them separate is what lets a lapsed subscription close the desk
+ * without destroying anything the member wrote. They resubscribe and their
+ * journal is still there.
  *
  * Passkeys are salted and stretched with PBKDF2 (core/crypto.js). Records
  * written by the original single-file build used a bare unsalted SHA-256, and
@@ -7085,10 +7169,11 @@ __def("src/ui/accounts.js", function (__exports, __req) {
 
 const db = __req("src/core/db.js");
 const { hashPin, verifyPin, randomSalt } = __req("src/core/crypto.js");
-const { findLicense, isExpired, DAY_MS } = __req("src/domain/licensing.js");
+const { DAY_MS } = __req("src/domain/licensing.js");
+const { readEntitlement, shouldRevalidate, applyValidation, STATE } = __req("src/domain/entitlement.js");
+const { activateKey, validateKey, deactivateKey } = __req("src/integrations/lemonsqueezy.js");
 
 const ACCOUNTS_KEY = 'accounts';
-const USEDKEYS_KEY = 'used_keys';
 const SESSION_KEY  = 'session';
 
 const norm = (userId) => String(userId || '').trim().toLowerCase();
@@ -7098,9 +7183,6 @@ const norm = (userId) => String(userId || '').trim().toLowerCase();
 const allAccounts = () => db.getValue(ACCOUNTS_KEY, {}).then((v) => v || {});
 const saveAccounts = (accounts) => db.setValue(ACCOUNTS_KEY, accounts);
 
-const usedKeys = () => db.getValue(USEDKEYS_KEY, {}).then((v) => v || {});
-const saveUsedKeys = (used) => db.setValue(USEDKEYS_KEY, used);
-
 async function findAccount(userId) {
   const accounts = await allAccounts();
   return accounts[norm(userId)] || null;
@@ -7109,14 +7191,20 @@ async function findAccount(userId) {
 /* --------------------------------------------------------------- Activation */
 
 /**
- * Bind a fresh access key to a new User ID and start its clock.
+ * Bind a licence key to a new User ID on this device.
+ *
  * Returns `{ ok: true, account }` or `{ ok: false, error }` — never throws for
- * an expected validation failure, because every one of those is a message the
- * user needs to read.
+ * an expected failure, because every one of those is a message the member needs
+ * to read.
+ *
+ * Note the order. Every local check runs *before* the network call, because
+ * activating consumes one of the key's device slots. Validating the User ID
+ * afterwards would mean a mistyped passkey silently burns a slot the member
+ * paid for, and they would have no way to get it back.
  */
 async function activate({ key, userId, pass, pass2 }) {
-  const licence = findLicense(key);
-  if (!licence) return fail('That access key is not recognised. Check it and try again.');
+  const licenceKey = String(key || '').trim();
+  if (!licenceKey) return fail('Enter the licence key from your purchase email.');
 
   const id = String(userId || '').trim();
   if (id.length < 3 || !/^[A-Za-z0-9_.]+$/.test(id)) {
@@ -7125,14 +7213,12 @@ async function activate({ key, userId, pass, pass2 }) {
   if (String(pass || '').length < 4) return fail('Passkey must be at least 4 characters.');
   if (pass !== pass2) return fail('The two passkeys do not match.');
 
-  const normalisedKey = key.trim().toUpperCase();
-  const used = await usedKeys();
-  if (used[normalisedKey]) {
-    return fail('This key has already been activated. Log in with your User ID instead, or contact your administrator.');
-  }
-
   const accounts = await allAccounts();
   if (accounts[norm(id)]) return fail('That User ID is already taken on this device. Choose another.');
+
+  // Only now spend the slot.
+  const res = await activateKey({ key: licenceKey, instanceName: id });
+  if (!res.ok) return fail(res.error);
 
   const now = Date.now();
   const salt = randomSalt();
@@ -7142,20 +7228,82 @@ async function activate({ key, userId, pass, pass2 }) {
     name: id,
     salt,
     pinHash: await hashPin(pass, salt),
-    key: normalisedKey,
-    days: licence.days,
+
+    // Entitlement. `expiresAt` is deliberately left null for a subscription
+    // that simply keeps renewing — inventing a date here would expire a paying
+    // member on a day the provider never mentioned. With no date, access is
+    // governed entirely by the seven-day recheck, which is where a cancellation
+    // will show up anyway.
+    licenseKey: licenceKey,
+    instanceId: res.instanceId,
+    status: res.status,
+    plan: res.plan || null,
+    planName: res.planName || null,
+    days: res.days ?? null,
+    expiresAt: res.expiresAt ?? null,
+    customerEmail: res.customerEmail || null,
+    lastValidatedAt: now,
+
     activatedAt: now,
-    expiresAt: now + licence.days * DAY_MS,
     createdAt: now,
   };
 
   accounts[account.id] = account;
   await saveAccounts(accounts);
 
-  used[normalisedKey] = { userId: id, activatedAt: now };
-  await saveUsedKeys(used);
-
   return { ok: true, account };
+}
+
+/* ------------------------------------------------------------- Revalidation */
+
+/**
+ * Ask Lemon Squeezy whether this account is still paid for, and record the
+ * answer.
+ *
+ * Called on sign-in and on a timer. It is safe to call at any time: it returns
+ * early when nothing is owed, so the caller does not have to know the schedule.
+ *
+ * The one rule that must not be broken is in the failure branch — a check we
+ * could not make leaves `lastValidatedAt` alone. Touching it on failure would
+ * restart the grace window on every attempt and hand out unlimited free access
+ * to anyone who simply stayed offline.
+ */
+async function revalidate(account, { force = false } = {}) {
+  if (!account || account.owner) return { account, checked: false };
+  if (!force && !shouldRevalidate(account)) return { account, checked: false };
+  if (!account.licenseKey) return { account, checked: false };
+
+  const res = await validateKey({ key: account.licenseKey, instanceId: account.instanceId });
+
+  if (!res.ok) {
+    // The binding was removed at the provider's end — the key may be fine, but
+    // this device is no longer on it. Say so rather than reporting a failure
+    // the member cannot act on.
+    if (res.needsReactivation) {
+      const next = { ...account, status: 'disabled' };
+      await upsert(next);
+      return { account: next, checked: true, error: res.error };
+    }
+    // Unreachable, or a refusal we cannot interpret: change nothing.
+    return { account, checked: false, error: res.error };
+  }
+
+  const next = applyValidation(account, res);
+  await upsert(next);
+  return { account: next, checked: true };
+}
+
+/** Release this device's slot so the key can be used elsewhere. Best effort. */
+async function releaseDevice(account) {
+  if (!account?.licenseKey || !account.instanceId) return { ok: false };
+  return deactivateKey({ key: account.licenseKey, instanceId: account.instanceId });
+}
+
+async function upsert(account) {
+  const accounts = await allAccounts();
+  accounts[account.id] = account;
+  await saveAccounts(accounts);
+  return account;
 }
 
 /* -------------------------------------------------------------------- Login */
@@ -7164,15 +7312,10 @@ async function login({ userId, pass }) {
   if (!String(userId || '').trim() || !pass) return fail('Enter your User ID and passkey.');
 
   const accounts = await allAccounts();
-  const account = accounts[norm(userId)];
+  let account = accounts[norm(userId)];
   if (!account) return fail('Wrong User ID or passkey.');
 
   if (!(await verifyPin(pass, account))) return fail('Wrong User ID or passkey.');
-
-  if (isExpired(account)) {
-    return fail(`Your ${account.days}-day access ended on ${new Date(account.expiresAt).toLocaleDateString()}. `
-      + 'Contact your administrator to renew.');
-  }
 
   // Quietly upgrade a legacy unsalted hash now that we have the plaintext.
   if (!account.salt) {
@@ -7182,7 +7325,19 @@ async function login({ userId, pass }) {
     await saveAccounts(accounts);
   }
 
-  return { ok: true, account };
+  // Sign-in is the natural moment to check: the member is present, so the one
+  // thing they can do about a lapsed subscription — renew it — is in reach.
+  // A blocked account is forced through a check rather than left blocked,
+  // which is how someone who was offline for three weeks gets back in.
+  const entitlement = readEntitlement(account);
+  if (shouldRevalidate(account) || entitlement.state === STATE.BLOCKED) {
+    ({ account } = await revalidate(account, { force: true }));
+  }
+
+  const check = readEntitlement(account);
+  if (!check.open) return fail(check.message, check.state);
+
+  return { ok: true, account, entitlement: check };
 }
 
 /* -------------------------------------------------------------------- Owner */
@@ -7243,19 +7398,26 @@ async function resumeSession() {
   const session = await db.getValue(SESSION_KEY, null);
   if (!session?.userId) return null;
 
-  const account = await findAccount(session.userId);
-  if (!account || isExpired(account)) {
+  let account = await findAccount(session.userId);
+  if (!account) { await endSession(); return null; }
+
+  // A reload is a free opportunity to re-check, but never a reason to block on
+  // the network: if the provider is unreachable the cached answer stands, which
+  // is exactly what the grace window is for.
+  if (shouldRevalidate(account)) ({ account } = await revalidate(account));
+
+  if (!readEntitlement(account).open) {
     await endSession();
     return null;
   }
   return account;
 }
 
-function fail(error) { return { ok: false, error }; }
+function fail(error, state = null) { return { ok: false, error, state }; }
 
 
 /* --- exports --- */
-Object.assign(__exports, { allAccounts, startSession, endSession, findAccount, activate, login, ensureOwner, resumeSession });
+Object.assign(__exports, { allAccounts, startSession, endSession, findAccount, activate, revalidate, releaseDevice, login, ensureOwner, resumeSession });
 
 });
 
@@ -7349,6 +7511,403 @@ function uid(prefix = 'id') {
 
 /* --- exports --- */
 Object.assign(__exports, { randomSalt, hashPin, safeEqual, verifyPin, uid });
+
+});
+
+__def("src/domain/entitlement.js", function (__exports, __req) {
+/**
+ * domain/entitlement.js — does this member get in right now?
+ *
+ * A subscription that can be cancelled creates a problem a fixed-term key never
+ * had: the answer changes without the member doing anything. Someone who
+ * cancels today must lose access, and the only place that fact exists is the
+ * payment provider's server.
+ *
+ * Checking on every launch would be the obvious fix and it is the wrong one —
+ * it would break the offline promise the whole app is built on, and it would
+ * lock a paying member out on a train. So access is decided from a cached
+ * answer plus how old that answer is:
+ *
+ *      0 ────────────── 7 days ───────────── 21 days ──────────▶
+ *      │  fresh          │  stale             │  blocked
+ *      │  no check       │  re-check when we  │  will not open
+ *      │  needed         │  can; still works  │  until a check
+ *      │                 │  fully offline     │  succeeds
+ *
+ * The asymmetry is deliberate. A *failed* check (no signal, provider down)
+ * costs the member nothing until the grace window runs out. A *successful*
+ * check that says cancelled or expired ends access immediately — there is no
+ * grace for an answer we actually received.
+ *
+ * Fourteen days of grace is a judgement call: long enough to cover a holiday
+ * without internet, short enough that a cancelled member cannot get another
+ * billing period for free.
+ *
+ * All of it is pure. No storage, no network, no clock of its own — `now` is
+ * always passed in, so every branch is reachable from a test.
+ */
+
+const DAY_MS = 86400000;
+
+/** How long a successful check is trusted before we try again. */
+const RECHECK_MS = 7 * DAY_MS;
+
+/** How long past that we keep working while checks keep failing. */
+const GRACE_MS = 14 * DAY_MS;
+
+/**
+ * Access states, in the order the checks run. `ok` is the only one that opens
+ * the desk; everything else carries a `message` written to be read by the
+ * member, not by a developer.
+ */
+const STATE = {
+  ACTIVE: 'active',       // fresh, paid, open
+  STALE: 'stale',         // open, but we owe the provider a check
+  BLOCKED: 'blocked',     // grace exhausted — needs a successful check to reopen
+  EXPIRED: 'expired',     // the term ended
+  CANCELLED: 'cancelled', // provider says the subscription is over
+  NONE: 'none',           // no entitlement at all
+};
+
+const OPEN = new Set([STATE.ACTIVE, STATE.STALE]);
+
+/** Whether a state lets the member into the desk. */
+const opens = (state) => OPEN.has(state);
+
+const days = (ms) => Math.max(0, Math.ceil(ms / DAY_MS));
+
+/**
+ * Decide access from a stored record.
+ *
+ * @param {object|null} record  { status, expiresAt, lastValidatedAt, owner }
+ * @param {number} now          epoch ms, always injected
+ * @returns {{state: string, open: boolean, message: string, recheckDue: boolean,
+ *            daysLeft: number|null, graceDaysLeft: number|null}}
+ */
+function readEntitlement(record, now = Date.now()) {
+  if (!record) return out(STATE.NONE, 'No active subscription on this device.');
+
+  // The owner's own account is not a subscription and must never be closed by
+  // a payment provider being unreachable. Whoever owns the software keeps the
+  // keys to it.
+  if (record.owner) return out(STATE.ACTIVE, '');
+
+  // A definite answer from the provider beats anything time-based. `expired`
+  // and `disabled` are what Lemon Squeezy reports once a subscription ends.
+  if (record.status === 'cancelled' || record.status === 'disabled') {
+    return out(STATE.CANCELLED,
+      'Your subscription was cancelled, so the desk is closed. Resubscribe to pick up where you left off — '
+      + 'your journal and settings are still here on this device.');
+  }
+
+  // A term end we were told about. Applies to fixed terms and to a subscription
+  // that has been cancelled but paid up until the end of its period.
+  if (Number.isFinite(record.expiresAt) && now >= record.expiresAt) {
+    return out(STATE.EXPIRED,
+      `Your access ended on ${new Date(record.expiresAt).toLocaleDateString()}. Renew to reopen the desk — `
+      + 'nothing you have saved is lost.');
+  }
+
+  const left = Number.isFinite(record.expiresAt) ? days(record.expiresAt - now) : null;
+
+  // Never validated at all. Treat as fresh: activation is the first check, and
+  // a record cannot exist without one having succeeded.
+  const since = now - (Number.isFinite(record.lastValidatedAt) ? record.lastValidatedAt : now);
+
+  if (since < RECHECK_MS) {
+    return out(STATE.ACTIVE, '', { daysLeft: left });
+  }
+
+  if (since < RECHECK_MS + GRACE_MS) {
+    const graceLeft = days(RECHECK_MS + GRACE_MS - since);
+    return out(STATE.STALE,
+      `Could not reach the subscription service to confirm your access. The desk keeps working for another `
+      + `${graceLeft} ${graceLeft === 1 ? 'day' : 'days'}; connect to the internet once before then.`,
+      { recheckDue: true, daysLeft: left, graceDaysLeft: graceLeft });
+  }
+
+  return out(STATE.BLOCKED,
+    'Your subscription has not been confirmed for three weeks. Connect to the internet and sign in again to '
+    + 'reopen the desk — this is a check, not a cancellation, and nothing you have saved is lost.',
+    { recheckDue: true, daysLeft: left, graceDaysLeft: 0 });
+}
+
+function out(state, message, extra = {}) {
+  return {
+    state,
+    open: opens(state),
+    message,
+    recheckDue: false,
+    daysLeft: null,
+    graceDaysLeft: null,
+    ...extra,
+  };
+}
+
+/**
+ * Whether it is worth spending a network round-trip on a check.
+ *
+ * Separate from `readEntitlement` because the answers differ: a member three
+ * days in is `ACTIVE` and needs nothing, but one at day eight is also open and
+ * *does* want a check attempted quietly in the background.
+ */
+function shouldRevalidate(record, now = Date.now()) {
+  if (!record || record.owner) return false;
+  if (!record.licenseKey) return false;                 // fixed-term or legacy record
+  if (record.status === 'cancelled' || record.status === 'disabled') return false;
+  const at = Number.isFinite(record.lastValidatedAt) ? record.lastValidatedAt : 0;
+  return now - at >= RECHECK_MS;
+}
+
+/**
+ * Fold a provider response into the stored record.
+ *
+ * Only ever called with a *successful* response. A failed check must leave
+ * `lastValidatedAt` untouched — that timestamp is what the grace window is
+ * measured from, and moving it on failure would hand out unlimited free time.
+ */
+function applyValidation(record, result, now = Date.now()) {
+  return {
+    ...record,
+    status: result.status,
+    expiresAt: Number.isFinite(result.expiresAt) ? result.expiresAt : record.expiresAt,
+    plan: result.plan || record.plan,
+    days: result.days ?? record.days,
+    lastValidatedAt: now,
+  };
+}
+
+
+/* --- exports --- */
+Object.assign(__exports, { DAY_MS, RECHECK_MS, GRACE_MS, STATE, opens, readEntitlement, shouldRevalidate, applyValidation });
+
+});
+
+__def("src/integrations/lemonsqueezy.js", function (__exports, __req) {
+/**
+ * integrations/lemonsqueezy.js — the licence client.
+ *
+ * Three endpoints, and none of them takes an API key:
+ *
+ *   POST /v1/licenses/activate    bind a key to this browser, once
+ *   POST /v1/licenses/validate    is that binding still paid for?
+ *   POST /v1/licenses/deactivate  release the binding for another device
+ *
+ * That matters more than it looks. The rest of the Lemon Squeezy API needs a
+ * store token, which could never ship in a page — anyone reading View Source
+ * would hold the keys to the store. These three are designed for exactly this
+ * case: the only credential involved is the licence key the buyer already has,
+ * and the worst a stranger can do with the endpoint is ask about a key they do
+ * not possess.
+ *
+ * So there is no server here, and no secret. The buyer's own key is the proof.
+ *
+ * Every function returns the same shape rather than throwing, because the
+ * caller has to tell three outcomes apart and treat them very differently:
+ *
+ *   { ok: true,  ... }                      the provider answered, key is good
+ *   { ok: false, reachable: true,  ... }    the provider answered: no
+ *   { ok: false, reachable: false, ... }    we never got an answer
+ *
+ * The last one must never cost a paying member their access — see the grace
+ * window in domain/entitlement.js. Collapsing "you did not pay" and "the wifi
+ * is down" into one failure is the bug this shape exists to prevent.
+ */
+
+const { CHECKOUT } = __req("src/domain/licensing.js");
+
+const API = 'https://api.lemonsqueezy.com/v1/licenses';
+
+/** Long enough for a slow phone connection, short enough not to hang activation. */
+const TIMEOUT_MS = 12000;
+
+/* ------------------------------------------------------------------ helpers */
+
+/**
+ * One POST, with a timeout and no unhandled rejection paths.
+ *
+ * Lemon Squeezy answers 400 with a JSON body for a bad key, so a non-OK status
+ * is still a real answer from the provider — `reachable` tracks whether we got
+ * bytes back, not whether we liked them.
+ */
+async function post(path, body) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${API}/${path}`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(body).toString(),
+      signal: controller.signal,
+    });
+
+    // A body is expected on success and on refusal alike. HTML here means a
+    // proxy or captive portal answered instead of the API.
+    let json = null;
+    try { json = await res.json(); } catch { json = null; }
+
+    if (!json) {
+      return { ok: false, reachable: false, error: 'The subscription service returned an unreadable response.' };
+    }
+    return { ok: res.ok, reachable: true, json };
+  } catch (err) {
+    const timedOut = err?.name === 'AbortError';
+    return {
+      ok: false,
+      reachable: false,
+      error: timedOut
+        ? 'The subscription service did not respond in time.'
+        : 'Could not reach the subscription service. Check your connection.',
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** LS reports the key state here; both nested shapes appear across endpoints. */
+const statusOf = (json) => json?.license_key?.status || null;
+
+const expiryOf = (json) => {
+  // `expires_at` is null for a subscription that simply keeps renewing, which
+  // is the normal case and must not be read as "expired".
+  const raw = json?.license_key?.expires_at;
+  if (!raw) return null;
+  const ms = Date.parse(raw);
+  return Number.isFinite(ms) ? ms : null;
+};
+
+/** Map the purchased variant back to one of our plans. */
+function planOf(json) {
+  const variantId = String(json?.meta?.variant_id ?? '');
+  const match = CHECKOUT.plans.find((p) => String(p.variantId) === variantId);
+  return match ? { plan: match.id, planName: match.name, days: match.days } : {};
+}
+
+/**
+ * Refuse a key that is real but belongs to somebody else's store.
+ *
+ * Without this, a licence key from any other Lemon Squeezy product would
+ * validate here and open the desk. The store id is not a secret — it appears in
+ * every checkout URL — so shipping it in the page costs nothing.
+ */
+function wrongStore(json) {
+  if (!CHECKOUT.storeId) return false;                    // not configured yet
+  const seen = json?.meta?.store_id;
+  return seen != null && String(seen) !== String(CHECKOUT.storeId);
+}
+
+const NOT_OURS = 'That key is valid, but it is not for BullionEdge Pro. Check you pasted the right one.';
+
+/** Turn an LS refusal into something a member can act on. */
+function refusal(json) {
+  const raw = String(json?.error || '').toLowerCase();
+  if (raw.includes('not found') || raw.includes('invalid')) {
+    return 'That licence key was not recognised. Copy it straight from your purchase email — it is easy to miss a character.';
+  }
+  if (raw.includes('activation limit')) {
+    return 'This key is already in use on the maximum number of devices. Sign out on another device first, or contact support to reset it.';
+  }
+  if (raw.includes('disabled')) {
+    return 'This key has been disabled. If you believe that is wrong, contact support with your order number.';
+  }
+  if (raw.includes('expired')) {
+    return 'This subscription has ended. Renew to reopen the desk.';
+  }
+  return json?.error || 'The subscription service refused that key.';
+}
+
+/* --------------------------------------------------------------- activation */
+
+/**
+ * Bind a licence key to this browser.
+ *
+ * `instanceName` is what the member will see in their Lemon Squeezy account as
+ * the device using the key, so it is their own User ID rather than a random id.
+ */
+async function activateKey({ key, instanceName }) {
+  if (!CHECKOUT.enabled) {
+    return { ok: false, reachable: false, error: 'Checkout is not configured yet. Contact support for access.' };
+  }
+
+  const res = await post('activate', { license_key: String(key || '').trim(), instance_name: instanceName });
+  if (!res.reachable) return res;
+
+  const { json } = res;
+  if (!res.ok || json.activated !== true) {
+    return { ok: false, reachable: true, error: refusal(json) };
+  }
+  if (wrongStore(json)) {
+    return { ok: false, reachable: true, error: NOT_OURS };
+  }
+
+  return {
+    ok: true,
+    reachable: true,
+    instanceId: json?.instance?.id || null,
+    status: statusOf(json) || 'active',
+    expiresAt: expiryOf(json),
+    customerEmail: json?.meta?.customer_email || null,
+    ...planOf(json),
+  };
+}
+
+/* --------------------------------------------------------------- validation */
+
+/**
+ * Ask whether an existing binding is still paid for.
+ *
+ * A key that has been cancelled still *exists*, so LS answers 200 with a status
+ * of `expired` or `disabled` rather than an error. That is the case this whole
+ * mechanism exists for, and it is why `valid === false` is reported as `ok`
+ * with a status — a definite answer, not a failure.
+ */
+async function validateKey({ key, instanceId }) {
+  const body = { license_key: String(key || '').trim() };
+  if (instanceId) body.instance_id = instanceId;
+
+  const res = await post('validate', body);
+  if (!res.reachable) return res;
+
+  const { json } = res;
+
+  // An unknown or deleted instance means this device's binding is gone —
+  // treat it as needing reactivation rather than as a cancellation.
+  if (!res.ok && String(json?.error || '').toLowerCase().includes('instance')) {
+    return { ok: false, reachable: true, needsReactivation: true, error: refusal(json) };
+  }
+  if (!res.ok) return { ok: false, reachable: true, error: refusal(json) };
+  if (wrongStore(json)) return { ok: false, reachable: true, error: NOT_OURS };
+
+  const status = statusOf(json) || (json.valid ? 'active' : 'disabled');
+  return {
+    ok: true,
+    reachable: true,
+    valid: json.valid === true && status === 'active',
+    status,
+    expiresAt: expiryOf(json),
+    ...planOf(json),
+  };
+}
+
+/* ------------------------------------------------------------- deactivation */
+
+/**
+ * Release this device's binding so the key can be used elsewhere.
+ *
+ * Best-effort by design: it runs on sign-out, and a member with no signal must
+ * still be able to sign out. Failure is reported but never blocks.
+ */
+async function deactivateKey({ key, instanceId }) {
+  if (!key || !instanceId) return { ok: false, reachable: true, error: 'Nothing to release.' };
+  const res = await post('deactivate', { license_key: String(key).trim(), instance_id: instanceId });
+  if (!res.reachable) return res;
+  return { ok: res.ok && res.json?.deactivated === true, reachable: true, error: res.ok ? null : refusal(res.json) };
+}
+
+
+/* --- exports --- */
+Object.assign(__exports, { activateKey, validateKey, deactivateKey });
 
 });
 
@@ -11805,6 +12364,9 @@ const { setEnabled: setParticles } = __req("src/ui/background.js");
 const { applyAccessibility, SHORTCUTS } = __req("src/ui/shortcuts.js");
 const { toast, confirm } = __req("src/ui/overlays.js");
 const { callout, tip } = __req("src/ui/components.js");
+const { currentAccount } = __req("src/ui/auth.js");
+const { CHECKOUT, planLabel } = __req("src/domain/licensing.js");
+const { readEntitlement, STATE } = __req("src/domain/entitlement.js");
 
 __exports.default = {
   id: 'settings',
@@ -11881,6 +12443,12 @@ __exports.default = {
               <button class="btn ghost sm" id="btn-restore">Restore from backup</button>
             </div>
             <input type="file" id="restore-file" accept="application/json,.json" hidden>
+          </div>
+
+          <div class="card reveal" id="sub-card">
+            <p class="eyebrow">Your subscription</p>
+            <h2>Plan &amp; billing <span class="hint">Cancelling here stops the next payment. Nothing on this device is deleted, so resubscribing picks up exactly where you left off.</span></h2>
+            <div id="sub-status"></div>
           </div>
 
           <div class="card reveal">
@@ -12004,6 +12572,8 @@ __exports.default = {
     setText('tz-name', `${cityOf(s.settings.tz).replace(/\b\w/g, (c) => c.toUpperCase())} · ${zoneAbbr(s.settings.tz)}`);
     setText('tz-offset', fmtOffset(tzOffsetHours(s.settings.tz)));
 
+    paintSubscription();
+
     const backend = getBackend();
     setHtml('storage-host', backend === 'memory'
       ? callout('', '<b>Storage is unavailable.</b> Nothing you enter will survive a page reload — private browsing or a blocked storage setting. Export a backup before you close the tab.')
@@ -12071,6 +12641,58 @@ function renderAiNote(root) {
 
 function setText(id, text) { const n = byId(id); if (n) n.textContent = text; }
 function setHtml(id, html) { const n = byId(id); if (n) n.innerHTML = html; }
+
+/**
+ * What the member is paying for, and the way out.
+ *
+ * A cancel link that is easy to find is not a leak — it is the difference
+ * between someone cancelling and someone charging back, and a chargeback costs
+ * the fee plus the dispute. It also has to be here rather than only on the
+ * public page, because a member who wants to stop is signed in, not browsing
+ * the storefront.
+ */
+function paintSubscription() {
+  const card = byId('sub-card');
+  if (!card) return;
+
+  const account = currentAccount();
+  if (!account) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  // The owner has no subscription to show or cancel.
+  if (account.owner) {
+    setHtml('sub-status', callout('gold',
+      '<b>Owner account.</b> Full access, no expiry, and no key consumed — this is your own software.'));
+    return;
+  }
+
+  const e = readEntitlement(account);
+  const term = account.planName || planLabel(account.days || 0);
+  const renews = e.daysLeft == null;
+
+  const line = e.state === STATE.STALE
+    ? callout('gold', `<b>${esc(term)} — confirming.</b> ${esc(e.message)}`)
+    : renews
+      ? callout('long', `<b>${esc(term)} — active.</b> Renews automatically at the same price until you cancel.`)
+      : callout('long', `<b>${esc(term)} — active.</b> ${e.daysLeft} day${e.daysLeft === 1 ? '' : 's'} remaining.`);
+
+  const checked = Number.isFinite(account.lastValidatedAt)
+    ? new Date(account.lastValidatedAt).toLocaleDateString()
+    : 'not yet';
+
+  setHtml('sub-status', `
+    ${line}
+    <div class="row tight" style="margin-top:var(--sp-3)">
+      <a class="btn ghost sm" href="${esc(CHECKOUT.portal)}" target="_blank" rel="noopener">
+        Manage or cancel subscription
+      </a>
+    </div>
+    <p class="field-note" style="margin-top:var(--sp-3)">
+      ${account.customerEmail ? `Billed to <b>${esc(account.customerEmail)}</b>. ` : ''}Last confirmed with the
+      payment provider on ${esc(checked)}. Cancelling stops the next payment and leaves you access to the end of the
+      period you have paid for; nothing on this device is deleted.
+    </p>`);
+}
 
 });
 
