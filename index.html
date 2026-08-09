@@ -16,6 +16,17 @@
      build intact. The mark is the assistant's diamond in brand gold. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A1214'/%3E%3Cpath d='M16 5.5 L26.5 16 L16 26.5 L5.5 16 Z' fill='%23E0A63C'/%3E%3C/svg%3E">
 
+<!-- Installable as an app. Android and iOS both read these; with the service
+     worker registered below, "Add to Home Screen" gives a real launcher icon
+     that opens fullscreen and starts with no network. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0A1214">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BullionEdge">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1328,9 +1339,40 @@ kbd {
 
 /* ---- Narrow screens ------------------------------------------------------ */
 
+/* Column labels, shown only when the table becomes a stack of cards. */
+.sigrow .lbl { display: none; }
+
 @media (max-width: 620px) {
-  .sigrow { grid-template-columns: 1.4fr .9fr 1fr; }
-  .sigrow > :nth-child(4), .sigrow > :nth-child(5) { display: none; }
+  /* Five columns cannot fit a phone, but the previous answer — hiding columns
+     four and five — deleted the stop and the targets, which are the entire
+     reason to look at a setup. Each row becomes a small card instead, so every
+     number survives and the header row is no longer needed. */
+  .sighead { display: none; }
+
+  .sigrow {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "name   bias"
+      "entry  rr"
+      "levels levels";
+    gap: 8px var(--sp-3);
+    padding: var(--sp-3);
+    align-items: start;
+  }
+  .sigrow .sname   { grid-area: name; }
+  .sigrow .sbias   { grid-area: bias;   text-align: right; }
+  .sigrow .sentry  { grid-area: entry; }
+  .sigrow .srr     { grid-area: rr;     text-align: right; }
+  .sigrow .slevels { grid-area: levels; padding-top: 8px; border-top: 1px solid var(--line-2); }
+
+  /* Without the header row each number needs to say what it is. */
+  .sigrow .lbl {
+    display: block; font-family: var(--font-body); font-size: var(--fs-2xs);
+    text-transform: uppercase; letter-spacing: .1em; color: var(--faint);
+    margin-bottom: 2px;
+  }
+  .sigrow .sentry { font-size: var(--fs-md); color: var(--ink); }
+
   .pricehead { flex-direction: column; gap: var(--sp-2); }
   .pricehead > div:last-child { text-align: left !important; }
 }
@@ -2084,6 +2126,59 @@ kbd {
 .lp-mnote { font-size: var(--fs-xs); color: var(--muted); line-height: 1.8; margin-top: var(--sp-4); }
 .lp-mwarn { display: block; margin-top: var(--sp-3); color: var(--gold); }
 
+/* ---- Install the app ------------------------------------------------------
+   Driven entirely by `data-install-offer` on <html>, which ui/install.js sets
+   only once the browser has told us an install is genuinely possible. Doing it
+   in CSS rather than by unhiding the node means it does not matter whether the
+   button exists yet when we find out, or how many times the landing page
+   re-renders afterwards. Absent attribute = no button. */
+.lp-install { display: none; }
+:root[data-install-offer] .lp-install {
+  display: inline-flex; align-items: center; gap: 8px;
+  border-color: color-mix(in oklab, var(--gold) 45%, transparent);
+  color: var(--gold);
+}
+
+/* One label per platform, because "Install the app" is a lie on iOS — there is
+   no install, there is a Share menu. */
+.lp-i-prompt, .lp-i-ios { display: none; }
+:root[data-install-offer="prompt"] .lp-i-prompt { display: inline; }
+:root[data-install-offer="ios"] .lp-i-ios { display: inline; }
+.lp-install:hover { border-color: var(--gold); background: color-mix(in oklab, var(--gold) 10%, transparent); }
+
+/* iOS instruction sheet. Full-screen scrim so the two taps are the only thing
+   on screen — this is the one place the site asks the visitor to leave the
+   page and use a browser menu, and it has to be unmissable. */
+.installsheet {
+  position: fixed; inset: 0; z-index: 200;
+  display: grid; place-items: center;
+  padding: var(--sp-4);
+  background: color-mix(in oklab, #000 72%, transparent);
+  backdrop-filter: blur(6px);
+  opacity: 0; transition: opacity .22s ease;
+}
+.installsheet.on { opacity: 1; }
+.installsheet-card {
+  width: min(420px, 100%);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: var(--sp-6); text-align: center;
+  transform: translateY(10px); transition: transform .22s ease;
+}
+.installsheet.on .installsheet-card { transform: none; }
+.installsheet-mark { font-size: 30px; color: var(--gold); margin-bottom: var(--sp-3); }
+.installsheet-card h3 {
+  font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 600;
+  margin-bottom: var(--sp-3);
+}
+.installsheet-card p { font-size: var(--fs-sm); color: var(--muted); line-height: 1.7; }
+.installsheet-card ol {
+  text-align: left; margin: var(--sp-4) 0; padding-left: 1.25em;
+  display: grid; gap: var(--sp-3);
+  font-size: var(--fs-sm); color: var(--ink-soft); line-height: 1.7;
+}
+.installsheet-card ol b { color: var(--gold); }
+.installsheet-note { font-size: var(--fs-xs) !important; margin-bottom: var(--sp-4); }
+
 /* ---- Narrow screens ------------------------------------------------------ */
 
 @media (max-width: 720px) {
@@ -2363,6 +2458,7 @@ const { initMagnetics, revealAll } = __req("src/ui/motion.js");
 const { initBackground } = __req("src/ui/background.js");
 const { initAssistant } = __req("src/ui/assistant.js");
 const { initShortcuts, applyAccessibility } = __req("src/ui/shortcuts.js");
+const { initInstall } = __req("src/ui/install.js");
 
 const dashboardView = __req("src/ui/views/dashboard.js").default;
 const liveView = __req("src/ui/views/live.js").default;
@@ -2387,6 +2483,10 @@ async function boot() {
   initMagnetics();
   initAssistant();
   initShortcuts();
+  // Registered before the landing page paints: Chrome can fire
+  // `beforeinstallprompt` as soon as the manifest is parsed, and a listener
+  // added afterwards would miss it.
+  initInstall();
 
   busOn(EV.TOAST, ({ message, kind }) => toast(message, kind || ''));
 
@@ -5400,6 +5500,16 @@ function markup() {
       <div class="lp-cta">
         <button class="btn magnetic" data-enter>Get started</button>
         <button class="btn ghost" data-to="lp-pricing">See plans &amp; pricing</button>
+        <!-- Hidden until ui/install.js sets data-install-offer on <html>, so it
+             never advertises something the visitor's browser cannot do. Both
+             labels ship in the markup and CSS picks the true one — the button
+             is rendered before we know which applies, and may be re-rendered
+             afterwards. -->
+        <button class="btn ghost lp-install" data-install>
+          <span aria-hidden="true">⬇</span>
+          <span class="lp-i-prompt">Install the app</span>
+          <span class="lp-i-ios">Add to Home Screen</span>
+        </button>
       </div>
       <p class="lp-micro">Educational software · not financial advice · you can lose money trading gold</p>
     </div>
@@ -8153,6 +8263,146 @@ Object.assign(__exports, { SHORTCUTS, initShortcuts, applyAccessibility });
 
 });
 
+__def("src/ui/install.js", function (__exports, __req) {
+/**
+ * ui/install.js — the "Install the app" affordance.
+ *
+ * Android Chrome fires `beforeinstallprompt` when a page qualifies for
+ * installation, and lets the page defer that prompt to a moment of its own
+ * choosing. That is the whole mechanism: there is no API to *ask* whether the
+ * app is installable, only this event telling you that it is.
+ *
+ * Three states, and the button must tell the truth in each:
+ *
+ *   Android/desktop Chrome  the event arrives -> show a real install button.
+ *   iOS Safari              no event exists at all; installation is a manual
+ *                           Share -> Add to Home Screen. Show instructions,
+ *                           not a button that would do nothing.
+ *   Already installed       nothing to offer. Stay hidden.
+ *
+ * The button starts hidden in the markup and is only revealed by one of the
+ * first two paths, so a browser that cannot install never sees the offer.
+ */
+
+const { byId } = __req("src/core/dom.js");
+
+/** The deferred event, held until the visitor clicks. Single-use: Chrome discards it after prompt(). */
+let deferred = null;
+
+/** True when the page is already running as an installed app. */
+const installed = () => window.matchMedia('(display-mode: standalone)').matches
+  || window.navigator.standalone === true;
+
+/** iOS never fires beforeinstallprompt, so it needs detecting by hand. */
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
+  // iPadOS 13+ reports itself as a Mac; the touch points give it away.
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+/**
+ * The offer is published as an attribute on <html>, not by touching the button.
+ *
+ * This module initialises during boot, before the landing page has rendered, so
+ * there is frequently no button to reveal at the moment we learn we can install.
+ * The landing page also re-renders and replaces its own markup. Both of those
+ * quietly defeat "find the button and unhide it" — the attribute has neither
+ * problem, because CSS applies it whenever the button appears and however often
+ * it is replaced.
+ *
+ *   (absent)   no install available — the button stays hidden
+ *   "prompt"   Chrome offered; clicking calls prompt()
+ *   "ios"      Safari; clicking explains Share -> Add to Home Screen
+ */
+const offer = (mode) => {
+  if (mode) document.documentElement.setAttribute('data-install-offer', mode);
+  else document.documentElement.removeAttribute('data-install-offer');
+};
+
+const offered = () => document.documentElement.getAttribute('data-install-offer');
+
+/**
+ * iOS has no programmatic install. The only honest thing to do is describe the
+ * two taps, using the wording of the actual menu items.
+ */
+function iosSheet() {
+  const host = byId('toast-host') || document.body;
+  const el = document.createElement('div');
+  el.className = 'installsheet';
+  el.innerHTML = `
+    <div class="installsheet-card" role="dialog" aria-modal="true" aria-label="Install BullionEdge Pro">
+      <div class="installsheet-mark" aria-hidden="true">◈</div>
+      <h3>Add BullionEdge to your Home Screen</h3>
+      <p>iPhone and iPad install apps from the browser menu rather than from the page. Two taps:</p>
+      <ol>
+        <li>Tap the <b>Share</b> button <span aria-hidden="true">⬆</span> at the bottom of Safari.</li>
+        <li>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+      </ol>
+      <p class="installsheet-note">
+        It opens fullscreen with no address bar, and works with no signal once it has loaded once.
+      </p>
+      <button class="btn block" data-close>Got it</button>
+    </div>`;
+  host.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('on'));
+
+  const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 220); };
+  el.addEventListener('click', (e) => {
+    if (e.target === el || e.target.closest('[data-close]')) close();
+  });
+  document.addEventListener('keydown', function esc(e) {
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+  });
+}
+
+async function run() {
+  if (offered() === 'ios') { iosSheet(); return; }
+  if (!deferred) return;
+
+  const prompt = deferred;
+  // Chrome invalidates the event once used. Clearing first means a second
+  // click cannot call prompt() on a spent event and throw.
+  deferred = null;
+  offer(null);
+
+  prompt.prompt();
+  const { outcome } = await prompt.userChoice.catch(() => ({ outcome: 'dismissed' }));
+
+  // Dismissing is not a refusal forever — put the button back so they can
+  // change their mind. Chrome will fire the event again on a later visit.
+  if (outcome !== 'accepted') offer('prompt');
+}
+
+function initInstall() {
+  // Already running as an installed app — there is nothing left to offer.
+  if (installed()) { offer(null); return; }
+
+  // Delegated, because the landing page re-renders and replaces the button.
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-install]')) { e.preventDefault(); run(); }
+  });
+  window.addEventListener('appinstalled', () => { deferred = null; offer(null); });
+
+  // iOS gets the offer immediately, since no event is ever coming — and it wins
+  // outright. Every browser on iOS is WebKit underneath, so even one that did
+  // fire `beforeinstallprompt` could not honour it. Not registering that
+  // listener at all stops a late event from relabelling the button to
+  // something the device cannot do.
+  if (isIOS()) { offer('ios'); return; }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Chrome would otherwise show its own mini-infobar. Taking the event lets
+    // the offer sit in the hero next to the other calls to action instead.
+    e.preventDefault();
+    deferred = e;
+    offer('prompt');
+  });
+}
+
+
+/* --- exports --- */
+Object.assign(__exports, { initInstall });
+
+});
+
 __def("src/ui/views/dashboard.js", function (__exports, __req) {
 /**
  * ui/views/dashboard.js — the landing screen.
@@ -9022,18 +9272,23 @@ function paintSignals() {
     const s = market.setups[st.id];
     const cur = st.id === active ? ' sigcur' : '';
     if (!s) {
-      return `<div class="sigrow${cur}"><div class="sname">${esc(st.name)}</div><div>${EM}</div><div>${EM}</div><div>${EM}</div><div>${EM}</div></div>`;
+      return `<div class="sigrow${cur}">
+        <div class="sname">${esc(st.name)}</div><div class="sbias">${EM}</div>
+        <div class="sentry">${EM}</div><div class="slevels">${EM}</div><div class="srr">${EM}</div>
+      </div>`;
     }
     const bias = s.bias === 'buy' ? '<span class="bias-buy">BUY</span>' : '<span class="bias-sell">SELL</span>';
     const conf = s.aligned === null ? ''
       : s.aligned ? '<br><span class="conf al">HTF ✓</span>'
                   : '<br><span class="conf ct">counter-HTF</span>';
+    // Every cell is classed so the phone layout can rearrange them into a card
+    // instead of dropping the columns that carry the stop and the targets.
     return `<div class="sigrow${cur}">
       <div class="sname">${esc(st.name)} <span class="t-faint" style="font-size:var(--fs-2xs)">${s.tf}</span></div>
-      <div>${bias}${conf}</div>
-      <div class="mono">${s.entry.toFixed(2)}</div>
-      <div class="mono t-sm">SL ${s.sl.toFixed(2)}<br>TP ${s.tp1.toFixed(2)} / ${s.tp2.toFixed(2)}</div>
-      <div class="mono t-sm">1:1.5<br>1:2.5</div>
+      <div class="sbias">${bias}${conf}</div>
+      <div class="sentry mono"><span class="lbl">Entry</span>${s.entry.toFixed(2)}</div>
+      <div class="slevels mono t-sm"><span class="lbl">Stop / targets</span>SL ${s.sl.toFixed(2)}<br>TP ${s.tp1.toFixed(2)} / ${s.tp2.toFixed(2)}</div>
+      <div class="srr mono t-sm"><span class="lbl">R:R</span>1:1.5<br>1:2.5</div>
     </div>`;
   }).join('');
 
@@ -12344,6 +12599,18 @@ __req("src/app.js");
 })();
 </script>
 <script>
+  // Register the service worker so the app launches with no network. Guarded on
+  // https/localhost because service workers are refused on file:// and plain
+  // http — the single-file build opened by double-click simply skips this and
+  // works exactly as before.
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch((err) => {
+        console.warn('[pwa] service worker registration failed:', err);
+      });
+    });
+  }
+
   // The assistant button is hidden until the app is running so it cannot be
   // clicked over the login screen.
   document.addEventListener('DOMContentLoaded', () => {
