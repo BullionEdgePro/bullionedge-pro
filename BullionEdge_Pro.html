@@ -8284,8 +8284,6 @@ __def("src/ui/install.js", function (__exports, __req) {
  * first two paths, so a browser that cannot install never sees the offer.
  */
 
-const { byId } = __req("src/core/dom.js");
-
 /** The deferred event, held until the visitor clicks. Single-use: Chrome discards it after prompt(). */
 let deferred = null;
 
@@ -8324,7 +8322,11 @@ const offered = () => document.documentElement.getAttribute('data-install-offer'
  * two taps, using the wording of the actual menu items.
  */
 function iosSheet() {
-  const host = byId('toast-host') || document.body;
+  // Appended to <body>, not to the toast host. The toast host carries
+  // `transform: translateX(-50%)`, which makes it the containing block for any
+  // `position: fixed` descendant — the full-screen scrim would have been laid
+  // out inside a 440px box pinned to the bottom of the screen. It is also
+  // `pointer-events: none`, which would have made the close button dead.
   const el = document.createElement('div');
   el.className = 'installsheet';
   el.innerHTML = `
@@ -8341,7 +8343,7 @@ function iosSheet() {
       </p>
       <button class="btn block" data-close>Got it</button>
     </div>`;
-  host.appendChild(el);
+  document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('on'));
 
   const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 220); };
