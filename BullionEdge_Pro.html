@@ -4003,13 +4003,62 @@ function inWindow(win, dec) {
     : dec >= win.start || dec < win.end;
 }
 
-/** Rough part of day, used to warn when a window lands in the small hours. */
+/** Rough part of day for a single instant. */
 function partOfDay(h) {
   const hour = wrap24(h);
   if (hour >= 5 && hour < 11) return { t: 'morning', warn: false };
   if (hour >= 11 && hour < 17) return { t: 'afternoon', warn: false };
   if (hour >= 17 && hour < 22) return { t: 'evening', warn: false };
   return { t: 'overnight', warn: true };
+}
+
+/** The same bands, as ranges. `overnight` wraps midnight. */
+const BANDS = [
+  { t: 'morning', from: 5, to: 11 },
+  { t: 'afternoon', from: 11, to: 17 },
+  { t: 'evening', from: 17, to: 22 },
+  { t: 'overnight', from: 22, to: 5 },
+];
+
+/** Split a possibly-wrapping range into one or two plain ranges on a 24h line. */
+const segments = (start, end) => (start <= end ? [[start, end]] : [[start, 24], [0, end]]);
+
+/** Hours two plain ranges share. */
+const overlap = (a, b) => Math.max(0, Math.min(a[1], b[1]) - Math.max(a[0], b[0]));
+
+/**
+ * Describe a whole window by where most of it falls.
+ *
+ * This used to be `partOfDay(win.start)` — the label for the first minute,
+ * applied to the entire window. For a trader east of London that meant the
+ * Asian window, running 02:00–09:00 local, was permanently tagged "overnight"
+ * in warning red, even though four of its seven hours are plainly morning.
+ *
+ * A seven-hour window cannot be described by one instant. So the hours are
+ * measured against each band and the largest share wins, and the warning only
+ * fires when the *majority* of the window really does sit in the small hours —
+ * which is the only case where "you would be trading this asleep" is true.
+ */
+function windowPartOfDay(win) {
+  const start = wrap24(win.start);
+  const end = wrap24(win.end);
+  const span = segments(start, end);
+
+  // A zero-length window has no majority of anything; fall back to the instant.
+  const length = span.reduce((sum, s) => sum + (s[1] - s[0]), 0);
+  if (length <= 0) return partOfDay(start);
+
+  let best = null;
+  let overnightHours = 0;
+
+  for (const band of BANDS) {
+    const hours = segments(band.from, band.to)
+      .reduce((sum, b) => sum + span.reduce((s, w) => s + overlap(w, b), 0), 0);
+    if (band.t === 'overnight') overnightHours = hours;
+    if (!best || hours > best.hours) best = { t: band.t, hours };
+  }
+
+  return { t: best.t, warn: overnightHours > length / 2, overnightShare: overnightHours / length };
 }
 
 /**
@@ -4069,7 +4118,7 @@ function windowSummary(tz) {
   return [a, b, c].map((w) => ({
     ...w,
     range: `${fmtH(w.start)}–${fmtH(w.end)}`,
-    pod: partOfDay(w.start),
+    pod: windowPartOfDay(w),
   }));
 }
 
@@ -4097,7 +4146,7 @@ const SESSION_BUCKETS = ['Asia', 'London', 'US Overlap', 'NY Afternoon', 'Off-ho
 
 
 /* --- exports --- */
-Object.assign(__exports, { windowList, SESSION_BUCKETS, windows, inWindow, partOfDay, readSession, windowSummary, sessionBucket });
+Object.assign(__exports, { windowList, SESSION_BUCKETS, windows, inWindow, partOfDay, windowPartOfDay, readSession, windowSummary, sessionBucket });
 
 });
 
@@ -9465,7 +9514,7 @@ __exports.default = {
       <div class="lrow ${w.peak ? 'peak' : ''}">
         <div>
           <div class="lname">${esc(w.name)}
-            <span class="chip" ${w.pod.warn ? 'style="background:var(--glow-short);color:var(--short)"' : ''}>${esc(w.pod.warn ? 'overnight' : w.pod.t)}</span>
+            <span class="chip" ${w.pod.warn ? 'style="background:var(--glow-short);color:var(--short)"' : ''}>${esc(w.pod.t)}</span>
           </div>
           <div class="lnote">${esc(w.note)}</div>
         </div>
