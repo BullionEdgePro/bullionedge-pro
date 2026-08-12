@@ -4159,62 +4159,260 @@ __def("src/domain/timezones.js", function (__exports, __req) {
  * Carried over from the original build and kept behaviourally identical.
  */
 
+/**
+ * Every country, grouped by region and sorted by country name.
+ *
+ * COUNTRY FIRST, city second. That ordering is not cosmetic: a native <select>
+ * jumps to the option whose text starts with what you type, so with the country
+ * leading, typing "phil" reaches the Philippines. With the city leading you
+ * would have to already know that the Philippines is filed under Manila.
+ *
+ * Countries wide enough to span real offsets get one row per zone — the United
+ * States, Canada, Russia, Australia, Brazil, Indonesia, Mexico, Kazakhstan.
+ * Picking "Russia" alone would be a coin-flip across eleven hours.
+ *
+ * The ids are IANA zone names and nothing else is stored. Offsets come from
+ * `Intl` at call time, so daylight saving is the browser's tz database rather
+ * than a table here that would rot. The cost of that is a typo failing quietly:
+ * an unrecognised zone throws inside Intl, gets caught, and returns UTC+0 —
+ * which looks like a working app showing every session at the wrong hour. So
+ * every entry is checked against the real tz database by a test.
+ */
 const ZONES = [
+  ['Africa', [
+    ['Africa/Algiers', 'Algeria · Algiers'],
+    ['Africa/Luanda', 'Angola · Luanda'],
+    ['Africa/Porto-Novo', 'Benin · Porto-Novo'],
+    ['Africa/Gaborone', 'Botswana · Gaborone'],
+    ['Africa/Ouagadougou', 'Burkina Faso · Ouagadougou'],
+    ['Africa/Bujumbura', 'Burundi · Bujumbura'],
+    ['Africa/Douala', 'Cameroon · Douala'],
+    ['Atlantic/Cape_Verde', 'Cape Verde · Praia'],
+    ['Africa/Bangui', 'Central African Republic · Bangui'],
+    ['Africa/Ndjamena', 'Chad · N’Djamena'],
+    ['Indian/Comoro', 'Comoros · Moroni'],
+    ['Africa/Brazzaville', 'Congo · Brazzaville'],
+    ['Africa/Kinshasa', 'Congo (DRC) · Kinshasa'],
+    ['Africa/Abidjan', 'Côte d’Ivoire · Abidjan'],
+    ['Africa/Djibouti', 'Djibouti · Djibouti'],
+    ['Africa/Cairo', 'Egypt · Cairo'],
+    ['Africa/Malabo', 'Equatorial Guinea · Malabo'],
+    ['Africa/Asmara', 'Eritrea · Asmara'],
+    ['Africa/Mbabane', 'Eswatini · Mbabane'],
+    ['Africa/Addis_Ababa', 'Ethiopia · Addis Ababa'],
+    ['Africa/Libreville', 'Gabon · Libreville'],
+    ['Africa/Banjul', 'Gambia · Banjul'],
+    ['Africa/Accra', 'Ghana · Accra'],
+    ['Africa/Conakry', 'Guinea · Conakry'],
+    ['Africa/Bissau', 'Guinea-Bissau · Bissau'],
+    ['Africa/Nairobi', 'Kenya · Nairobi'],
+    ['Africa/Maseru', 'Lesotho · Maseru'],
+    ['Africa/Monrovia', 'Liberia · Monrovia'],
+    ['Africa/Tripoli', 'Libya · Tripoli'],
+    ['Indian/Antananarivo', 'Madagascar · Antananarivo'],
+    ['Africa/Blantyre', 'Malawi · Blantyre'],
+    ['Africa/Bamako', 'Mali · Bamako'],
+    ['Africa/Nouakchott', 'Mauritania · Nouakchott'],
+    ['Indian/Mauritius', 'Mauritius · Port Louis'],
+    ['Africa/Casablanca', 'Morocco · Casablanca'],
+    ['Africa/Maputo', 'Mozambique · Maputo'],
+    ['Africa/Windhoek', 'Namibia · Windhoek'],
+    ['Africa/Niamey', 'Niger · Niamey'],
+    ['Africa/Lagos', 'Nigeria · Lagos'],
+    ['Africa/Kigali', 'Rwanda · Kigali'],
+    ['Africa/Sao_Tome', 'São Tomé & Príncipe · São Tomé'],
+    ['Africa/Dakar', 'Senegal · Dakar'],
+    ['Indian/Mahe', 'Seychelles · Victoria'],
+    ['Africa/Freetown', 'Sierra Leone · Freetown'],
+    ['Africa/Mogadishu', 'Somalia · Mogadishu'],
+    ['Africa/Johannesburg', 'South Africa · Johannesburg'],
+    ['Africa/Juba', 'South Sudan · Juba'],
+    ['Africa/Khartoum', 'Sudan · Khartoum'],
+    ['Africa/Dar_es_Salaam', 'Tanzania · Dar es Salaam'],
+    ['Africa/Lome', 'Togo · Lomé'],
+    ['Africa/Tunis', 'Tunisia · Tunis'],
+    ['Africa/Kampala', 'Uganda · Kampala'],
+    ['Africa/Lusaka', 'Zambia · Lusaka'],
+    ['Africa/Harare', 'Zimbabwe · Harare'],
+  ]],
   ['Americas', [
-    ['America/Los_Angeles', 'Los Angeles · USA (Pacific)'],
-    ['America/Denver', 'Denver · USA (Mountain)'],
-    ['America/Chicago', 'Chicago · USA (Central)'],
-    ['America/New_York', 'New York · USA (Eastern)'],
-    ['America/Toronto', 'Toronto · Canada'],
-    ['America/Mexico_City', 'Mexico City · Mexico'],
-    ['America/Bogota', 'Bogotá · Colombia'],
-    ['America/Lima', 'Lima · Peru'],
-    ['America/Santiago', 'Santiago · Chile'],
-    ['America/Sao_Paulo', 'São Paulo · Brazil'],
-    ['America/Argentina/Buenos_Aires', 'Buenos Aires · Argentina'],
+    ['America/Argentina/Buenos_Aires', 'Argentina · Buenos Aires'],
+    ['America/Nassau', 'Bahamas · Nassau'],
+    ['America/Barbados', 'Barbados · Bridgetown'],
+    ['America/Belize', 'Belize · Belmopan'],
+    ['America/La_Paz', 'Bolivia · La Paz'],
+    ['America/Manaus', 'Brazil · Manaus'],
+    ['America/Sao_Paulo', 'Brazil · São Paulo'],
+    ['America/Edmonton', 'Canada · Edmonton'],
+    ['America/Halifax', 'Canada · Halifax'],
+    ['America/Toronto', 'Canada · Toronto'],
+    ['America/Vancouver', 'Canada · Vancouver'],
+    ['America/Winnipeg', 'Canada · Winnipeg'],
+    ['America/Santiago', 'Chile · Santiago'],
+    ['America/Bogota', 'Colombia · Bogotá'],
+    ['America/Costa_Rica', 'Costa Rica · San José'],
+    ['America/Havana', 'Cuba · Havana'],
+    ['America/Santo_Domingo', 'Dominican Republic · Santo Domingo'],
+    ['America/Guayaquil', 'Ecuador · Quito'],
+    ['America/El_Salvador', 'El Salvador · San Salvador'],
+    ['America/Guatemala', 'Guatemala · Guatemala City'],
+    ['America/Guyana', 'Guyana · Georgetown'],
+    ['America/Port-au-Prince', 'Haiti · Port-au-Prince'],
+    ['America/Tegucigalpa', 'Honduras · Tegucigalpa'],
+    ['America/Jamaica', 'Jamaica · Kingston'],
+    ['America/Mexico_City', 'Mexico · Mexico City'],
+    ['America/Tijuana', 'Mexico · Tijuana'],
+    ['America/Managua', 'Nicaragua · Managua'],
+    ['America/Panama', 'Panama · Panama City'],
+    ['America/Asuncion', 'Paraguay · Asunción'],
+    ['America/Lima', 'Peru · Lima'],
+    ['America/Puerto_Rico', 'Puerto Rico · San Juan'],
+    ['America/Paramaribo', 'Suriname · Paramaribo'],
+    ['America/Port_of_Spain', 'Trinidad & Tobago · Port of Spain'],
+    ['America/Anchorage', 'United States · Anchorage'],
+    ['America/Chicago', 'United States · Chicago (Central)'],
+    ['America/Denver', 'United States · Denver (Mountain)'],
+    ['Pacific/Honolulu', 'United States · Honolulu'],
+    ['America/Los_Angeles', 'United States · Los Angeles (Pacific)'],
+    ['America/New_York', 'United States · New York (Eastern)'],
+    ['America/Phoenix', 'United States · Phoenix'],
+    ['America/Montevideo', 'Uruguay · Montevideo'],
+    ['America/Caracas', 'Venezuela · Caracas'],
   ]],
-  ['Europe & Africa', [
-    ['Europe/London', 'London · UK'],
-    ['Europe/Lisbon', 'Lisbon · Portugal'],
-    ['Europe/Madrid', 'Madrid · Spain'],
-    ['Europe/Paris', 'Paris · France'],
-    ['Europe/Berlin', 'Berlin · Germany'],
-    ['Europe/Zurich', 'Zurich · Switzerland'],
-    ['Europe/Rome', 'Rome · Italy'],
-    ['Europe/Amsterdam', 'Amsterdam · Netherlands'],
-    ['Europe/Athens', 'Athens · Greece'],
-    ['Europe/Istanbul', 'Istanbul · Türkiye'],
-    ['Europe/Moscow', 'Moscow · Russia'],
-    ['Africa/Lagos', 'Lagos · Nigeria'],
-    ['Africa/Cairo', 'Cairo · Egypt'],
-    ['Africa/Nairobi', 'Nairobi · Kenya'],
-    ['Africa/Johannesburg', 'Johannesburg · South Africa'],
-  ]],
-  ['Middle East & Asia', [
-    ['Asia/Riyadh', 'Riyadh · Saudi Arabia'],
-    ['Asia/Dubai', 'Dubai · UAE'],
-    ['Asia/Tehran', 'Tehran · Iran'],
-    ['Asia/Karachi', 'Karachi · Pakistan'],
-    ['Asia/Kolkata', 'Mumbai / Delhi · India'],
-    ['Asia/Kathmandu', 'Kathmandu · Nepal'],
-    ['Asia/Dhaka', 'Dhaka · Bangladesh'],
-    ['Asia/Bangkok', 'Bangkok · Thailand'],
-    ['Asia/Jakarta', 'Jakarta · Indonesia'],
-    ['Asia/Singapore', 'Singapore'],
-    ['Asia/Kuala_Lumpur', 'Kuala Lumpur · Malaysia'],
-    ['Asia/Manila', 'Manila · Philippines'],
+  ['Asia', [
+    ['Asia/Kabul', 'Afghanistan · Kabul'],
+    ['Asia/Yerevan', 'Armenia · Yerevan'],
+    ['Asia/Baku', 'Azerbaijan · Baku'],
+    ['Asia/Dhaka', 'Bangladesh · Dhaka'],
+    ['Asia/Thimphu', 'Bhutan · Thimphu'],
+    ['Asia/Brunei', 'Brunei · Bandar Seri Begawan'],
+    ['Asia/Phnom_Penh', 'Cambodia · Phnom Penh'],
+    ['Asia/Shanghai', 'China · Shanghai'],
+    ['Asia/Tbilisi', 'Georgia · Tbilisi'],
     ['Asia/Hong_Kong', 'Hong Kong'],
-    ['Asia/Shanghai', 'Shanghai · China'],
-    ['Asia/Seoul', 'Seoul · South Korea'],
-    ['Asia/Tokyo', 'Tokyo · Japan'],
+    ['Asia/Kolkata', 'India · Mumbai / Delhi'],
+    ['Asia/Jakarta', 'Indonesia · Jakarta'],
+    ['Asia/Jayapura', 'Indonesia · Jayapura'],
+    ['Asia/Makassar', 'Indonesia · Makassar'],
+    ['Asia/Tokyo', 'Japan · Tokyo'],
+    ['Asia/Almaty', 'Kazakhstan · Almaty'],
+    ['Asia/Aqtobe', 'Kazakhstan · Aqtobe'],
+    ['Asia/Bishkek', 'Kyrgyzstan · Bishkek'],
+    ['Asia/Vientiane', 'Laos · Vientiane'],
+    ['Asia/Macau', 'Macau'],
+    ['Asia/Kuala_Lumpur', 'Malaysia · Kuala Lumpur'],
+    ['Indian/Maldives', 'Maldives · Malé'],
+    ['Asia/Ulaanbaatar', 'Mongolia · Ulaanbaatar'],
+    ['Asia/Yangon', 'Myanmar · Yangon'],
+    ['Asia/Kathmandu', 'Nepal · Kathmandu'],
+    ['Asia/Pyongyang', 'North Korea · Pyongyang'],
+    ['Asia/Karachi', 'Pakistan · Karachi'],
+    ['Asia/Manila', 'Philippines · Manila'],
+    ['Asia/Singapore', 'Singapore'],
+    ['Asia/Seoul', 'South Korea · Seoul'],
+    ['Asia/Colombo', 'Sri Lanka · Colombo'],
+    ['Asia/Taipei', 'Taiwan · Taipei'],
+    ['Asia/Dushanbe', 'Tajikistan · Dushanbe'],
+    ['Asia/Bangkok', 'Thailand · Bangkok'],
+    ['Asia/Dili', 'Timor-Leste · Dili'],
+    ['Asia/Ashgabat', 'Turkmenistan · Ashgabat'],
+    ['Asia/Tashkent', 'Uzbekistan · Tashkent'],
+    ['Asia/Ho_Chi_Minh', 'Vietnam · Ho Chi Minh City'],
+  ]],
+  ['Europe', [
+    ['Europe/Tirane', 'Albania · Tirana'],
+    ['Europe/Andorra', 'Andorra · Andorra la Vella'],
+    ['Europe/Vienna', 'Austria · Vienna'],
+    ['Europe/Minsk', 'Belarus · Minsk'],
+    ['Europe/Brussels', 'Belgium · Brussels'],
+    ['Europe/Sarajevo', 'Bosnia & Herzegovina · Sarajevo'],
+    ['Europe/Sofia', 'Bulgaria · Sofia'],
+    ['Europe/Zagreb', 'Croatia · Zagreb'],
+    ['Europe/Prague', 'Czechia · Prague'],
+    ['Europe/Copenhagen', 'Denmark · Copenhagen'],
+    ['Europe/Tallinn', 'Estonia · Tallinn'],
+    ['Europe/Helsinki', 'Finland · Helsinki'],
+    ['Europe/Paris', 'France · Paris'],
+    ['Europe/Berlin', 'Germany · Berlin'],
+    ['Europe/Gibraltar', 'Gibraltar'],
+    ['Europe/Athens', 'Greece · Athens'],
+    ['Europe/Budapest', 'Hungary · Budapest'],
+    ['Atlantic/Reykjavik', 'Iceland · Reykjavík'],
+    ['Europe/Dublin', 'Ireland · Dublin'],
+    ['Europe/Rome', 'Italy · Rome'],
+    ['Europe/Riga', 'Latvia · Riga'],
+    ['Europe/Vaduz', 'Liechtenstein · Vaduz'],
+    ['Europe/Vilnius', 'Lithuania · Vilnius'],
+    ['Europe/Luxembourg', 'Luxembourg'],
+    ['Europe/Malta', 'Malta · Valletta'],
+    ['Europe/Chisinau', 'Moldova · Chișinău'],
+    ['Europe/Monaco', 'Monaco'],
+    ['Europe/Podgorica', 'Montenegro · Podgorica'],
+    ['Europe/Amsterdam', 'Netherlands · Amsterdam'],
+    ['Europe/Skopje', 'North Macedonia · Skopje'],
+    ['Europe/Oslo', 'Norway · Oslo'],
+    ['Europe/Warsaw', 'Poland · Warsaw'],
+    ['Europe/Lisbon', 'Portugal · Lisbon'],
+    ['Europe/Bucharest', 'Romania · Bucharest'],
+    ['Europe/Moscow', 'Russia · Moscow'],
+    ['Asia/Novosibirsk', 'Russia · Novosibirsk'],
+    ['Asia/Vladivostok', 'Russia · Vladivostok'],
+    ['Asia/Yekaterinburg', 'Russia · Yekaterinburg'],
+    ['Europe/Belgrade', 'Serbia · Belgrade'],
+    ['Europe/Bratislava', 'Slovakia · Bratislava'],
+    ['Europe/Ljubljana', 'Slovenia · Ljubljana'],
+    ['Europe/Madrid', 'Spain · Madrid'],
+    ['Europe/Stockholm', 'Sweden · Stockholm'],
+    ['Europe/Zurich', 'Switzerland · Zurich'],
+    ['Europe/Kyiv', 'Ukraine · Kyiv'],
+    ['Europe/London', 'United Kingdom · London'],
+    ['Europe/Vatican', 'Vatican City'],
+  ]],
+  ['Middle East', [
+    ['Asia/Bahrain', 'Bahrain · Manama'],
+    ['Asia/Nicosia', 'Cyprus · Nicosia'],
+    ['Asia/Tehran', 'Iran · Tehran'],
+    ['Asia/Baghdad', 'Iraq · Baghdad'],
+    ['Asia/Jerusalem', 'Israel · Jerusalem'],
+    ['Asia/Amman', 'Jordan · Amman'],
+    ['Asia/Kuwait', 'Kuwait · Kuwait City'],
+    ['Asia/Beirut', 'Lebanon · Beirut'],
+    ['Asia/Muscat', 'Oman · Muscat'],
+    ['Asia/Hebron', 'Palestine · Ramallah'],
+    ['Asia/Qatar', 'Qatar · Doha'],
+    ['Asia/Riyadh', 'Saudi Arabia · Riyadh'],
+    ['Asia/Damascus', 'Syria · Damascus'],
+    ['Europe/Istanbul', 'Türkiye · Istanbul'],
+    ['Asia/Dubai', 'United Arab Emirates · Dubai'],
+    ['Asia/Aden', 'Yemen · Sanaa'],
   ]],
   ['Oceania', [
-    ['Australia/Perth', 'Perth · Australia'],
-    ['Australia/Adelaide', 'Adelaide · Australia'],
-    ['Australia/Sydney', 'Sydney · Australia'],
-    ['Pacific/Auckland', 'Auckland · New Zealand'],
+    ['Australia/Adelaide', 'Australia · Adelaide'],
+    ['Australia/Brisbane', 'Australia · Brisbane'],
+    ['Australia/Darwin', 'Australia · Darwin'],
+    ['Australia/Perth', 'Australia · Perth'],
+    ['Australia/Sydney', 'Australia · Sydney'],
+    ['Pacific/Fiji', 'Fiji · Suva'],
+    ['Pacific/Tahiti', 'French Polynesia · Papeete'],
+    ['Pacific/Guam', 'Guam · Hagåtña'],
+    ['Pacific/Noumea', 'New Caledonia · Nouméa'],
+    ['Pacific/Auckland', 'New Zealand · Auckland'],
+    ['Pacific/Port_Moresby', 'Papua New Guinea · Port Moresby'],
+    ['Pacific/Apia', 'Samoa · Apia'],
+    ['Pacific/Guadalcanal', 'Solomon Islands · Honiara'],
+    ['Pacific/Tongatapu', 'Tonga · Nukuʻalofa'],
+    ['Pacific/Efate', 'Vanuatu · Port Vila'],
   ]],
 ];
+
+/** Flat [tz, label] pairs, for lookups that do not care about grouping. */
+const ALL_ZONES = ZONES.flatMap(([, items]) => items);
+
+/** The printed label for a zone, or null when it is not one we list. */
+const labelFor = (tz) => ALL_ZONES.find(([id]) => id === tz)?.[1] ?? null;
+
+/** Is this a zone the picker offers? */
+const isKnownZone = (tz) => ALL_ZONES.some(([id]) => id === tz);
 
 /** Offset from UTC in decimal hours, rounded to the nearest quarter hour. */
 function tzOffsetHours(tz) {
@@ -4300,7 +4498,7 @@ function etToLocalHours(h, m, tz) {
 
 
 /* --- exports --- */
-Object.assign(__exports, { ZONES, wrap24, cityOf, tzOffsetHours, nowParts, weekdayIn, fmtH, fmtOffset, zoneAbbr, detectTz, etToLocalHours });
+Object.assign(__exports, { ZONES, ALL_ZONES, labelFor, isKnownZone, wrap24, cityOf, tzOffsetHours, nowParts, weekdayIn, fmtH, fmtOffset, zoneAbbr, detectTz, etToLocalHours });
 
 });
 
@@ -9521,8 +9719,14 @@ __exports.default = {
         <div class="lval">${esc(w.range)}</div>
       </div>`).join(''));
 
-    setText('tz-city', cityOf(s.settings.tz).replace(/\b\w/g, (c) => c.toUpperCase()));
-    setText('tz-meta', `${zoneAbbr(s.settings.tz)} · ${fmtOffset(tzOffsetHours(s.settings.tz))}`);
+    // `zoneAbbr` falls back to the city when Intl offers nothing better than
+    // "GMT+4", which printed the city twice — once large, once in the line
+    // beneath it. Show the abbreviation only when it is actually one.
+    const city = cityOf(s.settings.tz).replace(/\b\w/g, (c) => c.toUpperCase());
+    const abbr = zoneAbbr(s.settings.tz);
+    const offset = fmtOffset(tzOffsetHours(s.settings.tz));
+    setText('tz-city', city);
+    setText('tz-meta', abbr.toLowerCase() === cityOf(s.settings.tz).toLowerCase() ? offset : `${abbr} · ${offset}`);
 
     /* ---- News --------------------------------------------------------- */
     setHtml('news-host', listEvents(s.settings.tz).map((e) => `
@@ -12736,7 +12940,7 @@ __def("src/ui/views/settings.js", function (__exports, __req) {
 const { esc, byId, on } = __req("src/core/dom.js");
 const { state, patch } = __req("src/core/state.js");
 const { emit, EV } = __req("src/core/bus.js");
-const { ZONES, detectTz, cityOf, zoneAbbr, fmtOffset, tzOffsetHours } = __req("src/domain/timezones.js");
+const { ZONES, detectTz, cityOf, zoneAbbr, fmtOffset, tzOffsetHours, isKnownZone, labelFor } = __req("src/domain/timezones.js");
 const { getBackend } = __req("src/core/db.js");
 const { exportBackup, importBackup, exportCsv } = __req("src/app-actions.js");
 const { listConnectors } = __req("src/integrations/index.js");
@@ -12844,6 +13048,16 @@ __exports.default = {
             <div class="field">
               <div class="selwrap">
                 <select id="set-tz" aria-label="Timezone">
+                  ${/* The device can report any zone in the tz database, and the
+                       list here — comprehensive as it is — does not include every
+                       territory. Without this row the select would show no
+                       selection, fall back to displaying its first option, and
+                       claim the member was in Algeria while the app quietly used
+                       their real zone. */''}
+                  ${isKnownZone(s.settings.tz) ? '' : `
+                    <optgroup label="Detected on this device">
+                      <option value="${esc(s.settings.tz)}" selected>${esc(cityOf(s.settings.tz))} · ${esc(s.settings.tz)}</option>
+                    </optgroup>`}
                   ${ZONES.map(([group, items]) => `
                     <optgroup label="${esc(group)}">
                       ${items.map(([tz, label]) => `<option value="${tz}" ${tz === s.settings.tz ? 'selected' : ''}>${esc(label)}</option>`).join('')}
@@ -13085,7 +13299,10 @@ __exports.default = {
   },
 
   update(root, analysis, s) {
-    setText('tz-name', `${cityOf(s.settings.tz).replace(/\b\w/g, (c) => c.toUpperCase())} · ${zoneAbbr(s.settings.tz)}`);
+    // The country they picked, not the city twice. `zoneAbbr` falls back to the
+    // city name whenever Intl only offers "GMT+4", which used to render as
+    // "Dubai · Dubai" directly under a control that said "Dubai".
+    setText('tz-name', labelFor(s.settings.tz) || cityOf(s.settings.tz).replace(/\b\w/g, (c) => c.toUpperCase()));
     setText('tz-offset', fmtOffset(tzOffsetHours(s.settings.tz)));
 
     paintSubscription();
