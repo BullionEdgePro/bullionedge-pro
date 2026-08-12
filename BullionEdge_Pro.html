@@ -9,8 +9,94 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="BullionEdge Pro — an AI-guided pre-trade checklist, risk manager and psychology coach for intraday gold and FX.">
-<title>BullionEdge Pro — AI pre-trade assistant</title>
+<meta name="description" content="Score your gold and FX trade plan before you click. BullionEdge Pro is an offline-first pre-trade checklist, position-size risk manager and trading journal.">
+<title>BullionEdge Pro — AI Pre-Trade Checklist for Gold &amp; FX</title>
+
+<!-- ==================== Search and social ====================
+     The canonical is absolute and points at the deployed directory, not at a
+     filename. It matters here because the build writes the same bytes twice —
+     index.html and BullionEdge_Pro.html — so both copies would otherwise look
+     like two separate pages with identical content. Both carry this tag, so a
+     crawler folds the branded filename into the directory URL and only one of
+     them competes.
+
+     Google verifies ownership from google1a7db57de1c0255a.html, which the build
+     copies beside this file. That file is load-bearing: deleting it drops the
+     Search Console property back to unverified, so leave it in place even after
+     verification succeeds. There is no google-site-verification meta tag here
+     because its token is issued separately by Search Console and is not derived
+     from the filename — add one only by pasting the value Google shows you. -->
+<link rel="canonical" href="https://bullionedgepro.github.io/bullionedge-pro/">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BullionEdge Pro">
+<meta property="og:url" content="https://bullionedgepro.github.io/bullionedge-pro/">
+<meta property="og:title" content="BullionEdge Pro — AI Pre-Trade Checklist for Gold &amp; FX">
+<meta property="og:description" content="Score your gold and FX trade plan before you click. An offline-first pre-trade checklist, position-size risk manager and trading journal.">
+<meta property="og:image" content="https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="900">
+<meta property="og:image:alt" content="The BullionEdge Pro trading desk, showing a scored gold setup beside its risk figures.">
+<meta property="og:locale" content="en_GB">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BullionEdge Pro — AI Pre-Trade Checklist for Gold &amp; FX">
+<meta name="twitter:description" content="Score your gold and FX trade plan before you click. An offline-first pre-trade checklist, position-size risk manager and trading journal.">
+<meta name="twitter:image" content="https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp">
+
+<!-- Prices, term lengths and the feature list are the ones in
+     src/domain/licensing.js. If a plan changes there, change it here too — a
+     stale price in structured data is the one that shows up in a search result.
+     There is deliberately no aggregateRating: the app has no reviews, and
+     inventing them is what gets rich results revoked. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "BullionEdge Pro",
+  "alternateName": "BullionEdge",
+  "url": "https://bullionedgepro.github.io/bullionedge-pro/",
+  "applicationCategory": "FinanceApplication",
+  "applicationSubCategory": "Pre-trade analysis, risk management and trade journaling",
+  "operatingSystem": "Any modern web browser; installable on Android and iOS",
+  "browserRequirements": "Requires JavaScript. Runs offline once installed.",
+  "softwareVersion": "2.0.0",
+  "inLanguage": "en",
+  "image": "https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp",
+  "description": "BullionEdge Pro scores a gold or FX trade plan before it is placed. It is a rules-based pre-trade checklist, position-size risk manager, session clock and trading journal that runs entirely in the browser and keeps working with no connection. It is not a signal service and does not predict prices.",
+  "featureList": [
+    "Rules-based pre-trade checklist and trade score",
+    "Buy and sell zones derived from levels you enter",
+    "Position and lot sizing that never exceeds your nominated risk",
+    "Trading journal with full local export",
+    "Trading psychology and discipline prompts",
+    "Live XAU/USD price and interactive candle chart",
+    "Trading session clock and news schedule",
+    "Works fully offline as an installable app"
+  ],
+  "offers": {
+    "@type": "AggregateOffer",
+    "priceCurrency": "USD",
+    "lowPrice": "9.99",
+    "highPrice": "159.99",
+    "offerCount": "4",
+    "offers": [
+      { "@type": "Offer", "name": "Week Pass", "price": "9.99",   "priceCurrency": "USD" },
+      { "@type": "Offer", "name": "Starter",   "price": "31.99",  "priceCurrency": "USD" },
+      { "@type": "Offer", "name": "Pro",       "price": "89.99",  "priceCurrency": "USD" },
+      { "@type": "Offer", "name": "Elite",     "price": "159.99", "priceCurrency": "USD" }
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BullionEdge Pro",
+    "url": "https://bullionedgepro.github.io/bullionedge-pro/",
+    "logo": "https://bullionedgepro.github.io/bullionedge-pro/assets/icons/icon-512.png"
+  },
+  "disambiguatingDescription": "Analytical planning and journaling software. Not financial advice, not a signal service, and not a broker dealing price."
+}
+</script>
 
 <!-- The brand mark, then an inline SVG fallback.
      Order matters: a browser takes the last icon it can use, so the SVG is

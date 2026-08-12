@@ -1,0 +1,31 @@
+# BullionEdge Pro
+#
+# READ THIS BEFORE RELYING ON THIS FILE.
+#
+# Google only ever reads robots.txt from the root of a host. This site is
+# published to a subdirectory, so this file is served at
+#
+#     https://bullionedgepro.github.io/bullionedge-pro/robots.txt
+#
+# and Googlebot will not look there. The file that actually governs crawling of
+# bullionedgepro.github.io is
+#
+#     https://bullionedgepro.github.io/robots.txt
+#
+# which today returns 404 — and a missing robots.txt means "crawl everything",
+# so nothing is currently blocked and indexing is not at risk. This copy is kept
+# because a few third-party crawlers and audit tools do read a per-directory
+# robots.txt, and because it documents the intent in the repository that owns it.
+#
+# To make it authoritative, create a repository named exactly
+# `bullionedgepro.github.io`, enable Pages on it, and put a robots.txt at its
+# root with the Sitemap line below. That host root is shared by every project
+# page on the account, so keep any rules there host-wide.
+#
+# The sitemap itself is unaffected by any of this: sitemaps are valid at any
+# path, and this one is submitted to Search Console directly.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://bullionedgepro.github.io/bullionedge-pro/sitemap.xml

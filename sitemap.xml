@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BullionEdge Pro — sitemap.
+
+  One entry, because the app genuinely is one page: the router moves between
+  views with the fragment (#desk, #risk, #journal), and a fragment is not a URL
+  a crawler can index separately. Listing them would be listing this same page
+  eight times.
+
+  BullionEdge_Pro.html is deliberately absent. The build writes it as a
+  byte-identical copy of index.html for the double-click case, and both carry a
+  canonical pointing here, so it must not be advertised as a second page.
+
+  A sitemap may only contain URLs at or below its own directory, which is why
+  this one lives inside /bullionedge-pro/ and lists only URLs from there. Submit
+  it in Search Console at:
+      https://bullionedgepro.github.io/bullionedge-pro/sitemap.xml
+
+  Bump <lastmod> when the page's visible content changes, not on every rebuild —
+  a date that moves for no reason teaches Google to stop trusting it.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://bullionedgepro.github.io/bullionedge-pro/</loc>
+    <lastmod>2026-08-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
