@@ -885,7 +885,37 @@ tr:last-child td { border-bottom: none; }
   display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; flex: none;
   background: linear-gradient(150deg, var(--gold-bright), var(--gold-dim));
   color: var(--gold-ink); font-family: var(--font-display); font-weight: 700; font-size: var(--fs-sm);
+  background-size: cover; background-position: center;
 }
+
+/* With a photo the initials underneath must disappear, but they stay in the
+   DOM: if the stored data URI is ever unreadable the browser falls back to the
+   gradient, and letters are a better failure than a blank gold disc. */
+.avatar.haspic, .pf-photo.haspic { color: transparent; text-shadow: none; }
+
+/* ---- Profile card -------------------------------------------------------- */
+
+.pf-head {
+  display: flex; align-items: center; gap: var(--sp-4);
+  margin-bottom: var(--sp-4); flex-wrap: wrap;
+}
+.pf-photo {
+  display: grid; place-items: center; flex: none;
+  width: 76px; height: 76px; border-radius: 50%;
+  background: linear-gradient(150deg, var(--gold-bright), var(--gold-dim));
+  background-size: cover; background-position: center;
+  color: var(--gold-ink); font-family: var(--font-display); font-weight: 700; font-size: var(--fs-lg);
+  border: 1px solid var(--line-2);
+}
+/* `min-width: 0` so a long status message wraps inside the card instead of
+   forcing the row wider than the column. */
+.pf-photoactions { display: flex; flex-wrap: wrap; gap: var(--sp-2); flex: 1; min-width: 0; }
+.pf-photoactions .field-note { flex-basis: 100%; margin-top: 0; }
+
+/* Validation messages sit under their own input and take no space until they
+   have something to say — an empty reserved line reads as a rendering fault. */
+.field-note.err { color: var(--short); }
+.field-note.err:empty { display: none; }
 .iconbtn {
   display: grid; place-items: center; width: 34px; height: 34px; flex: none;
   background: none; border: 1px solid var(--line-2); border-radius: var(--r-sm);
@@ -5206,6 +5236,7 @@ const { initLanding, hideLanding } = __req("src/ui/landing.js");
 const { resetRouter } = __req("src/ui/router.js");
 const { activate, login, startSession, endSession, resumeSession, ensureOwner, revalidate } = __req("src/ui/accounts.js");
 const { planLabel } = __req("src/domain/licensing.js");
+const { displayNameFor, initials } = __req("src/domain/profile.js");
 const { readEntitlement, shouldRevalidate, STATE } = __req("src/domain/entitlement.js");
 
 /* ===================================================================
@@ -5398,8 +5429,7 @@ async function enter(account) {
   patch({ profileId: account.id, profileName: account.userId }, { transient: true, silent: true });
   await hydrate(account.id);
 
-  byId('who-name').textContent = account.userId;
-  byId('avatar').textContent = account.userId.trim().charAt(0).toUpperCase();
+  paintIdentity();
   paintPlanBadge();
 
   hideLanding();
@@ -5412,6 +5442,43 @@ async function enter(account) {
 
   emit(EV.PROFILE_IN, { profile: account });
   if (onEnter) await onEnter(account);
+}
+
+/* ---------------------------------------------------------------- Identity */
+
+/**
+ * Paint the name and avatar in the top bar from the signed-in account.
+ *
+ * Exported because Settings calls it after a profile is saved. Repainting from
+ * the account record rather than from the form means the top bar can never
+ * disagree with what was actually stored — if the save was rejected, the corner
+ * still shows the old name, which is the truth.
+ */
+function paintIdentity() {
+  if (!current) return;
+
+  const name = displayNameFor(current);
+  const who = byId('who-name');
+  if (who) who.textContent = name;
+
+  const avatar = byId('avatar');
+  if (!avatar) return;
+
+  const photo = current.profile?.photo || '';
+  avatar.classList.toggle('haspic', Boolean(photo));
+  avatar.style.backgroundImage = photo ? `url("${photo}")` : '';
+  // The letters stay in the DOM under the photo. If the data URI is ever
+  // unreadable the circle shows initials rather than an empty gold disc.
+  avatar.textContent = initials(name) || name.trim().charAt(0).toUpperCase();
+  avatar.title = name;
+}
+
+/** Adopt an updated account record — after a profile save, or a revalidation. */
+function refreshAccount(account) {
+  if (!account || !current || account.id !== current.id) return;
+  current = account;
+  paintIdentity();
+  paintPlanBadge();
 }
 
 /* ------------------------------------------------------------- Entitlement */
@@ -5509,7 +5576,7 @@ async function withBusy(btn, fn) {
 
 
 /* --- exports --- */
-Object.assign(__exports, { ACCESS, currentAccount, initAuth });
+Object.assign(__exports, { ACCESS, currentAccount, initAuth, paintIdentity, refreshAccount });
 
 });
 
@@ -7233,6 +7300,7 @@ const db = __req("src/core/db.js");
 const { hashPin, verifyPin, randomSalt } = __req("src/core/crypto.js");
 const { DAY_MS } = __req("src/domain/licensing.js");
 const { readEntitlement, shouldRevalidate, applyValidation, STATE } = __req("src/domain/entitlement.js");
+const { validateProfile } = __req("src/domain/profile.js");
 const { activateKey, validateKey, deactivateKey } = __req("src/integrations/lemonsqueezy.js");
 
 const ACCOUNTS_KEY = 'accounts';
@@ -7353,6 +7421,48 @@ async function revalidate(account, { force = false } = {}) {
   const next = applyValidation(account, res);
   await upsert(next);
   return { account: next, checked: true };
+}
+
+/* ------------------------------------------------------------------ Profile */
+
+/**
+ * Save the member's own details onto their account record.
+ *
+ * Deliberately narrow: it writes `profile` and nothing else. An earlier
+ * version merged the whole account object, which meant a stale copy held by a
+ * view could quietly roll back a licence status that revalidation had just
+ * updated. Re-reading the record here and touching one key makes that
+ * impossible.
+ *
+ * Validation happens in domain/profile.js and is expected to have passed
+ * already; this normalises again anyway, because a caller that skips it should
+ * not be able to write an unbounded string into storage.
+ */
+async function saveProfile(accountId, profile) {
+  const accounts = await allAccounts();
+  const account = accounts[norm(accountId)];
+  if (!account) return { ok: false, error: 'That profile no longer exists on this device.' };
+
+  const { ok, errors, profile: clean } = validateProfile(profile);
+  if (!ok) return { ok: false, error: Object.values(errors)[0], errors };
+
+  account.profile = clean;
+  accounts[account.id] = account;
+
+  try {
+    await saveAccounts(accounts);
+  } catch (err) {
+    // Almost always the storage quota, and almost always the photo. Say which.
+    console.error('[accounts] profile save failed:', err);
+    return {
+      ok: false,
+      error: clean.photo
+        ? 'There was not enough room to save. Remove the photo, or export a backup and clear some space.'
+        : 'There was not enough room to save your profile.',
+    };
+  }
+
+  return { ok: true, account };
 }
 
 /** Release this device's slot so the key can be used elsewhere. Best effort. */
@@ -7479,7 +7589,7 @@ function fail(error, state = null) { return { ok: false, error, state }; }
 
 
 /* --- exports --- */
-Object.assign(__exports, { allAccounts, startSession, endSession, findAccount, activate, revalidate, releaseDevice, login, ensureOwner, resumeSession });
+Object.assign(__exports, { allAccounts, startSession, endSession, findAccount, activate, revalidate, saveProfile, releaseDevice, login, ensureOwner, resumeSession });
 
 });
 
@@ -7742,6 +7852,171 @@ function applyValidation(record, result, now = Date.now()) {
 
 /* --- exports --- */
 Object.assign(__exports, { DAY_MS, RECHECK_MS, GRACE_MS, STATE, opens, readEntitlement, shouldRevalidate, applyValidation });
+
+});
+
+__def("src/domain/profile.js", function (__exports, __req) {
+/**
+ * domain/profile.js — the member's own details.
+ *
+ * Pure: no DOM, no storage, no clock. The account record that carries a profile
+ * lives in ui/accounts.js; this file only decides what a valid profile is and
+ * what it looks like once tidied up.
+ *
+ * ===================================================================
+ * WHAT IS STORED HERE, AND WHERE IT GOES
+ *
+ * Nowhere. Every field below is written into the account record in
+ * this browser and is never transmitted — there is no account server
+ * to transmit it to.
+ *
+ * That is a genuine privacy property and also a warning: it is held
+ * unencrypted, anyone with the unlocked device can read it, and it
+ * lands in the backup export as plain JSON. So the fields are kept
+ * deliberately few, and `address` is optional and marked as serving no
+ * function in the app.
+ *
+ * It really does serve none. There is nothing to post, and a billing
+ * address belongs with the payment provider, who is the merchant of
+ * record and needs it for tax. Collecting a second copy here buys
+ * nothing and creates something to lose.
+ * ===================================================================
+ */
+
+/**
+ * Field lengths, in characters.
+ *
+ * These are not arbitrary. Storage is a shared quota — localStorage is about
+ * 5MB for everything including the journal and any screenshots — so an
+ * unbounded bio is a way to break someone's install by typing into it.
+ */
+const LIMITS = {
+  displayName: 40,
+  email: 120,
+  country: 56,
+  city: 60,
+  address: 200,
+  broker: 60,
+  bio: 240,
+};
+
+/** The square the photo is resized to before storage. */
+const PHOTO_PX = 256;
+
+/**
+ * Hard ceiling on a stored photo, after resizing.
+ *
+ * A 256px JPEG lands around 15–30 KB, so this is roughly four times the
+ * expected size — comfortably above anything legitimate, and far below the
+ * multi-megabyte original a phone camera would hand over.
+ */
+const PHOTO_MAX_BYTES = 120 * 1024;
+
+/** An empty profile, used for a new account and as the shape of the record. */
+const EMPTY = {
+  displayName: '', email: '', country: '', city: '', address: '', broker: '', bio: '', photo: '',
+};
+
+const clean = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+
+/**
+ * Tidy a profile into storable form.
+ *
+ * Whitespace is collapsed and the value truncated rather than rejected: a name
+ * pasted with a trailing newline is not an error the member should have to read
+ * about, it is something to quietly fix.
+ */
+function normaliseProfile(input = {}) {
+  const out = { ...EMPTY };
+  for (const key of Object.keys(LIMITS)) out[key] = clean(input[key], LIMITS[key]);
+
+  // The bio is the one field where line breaks are meaningful, so it keeps
+  // them — but they are normalised so ten blank lines cannot pad the record.
+  out.bio = String(input.bio ?? '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, LIMITS.bio);
+
+  // Only a data URI is accepted. A remote URL would mean the page fetching an
+  // image from somewhere on every load, which is both a tracking vector and a
+  // way to break the offline promise.
+  const photo = String(input.photo ?? '');
+  out.photo = /^data:image\/(png|jpeg|webp);base64,/.test(photo) ? photo : '';
+
+  return out;
+}
+
+/**
+ * Check a profile before saving.
+ *
+ * Returns `{ ok, errors }` where errors is keyed by field, because the form
+ * shows each message next to the input it belongs to.
+ */
+function validateProfile(input = {}) {
+  const p = normaliseProfile(input);
+  const errors = {};
+
+  // Everything here is optional — an empty profile is valid. A member who
+  // wants to type nothing about themselves is making a reasonable choice.
+  if (p.email && !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(p.email)) {
+    errors.email = 'That does not look like an email address.';
+  }
+  if (p.displayName && p.displayName.length < 2) {
+    errors.displayName = 'Use at least two characters, or leave it empty.';
+  }
+  if (p.photo && p.photo.length > PHOTO_MAX_BYTES) {
+    errors.photo = 'That image is too large even after resizing. Try a different one.';
+  }
+
+  return { ok: Object.keys(errors).length === 0, errors, profile: p };
+}
+
+/**
+ * What to show in the top bar.
+ *
+ * The display name wins when set, otherwise the User ID they signed in with —
+ * never blank, because an empty name in the corner reads as a bug.
+ */
+function displayNameFor(account) {
+  if (!account) return '';
+  return account.profile?.displayName?.trim() || account.userId || '';
+}
+
+/**
+ * One or two letters for the avatar when there is no photo.
+ *
+ * Two initials for a name with parts, one otherwise. Uppercased, and it works
+ * on scripts without case — Arabic and CJK simply come back as the first
+ * character, which is the right answer rather than an empty circle.
+ */
+function initials(name) {
+  const parts = String(name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  const first = [...parts[0]][0] ?? '';
+  const last = parts.length > 1 ? [...parts[parts.length - 1]][0] ?? '' : '';
+  return (first + last).toUpperCase();
+}
+
+/**
+ * The centre square of a rectangle, for cropping a photo to a circle.
+ *
+ * Worth having as its own function because the obvious version — scaling both
+ * axes to the target — squashes every face that was not photographed square,
+ * and it is the sort of bug that looks like bad taste rather than bad maths.
+ *
+ * @returns {{sx:number, sy:number, size:number}} source rect, always square
+ */
+function coverCrop(srcW, srcH) {
+  const w = Math.max(0, Number(srcW) || 0);
+  const h = Math.max(0, Number(srcH) || 0);
+  const size = Math.min(w, h);
+  return { sx: Math.round((w - size) / 2), sy: Math.round((h - size) / 2), size };
+}
+
+
+/* --- exports --- */
+Object.assign(__exports, { LIMITS, PHOTO_PX, PHOTO_MAX_BYTES, EMPTY, normaliseProfile, validateProfile, displayNameFor, initials, coverCrop });
 
 });
 
@@ -12422,9 +12697,15 @@ const { setEnabled: setParticles } = __req("src/ui/background.js");
 const { applyAccessibility, SHORTCUTS } = __req("src/ui/shortcuts.js");
 const { toast, confirm } = __req("src/ui/overlays.js");
 const { callout, tip } = __req("src/ui/components.js");
-const { currentAccount } = __req("src/ui/auth.js");
+const { currentAccount, refreshAccount } = __req("src/ui/auth.js");
+const { saveProfile } = __req("src/ui/accounts.js");
 const { CHECKOUT, planLabel } = __req("src/domain/licensing.js");
 const { readEntitlement, STATE } = __req("src/domain/entitlement.js");
+const { LIMITS, initials, displayNameFor } = __req("src/domain/profile.js");
+const { fileToSquareDataUrl, ACCEPT } = __req("src/ui/photo.js");
+
+/** The text fields, in the order they appear. Photo is handled separately. */
+const PROFILE_FIELDS = ['displayName', 'email', 'broker', 'country', 'city', 'address', 'bio'];
 
 __exports.default = {
   id: 'settings',
@@ -12440,6 +12721,72 @@ __exports.default = {
 
       <div class="cols split">
         <div class="col">
+          <div class="card reveal" id="profile-card">
+            <p class="eyebrow">Your profile</p>
+            <h2>Who you are
+              <span class="hint">Shown only to you, in the corner of this desk. Every field is optional and none of it leaves this device.</span>
+            </h2>
+
+            <div class="pf-head">
+              <span class="pf-photo" id="pf-photo" aria-hidden="true"></span>
+              <div class="pf-photoactions">
+                <button class="btn ghost sm" id="btn-photo">Choose photo</button>
+                <button class="btn ghost sm" id="btn-photo-clear">Remove</button>
+                <p class="field-note" id="pf-photo-note">PNG, JPEG or WebP. Cropped square and shrunk to 256px before saving.</p>
+              </div>
+              <input type="file" id="pf-file" accept="${esc(ACCEPT)}" hidden>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="pf-displayName">Display name</label>
+                <input id="pf-displayName" type="text" maxlength="${LIMITS.displayName}" autocomplete="name" placeholder="How you want to be greeted">
+                <p class="field-note err" id="err-displayName"></p>
+              </div>
+              <div class="field">
+                <label for="pf-email">Email ${tip('Only used so you can find it again — the app sends nothing anywhere. Your receipts and licence key come from the payment provider, not from here.')}</label>
+                <input id="pf-email" type="email" maxlength="${LIMITS.email}" autocomplete="email" placeholder="you@example.com">
+                <p class="field-note err" id="err-email"></p>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="pf-broker">Broker</label>
+                <input id="pf-broker" type="text" maxlength="${LIMITS.broker}" placeholder="e.g. XM">
+              </div>
+              <div class="field">
+                <label for="pf-country">Country</label>
+                <input id="pf-country" type="text" maxlength="${LIMITS.country}" autocomplete="country-name" placeholder="e.g. Philippines">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="pf-city">City</label>
+                <input id="pf-city" type="text" maxlength="${LIMITS.city}" autocomplete="address-level2" placeholder="e.g. Dubai">
+              </div>
+              <div class="field">
+                <label for="pf-address">Address <span class="t-muted">— optional</span></label>
+                <input id="pf-address" type="text" maxlength="${LIMITS.address}" autocomplete="street-address" placeholder="Not needed for anything">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="pf-bio">Notes to yourself</label>
+              <textarea id="pf-bio" rows="3" maxlength="${LIMITS.bio}" placeholder="Your rules, your reminders — whatever you want to see here."></textarea>
+            </div>
+
+            <div class="row tight">
+              <button class="btn sm magnetic" id="btn-profile-save">Save profile</button>
+              <span class="field-note" id="pf-status"></span>
+            </div>
+
+            ${callout('', '<b>This stays on your device.</b> There is no account server, so nothing here is sent anywhere — '
+              + 'but it is also stored unencrypted and appears in your backup export. The address field is genuinely optional: '
+              + 'nothing in the app uses it, and your billing address already lives with the payment provider.')}
+          </div>
+
           <div class="card gold reveal">
             <p class="eyebrow">Location</p>
             <h2>Where are you trading from?
@@ -12590,6 +12937,68 @@ __exports.default = {
       emit(EV.SETTINGS, { source: 'settings' });
     });
 
+    /* ---- Profile -------------------------------------------------------- */
+    // `draft` holds the photo between choosing it and pressing Save, so a
+    // member who picks a picture and then changes their mind can navigate away
+    // without having written anything.
+    let draft = { photo: currentAccount()?.profile?.photo || '' };
+    fillProfileForm(currentAccount());
+
+    on(root, 'click', '#btn-photo', () => byId('pf-file')?.click());
+
+    on(root, 'change', '#pf-file', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';                       // so the same file can be re-picked
+      if (!file) return;
+
+      const note = byId('pf-photo-note');
+      if (note) { note.textContent = 'Resizing…'; note.classList.remove('err'); }
+      try {
+        draft.photo = await fileToSquareDataUrl(file);
+        paintPhoto(draft.photo);
+        if (note) note.textContent = `Ready — ${Math.round(draft.photo.length / 1024)} KB. Press Save profile to keep it.`;
+      } catch (err) {
+        if (note) { note.textContent = err.message; note.classList.add('err'); }
+      }
+    });
+
+    on(root, 'click', '#btn-photo-clear', () => {
+      draft.photo = '';
+      paintPhoto('');
+      const note = byId('pf-photo-note');
+      if (note) { note.textContent = 'Photo removed. Press Save profile to confirm.'; note.classList.remove('err'); }
+    });
+
+    on(root, 'click', '#btn-profile-save', async (_e, btn) => {
+      const account = currentAccount();
+      if (!account) return;
+
+      const profile = { photo: draft.photo };
+      for (const key of PROFILE_FIELDS) profile[key] = byId(`pf-${key}`)?.value ?? '';
+
+      // Clear any error from a previous attempt before showing new ones.
+      for (const key of PROFILE_FIELDS) setText(`err-${key}`, '');
+
+      btn.disabled = true;
+      const res = await saveProfile(account.id, profile);
+      btn.disabled = false;
+
+      if (!res.ok) {
+        for (const [key, message] of Object.entries(res.errors || {})) setText(`err-${key}`, message);
+        setText('pf-status', '');
+        toast(res.error, 'bad');
+        return;
+      }
+
+      // Adopt the saved record so the top bar and this form agree with storage
+      // rather than with what was typed.
+      refreshAccount(res.account);
+      draft.photo = res.account.profile.photo;
+      fillProfileForm(res.account);
+      setText('pf-status', 'Saved.');
+      toast('Profile saved.', 'ok');
+    });
+
     /* ---- Data ---------------------------------------------------------- */
     on(root, 'click', '#btn-backup', () => exportBackup());
     on(root, 'click', '#btn-csv2', () => exportCsv());
@@ -12699,6 +13108,43 @@ function renderAiNote(root) {
 
 function setText(id, text) { const n = byId(id); if (n) n.textContent = text; }
 function setHtml(id, html) { const n = byId(id); if (n) n.innerHTML = html; }
+
+/* ----------------------------------------------------------------- Profile */
+
+/** Fill the form from the stored record — never from anything typed. */
+function fillProfileForm(account) {
+  const card = byId('profile-card');
+  if (!card) return;
+
+  // The owner account has no member profile to edit. Hiding the card is
+  // kinder than showing a form whose Save would write to a record that exists
+  // only to let you into your own software.
+  if (!account) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  const profile = account.profile || {};
+  for (const key of PROFILE_FIELDS) {
+    const input = byId(`pf-${key}`);
+    if (input) input.value = profile[key] || '';
+    setText(`err-${key}`, '');
+  }
+  paintPhoto(profile.photo || '', displayNameFor(account));
+}
+
+/**
+ * Draw the avatar preview.
+ *
+ * Initials sit underneath the photo rather than instead of it, so a data URI
+ * that fails to render leaves letters rather than an empty circle.
+ */
+function paintPhoto(photo, name) {
+  const el = byId('pf-photo');
+  if (!el) return;
+  const label = name || displayNameFor(currentAccount());
+  el.textContent = initials(label);
+  el.classList.toggle('haspic', Boolean(photo));
+  el.style.backgroundImage = photo ? `url("${photo}")` : '';
+}
 
 /**
  * What the member is paying for, and the way out.
@@ -12943,6 +13389,110 @@ async function invoke(id, capability, ...args) {
 
 /* --- exports --- */
 Object.assign(__exports, { CAPABILITY, listConnectors, getConnector, connectorsFor, registerConnector, invoke });
+
+});
+
+__def("src/ui/photo.js", function (__exports, __req) {
+/**
+ * ui/photo.js — turn a chosen file into a small square avatar.
+ *
+ * The whole job is *not storing what the file picker handed over*. A modern
+ * phone camera produces a 3–6 MB JPEG. localStorage is about 5 MB for
+ * everything — journal, settings, screenshots — so writing one raw photo into
+ * an account record can break the install of the person who chose it, and the
+ * failure surfaces later as an unrelated save silently not working.
+ *
+ * So the file is decoded, centre-cropped to a square, drawn down to 256px and
+ * re-encoded. What comes out is 15–30 KB.
+ *
+ * Everything here touches the DOM; the arithmetic it depends on lives in
+ * domain/profile.js and is tested there.
+ */
+
+const { coverCrop, PHOTO_PX, PHOTO_MAX_BYTES } = __req("src/domain/profile.js");
+
+/** What the file input should accept. SVG is deliberately absent — see below. */
+const ACCEPT = 'image/png,image/jpeg,image/webp';
+
+/** Reject before decoding. 20 MB is far past any real photo and stops a silly file early. */
+const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
+
+/**
+ * Decode a file into an ImageBitmap or HTMLImageElement.
+ *
+ * `createImageBitmap` is used where available because it decodes off the main
+ * thread — noticeable on a phone with a large photo — and falls back to an
+ * object URL, which is always revoked so the blob is not held for the session.
+ */
+async function decode(file) {
+  if (typeof createImageBitmap === 'function') {
+    try { return await createImageBitmap(file); } catch { /* fall through */ }
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('That file could not be read as an image.'));
+      img.src = url;
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * Convert a picked file into a square data URI ready to store.
+ *
+ * @param {File} file
+ * @returns {Promise<string>} a `data:image/jpeg;base64,…` string
+ * @throws {Error} with a message written to be shown to the member
+ */
+async function fileToSquareDataUrl(file) {
+  if (!file) throw new Error('No file was chosen.');
+
+  // SVG is an image type the browser will happily render and also a document
+  // that can carry script. It is excluded at the picker and again here, since
+  // a file can always be chosen through a path the accept attribute does not
+  // cover.
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+    throw new Error('Choose a PNG, JPEG or WebP image.');
+  }
+  if (file.size > MAX_SOURCE_BYTES) {
+    throw new Error('That image is very large. Choose one under 20 MB.');
+  }
+
+  const source = await decode(file);
+  const w = source.width;
+  const h = source.height;
+  if (!w || !h) throw new Error('That image appears to be empty.');
+
+  const { sx, sy, size } = coverCrop(w, h);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = PHOTO_PX;
+  canvas.height = PHOTO_PX;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(source, sx, sy, size, size, 0, 0, PHOTO_PX, PHOTO_PX);
+
+  // Release the decoded bitmap rather than waiting for collection — these are
+  // large, and a member trying three photos in a row would hold all three.
+  if (typeof source.close === 'function') source.close();
+
+  // Step the quality down until it fits. A busy photo at 0.82 is occasionally
+  // over budget, and silently storing something too big is how the quota gets
+  // exhausted later, during an unrelated save.
+  for (const quality of [0.82, 0.7, 0.6, 0.5]) {
+    const uri = canvas.toDataURL('image/jpeg', quality);
+    if (uri.length <= PHOTO_MAX_BYTES) return uri;
+  }
+  throw new Error('That image would not compress small enough. Try a simpler one.');
+}
+
+
+/* --- exports --- */
+Object.assign(__exports, { ACCEPT, fileToSquareDataUrl });
 
 });
 
