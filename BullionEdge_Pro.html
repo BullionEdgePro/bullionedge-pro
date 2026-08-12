@@ -6244,6 +6244,18 @@ function markup() {
     </section>
 
     <footer class="lp-foot">
+      <!-- Free guides, and the only crawl path to them.
+           These three pages are the site's whole non-brand search surface: the
+           desk itself is behind a licence key, so this landing page is the only
+           thing a crawler can read, and a page nothing links to is discovered
+           slowly if at all. The sitemap lists them too, but an internal link is
+           the stronger signal and the one a reader can actually follow.
+           They are genuinely free and require no key — see tools/pages.mjs. -->
+      <p class="lp-guides"><b>Free guides.</b>
+      <a href="lot-size-calculator/">XAU/USD lot size calculator</a> ·
+      <a href="pre-trade-checklist/">The pre-trade checklist</a> ·
+      <a href="best-time-to-trade-gold/">Best time to trade gold</a></p>
+
       <p><b>Risk warning &amp; full disclaimer.</b>
       BullionEdge Pro is analytical and risk-management software for the XAU/USD (gold) market. It is not financial,
       investment, tax or legal advice; it is not a broker, fund or account-management service; and it is not a signal
