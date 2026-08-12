@@ -2399,36 +2399,9 @@ kbd {
      Rendered by src/ui/landing.js from the catalogue in domain/licensing.js. -->
 <div id="landing"></div>
 
-<!-- ==================== Access gate ==================== -->
-<div class="authscreen" id="gate" style="display:none">
-  <div class="authcard">
-    <img class="brandmark" src="assets/icons/brand-mark.png" alt="" aria-hidden="true" width="112" height="112" onerror="this.remove()">
-    <div class="wordmark"><span class="b">Bullion</span>Edge<span class="prochip">PRO</span></div>
-    <div class="atag">AI-guided pre-trade analysis for high-probability setups.</div>
-    <p class="asub">Owner sign-in. Opens the desk directly — no access key needed.</p>
-
-    <div class="field">
-      <label for="gate-user">Username</label>
-      <input id="gate-user" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="username">
-    </div>
-    <div class="field">
-      <label for="gate-pass">Password</label>
-      <input id="gate-pass" type="password" autocomplete="off" placeholder="password">
-    </div>
-    <div class="autherr" id="gate-err" role="alert"></div>
-    <button class="btn block magnetic" id="gate-btn">Unlock access</button>
-    <button class="linkbtn" id="gate-back">← Back to the site</button>
-
-    <p class="authnote">
-      <b>Access-control note.</b> This signs you in as the owner: full access, no expiry, and no key consumed — so you
-      can use and demo your own software without spending a key you could have sold. Because it runs in the browser,
-      anyone who views the page source can read these credentials. That is true of any credential shipped inside a
-      page, and no length of password changes it. Treat this as a convenience, not as security; for genuinely
-      protected access, put the app behind a real server login.
-    </p>
-  </div>
-</div>
-
+<!-- ==================== Owner gate ====================
+     Everything between the owner-only markers is removed by the public build —
+     see tools/build.mjs. Do not put anything here that the public page needs. -->
 <!-- ==================== Member profiles ==================== -->
 <div class="authscreen" id="auth" style="display:none">
   <div class="authcard">
@@ -2492,8 +2465,7 @@ kbd {
       browser on this device — nothing syncs, and clearing site data deletes them, so use the backup export. Whether
       your subscription is paid for is checked with the payment provider, which is why cancelling closes the desk and
       renewing reopens it with your journal intact. Never reuse a real banking or broker password here.
-      <button class="linkbtn inline" id="admin-link">Owner sign-in</button>
-    </p>
+      </p>
   </div>
 </div>
 
@@ -5556,10 +5528,12 @@ __def("src/ui/auth.js", function (__exports, __req) {
  *    an access key. The entitlement check runs in this browser, so it deters
  *    casual sharing and is not a licence server — see domain/licensing.js.
  *
- *  - The ADMIN gate is a vestigial front-end lock kept from the original build.
- *    It grants nothing on its own; it simply reveals the member login. The
- *    credentials sit in the page source, so it deters nothing determined.
- *    Reachable at #admin, or from the link on the login card.
+ *  - The OWNER gate opens the desk directly, with no access key and no expiry.
+ *    It exists for demoing and testing your own software. It does NOT ship in
+ *    the public build: the credentials would be readable in the page source, so
+ *    tools/build.mjs strips them and this whole screen out. See ui/owner-access.js.
+ *    Where it does exist, it is reachable at #admin or from the link on the
+ *    login card.
  */
 
 const { byId, valOf } = __req("src/core/dom.js");
@@ -5571,21 +5545,17 @@ const { activate, login, startSession, endSession, resumeSession, ensureOwner, r
 const { planLabel } = __req("src/domain/licensing.js");
 const { displayNameFor, initials } = __req("src/domain/profile.js");
 const { readEntitlement, shouldRevalidate, STATE } = __req("src/domain/entitlement.js");
+const { OWNER_ACCESS } = __req("src/ui/owner-access.js");
 
-/* ===================================================================
-   OWNER SIGN-IN — change these before sharing the file.
-
-   These credentials open the desk directly, with no access key and no
-   expiry, so you can use and demo your own software without burning a
-   key you could have sold.
-
-   They are readable by anyone who opens "View source". That is not a
-   bug to be fixed with a longer password: any credential shipped inside
-   a page is public. Treat this as a convenience for you, never as a
-   security boundary — and if that matters, put the app behind a real
-   server login.
-   =================================================================== */
-const ACCESS = { user: 'be.owner', pass: 'Hr2fPnjbKuDxTeesNXurHr' };
+/**
+ * Whether owner sign-in exists in this build at all.
+ *
+ * False in the public build, where tools/build.mjs has replaced the credentials
+ * with null and removed the gate markup. Everything owner-related below is
+ * gated on this, and the DOM lookups are written to tolerate the missing
+ * screen rather than assume it.
+ */
+const OWNER_SIGNIN = OWNER_ACCESS !== null;
 
 /** How often to re-check that the signed-in account is still inside its term. */
 const WATCHDOG_MS = 30000;
@@ -5614,30 +5584,49 @@ async function initAuth(enterCallback) {
   // A live session skips straight to the desk, which is what someone who just
   // refreshed the page expects.
   const account = await resumeSession();
-  if (account) { await enter(account); return; }
+  if (account && !barredOwner(account)) { await enter(account); return; }
+  if (account) await endSession();          // an owner session in a public build
 
-  if (location.hash === '#admin') showGate();
+  if (OWNER_SIGNIN && location.hash === '#admin') showGate();
   else showLanding();
 }
 
+/**
+ * An owner account signing in where owner sign-in does not exist.
+ *
+ * Stripping the gate is not enough on its own. An owner account is stored like
+ * any other account, never expires, and readEntitlement waves it through
+ * unconditionally — so anyone who reached the desk with owner credentials in an
+ * earlier build still has a permanent, key-free account on that device, usable
+ * from the ordinary member login long after the gate is gone. Rotating the
+ * password does not reach it either, because it is already created.
+ *
+ * The public build therefore refuses the account itself, not just the gate.
+ */
+const barredOwner = (account) => !OWNER_SIGNIN && Boolean(account?.owner);
+
 /* ------------------------------------------------------------------ Screens */
 
+/** Hide by id, tolerating a screen the build removed. */
+const hide = (id) => { const el = byId(id); if (el) el.style.display = 'none'; };
+
 function showLanding() {
-  byId('gate').style.display = 'none';
-  byId('auth').style.display = 'none';
+  hide('gate');
+  hide('auth');
   byId('landing').style.display = 'block';
 }
 
 function showGate() {
+  if (!OWNER_SIGNIN) return showLanding();
   hideLanding();
-  byId('auth').style.display = 'none';
+  hide('auth');
   byId('gate').style.display = 'flex';
   setTimeout(() => byId('gate-user')?.focus(), 120);
 }
 
 function showLogin() {
   hideLanding();
-  byId('gate').style.display = 'none';
+  hide('gate');
   byId('auth').style.display = 'flex';
   setTab('login');
   window.scrollTo(0, 0);
@@ -5654,6 +5643,10 @@ function setTab(which) {
 /* --------------------------------------------------------------------- Gate */
 
 function wireGate() {
+  // Nothing to wire in the public build: the credentials are null and the whole
+  // screen has been removed from the document, so every id below is missing.
+  if (!OWNER_SIGNIN) return;
+
   // Previously this only revealed the member login, which looked exactly like
   // nothing had happened — you still needed a key to get any further. It now
   // signs you straight into the desk as the owner.
@@ -5662,7 +5655,7 @@ function wireGate() {
     const btn = byId('gate-btn');
     const user = valOf('gate-user').trim();
 
-    if (user.toLowerCase() !== ACCESS.user.toLowerCase() || valOf('gate-pass') !== ACCESS.pass) {
+    if (user.toLowerCase() !== OWNER_ACCESS.user.toLowerCase() || valOf('gate-pass') !== OWNER_ACCESS.pass) {
       err.textContent = 'Incorrect username or password.';
       byId('gate-pass').value = '';
       byId('gate-pass').focus();
@@ -5671,7 +5664,7 @@ function wireGate() {
 
     err.textContent = '';
     await withBusy(btn, async () => {
-      const account = await ensureOwner(ACCESS.user, ACCESS.pass);
+      const account = await ensureOwner(OWNER_ACCESS.user, OWNER_ACCESS.pass);
       await startSession(account);
       await enter(account);
     });
@@ -5689,7 +5682,8 @@ function wireLogin() {
   byId('tab-login').addEventListener('click', () => setTab('login'));
   byId('tab-create').addEventListener('click', () => setTab('create'));
   byId('auth-back').addEventListener('click', showLanding);
-  byId('admin-link').addEventListener('click', showGate);
+  // Removed from the document by the public build; wired only where it exists.
+  byId('admin-link')?.addEventListener('click', showGate);
 
   /* ---- Log in --------------------------------------------------------- */
   const doLogin = async (btn) => {
@@ -5699,6 +5693,13 @@ function wireLogin() {
       const result = await login({ userId: valOf('login-user'), pass: valOf('login-pass') });
       if (!result.ok) {
         err.textContent = result.error;
+        byId('login-pass').value = '';
+        return;
+      }
+      // See barredOwner: an owner account left over from a build that had the
+      // gate must not become a way back in once the gate is gone.
+      if (barredOwner(result.account)) {
+        err.textContent = 'Owner sign-in is not available in this build.';
         byId('login-pass').value = '';
         return;
       }
@@ -5766,8 +5767,8 @@ async function enter(account) {
   paintPlanBadge();
 
   hideLanding();
-  byId('gate').style.display = 'none';
-  byId('auth').style.display = 'none';
+  hide('gate');
+  hide('auth');
   byId('app').classList.add('ready');
   window.scrollTo(0, 0);
 
@@ -5909,7 +5910,7 @@ async function withBusy(btn, fn) {
 
 
 /* --- exports --- */
-Object.assign(__exports, { ACCESS, currentAccount, initAuth, paintIdentity, refreshAccount });
+Object.assign(__exports, { currentAccount, initAuth, paintIdentity, refreshAccount });
 
 });
 
@@ -6243,18 +6244,6 @@ function markup() {
     </section>
 
     <footer class="lp-foot">
-      <!-- Free guides, and the only crawl path to them.
-           These three pages are the site's whole non-brand search surface: the
-           desk itself is behind a licence key, so this landing page is the only
-           thing a crawler can read, and a page nothing links to is discovered
-           slowly if at all. The sitemap lists them too, but an internal link is
-           the stronger signal and the one a reader can actually follow.
-           They are genuinely free and require no key — see tools/pages.mjs. -->
-      <p class="lp-guides"><b>Free guides.</b>
-      <a href="lot-size-calculator/">XAU/USD lot size calculator</a> ·
-      <a href="pre-trade-checklist/">The pre-trade checklist</a> ·
-      <a href="best-time-to-trade-gold/">Best time to trade gold</a></p>
-
       <p><b>Risk warning &amp; full disclaimer.</b>
       BullionEdge Pro is analytical and risk-management software for the XAU/USD (gold) market. It is not financial,
       investment, tax or legal advice; it is not a broker, fund or account-management service; and it is not a signal
@@ -7872,22 +7861,31 @@ const OWNER_DAYS = 36500;
  *
  * Its expiry is pushed forward on every sign-in, so the watchdog can never shut
  * the door on the person who owns the software.
+ *
+ * The stored passkey is re-derived from `pass` on every sign-in, which is what
+ * makes rotating the owner credentials mean anything. This used to update only
+ * the expiry, so an existing record kept the hash of whatever password it was
+ * first created with: changing the credentials left the old one working through
+ * the member login, and the new one failing there. The gate and the stored
+ * account now cannot disagree.
  */
 async function ensureOwner(userId, pass) {
   const accounts = await allAccounts();
   const id = norm(userId);
   const now = Date.now();
   const expiresAt = now + OWNER_DAYS * DAY_MS;
+  const salt = randomSalt();
+  const pinHash = await hashPin(pass, salt);
 
   let account = accounts[id];
   if (account) {
     account.expiresAt = expiresAt;
     account.owner = true;
+    account.salt = salt;
+    account.pinHash = pinHash;
   } else {
-    const salt = randomSalt();
     account = {
-      userId, id, name: userId, salt,
-      pinHash: await hashPin(pass, salt),
+      userId, id, name: userId, salt, pinHash,
       key: 'OWNER', days: OWNER_DAYS,
       activatedAt: now, expiresAt, createdAt: now,
       owner: true,
@@ -8590,6 +8588,15 @@ async function deactivateKey({ key, instanceId }) {
 
 /* --- exports --- */
 Object.assign(__exports, { activateKey, validateKey, deactivateKey });
+
+});
+
+__def("src/ui/owner-access.js", function (__exports, __req) {
+const OWNER_ACCESS = null;
+
+
+/* --- exports --- */
+Object.assign(__exports, { OWNER_ACCESS });
 
 });
 
