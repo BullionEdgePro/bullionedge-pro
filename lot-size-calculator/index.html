@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Free XAUUSD lot size calculator. Enter balance, risk percent and stop for the exact gold position size — rounded down, never up, so real risk stays inside budget.">
+<title>XAUUSD Lot Size Calculator — Free Gold Position Sizing</title>
+<link rel="canonical" href="https://bullionedgepro.github.io/bullionedge-pro/lot-size-calculator/">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A1214'/%3E%3Cpath d='M16 5.5 L26.5 16 L16 26.5 L5.5 16 Z' fill='%23E0A63C'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="192x192" href="../assets/icons/icon-192.png">
+<meta name="theme-color" content="#0A1214">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="BullionEdge Pro">
+<meta property="og:url" content="https://bullionedgepro.github.io/bullionedge-pro/lot-size-calculator/">
+<meta property="og:title" content="XAUUSD Lot Size Calculator — Free Gold Position Sizing">
+<meta property="og:description" content="Free XAUUSD lot size calculator. Enter balance, risk percent and stop for the exact gold position size — rounded down, never up, so real risk stays inside budget.">
+<meta property="og:image" content="https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="900">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="XAUUSD Lot Size Calculator — Free Gold Position Sizing">
+<meta name="twitter:description" content="Free XAUUSD lot size calculator. Enter balance, risk percent and stop for the exact gold position size — rounded down, never up, so real risk stays inside budget.">
+<meta name="twitter:image" content="https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{--bg:#0A1214;--bg-raise:#0E1A1B;--panel:#10201F;--line:#1E3335;
+--ink:#EAF0EE;--ink-soft:#C3D2CE;--muted:#8A9B98;--gold:#E0A63C;--gold-bright:#FFC864;
+--long:#46B98C;--short:#E0704A;--radius:14px;
+--sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+--display:'Space Grotesk',var(--sans);--mono:'IBM Plex Mono',ui-monospace,monospace}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+header.site{border-bottom:1px solid var(--line);background:var(--bg-raise);position:sticky;top:0;z-index:5}
+header.site .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);
+font-family:var(--display);font-weight:700;letter-spacing:.01em}
+.brand .mark{width:26px;height:26px;flex:none}
+.brand .pro{font-family:var(--mono);font-size:11px;color:var(--gold);border:1px solid var(--gold);
+border-radius:4px;padding:1px 5px;letter-spacing:.08em}
+.cta{background:var(--gold);color:#241A05;text-decoration:none;font-weight:600;font-size:14px;
+padding:9px 16px;border-radius:9px;white-space:nowrap}
+.cta:hover{background:var(--gold-bright)}
+main{padding-block:44px 20px}
+h1{font-family:var(--display);font-size:clamp(30px,5.2vw,44px);line-height:1.12;margin:0 0 14px;letter-spacing:-.02em}
+h2{font-family:var(--display);font-size:clamp(21px,3.2vw,27px);line-height:1.25;margin:44px 0 12px;letter-spacing:-.01em}
+h3{font-family:var(--display);font-size:19px;margin:30px 0 8px}
+.standfirst{font-size:20px;color:var(--ink-soft);margin:0 0 8px}
+a{color:var(--gold-bright)}
+table{width:100%;border-collapse:collapse;margin:22px 0;font-size:15px;display:block;overflow-x:auto}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+code,.mono{font-family:var(--mono);font-size:.92em}
+.note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);
+border-radius:var(--radius);padding:16px 18px;margin:26px 0;font-size:15.5px;color:var(--ink-soft)}
+.note strong{color:var(--ink)}
+footer.site{border-top:1px solid var(--line);margin-top:56px;padding-block:28px 44px;
+font-size:13.5px;color:var(--muted)}
+footer.site a{color:var(--ink-soft)}
+footer.site p{margin:0 0 10px}
+.crumb{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+color:var(--muted);margin:0 0 10px}
+.crumb a{color:var(--muted)}
+/* calculator */
+.calc{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin:26px 0}
+.calc .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.calc .row{grid-template-columns:1fr}}
+.calc label{display:block;font-size:13px;color:var(--muted);margin:0 0 5px;font-weight:500}
+.calc input,.calc select{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);
+border-radius:9px;padding:11px 12px;font-family:var(--mono);font-size:15px}
+.calc input:focus,.calc select:focus{outline:2px solid var(--gold);outline-offset:1px}
+.calc .field{margin:0 0 14px}
+.out{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
+.out .big{font-family:var(--display);font-size:38px;font-weight:700;color:var(--gold);line-height:1.1}
+.out .big small{font-size:16px;color:var(--muted);font-weight:500;font-family:var(--sans)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+@media(max-width:560px){.grid3{grid-template-columns:1fr 1fr}}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.stat dt{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+font-family:var(--mono);margin:0 0 3px}
+.stat dd{margin:0;font-family:var(--mono);font-size:16px;color:var(--ink)}
+.msg{margin-top:14px;padding:11px 13px;border-radius:9px;font-size:14.5px;line-height:1.5}
+.msg.error{background:rgba(224,112,74,.12);border:1px solid var(--short);color:#FFB89E}
+.msg.warn{background:rgba(224,166,60,.1);border:1px solid var(--gold-dim,#B8842C);color:var(--gold-bright)}
+.msg:empty{display:none}</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "headline": "XAU/USD lot size calculator",
+  "name": "XAUUSD Lot Size Calculator — Free Gold Position Sizing",
+  "description": "Free XAUUSD lot size calculator. Enter balance, risk percent and stop for the exact gold position size — rounded down, never up, so real risk stays inside budget.",
+  "url": "https://bullionedgepro.github.io/bullionedge-pro/lot-size-calculator/",
+  "inLanguage": "en",
+  "datePublished": "2026-08-13",
+  "dateModified": "2026-08-13",
+  "image": "https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "BullionEdge Pro",
+    "url": "https://bullionedgepro.github.io/bullionedge-pro/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BullionEdge Pro",
+    "url": "https://bullionedgepro.github.io/bullionedge-pro/",
+    "logo": "https://bullionedgepro.github.io/bullionedge-pro/assets/icons/icon-512.png"
+  },
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Any modern web browser",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="../"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0A1214"/><path d="M16 5.5 L26.5 16 L16 26.5 L5.5 16 Z" fill="#E0A63C"/></svg><span>BullionEdge</span><span class="pro">PRO</span></a>
+    <a class="cta" href="../">Open the desk</a>
+  </div>
+</header>
+<main class="wrap">
+<p class="crumb"><a href="../">BullionEdge Pro</a> — Lot size calculator</p>
+<h1>XAU/USD lot size calculator</h1>
+<p class="standfirst">Enter your balance, the percentage you are willing to lose, and where the stop goes. The lot size falls out of the arithmetic. No account, no email, and it keeps working offline once loaded.</p>
+
+<div class="calc">
+  <div class="row">
+    <div class="field">
+      <label for="capital">Account balance (USD)</label>
+      <input id="capital" type="number" inputmode="decimal" value="5000" min="1" step="any">
+    </div>
+    <div class="field">
+      <label for="riskPct">Risk per trade (%)</label>
+      <input id="riskPct" type="number" inputmode="decimal" value="1" min="0.01" step="any">
+    </div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label for="dir">Direction</label>
+      <select id="dir"><option value="long">Long</option><option value="short">Short</option></select>
+    </div>
+    <div class="field">
+      <label for="entry">Entry price</label>
+      <input id="entry" type="number" inputmode="decimal" value="2400.00" min="0" step="any">
+    </div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label for="stopMode">Stop measured in</label>
+      <select id="stopMode">
+        <option value="pips">Pips (0.10 = 1 pip)</option>
+        <option value="price">Stop price</option>
+      </select>
+    </div>
+    <div class="field" id="stopPipsField">
+      <label for="slPips">Stop loss (pips)</label>
+      <input id="slPips" type="number" inputmode="decimal" value="150" min="0" step="any">
+    </div>
+    <div class="field" id="stopPriceField" hidden>
+      <label for="stopPrice">Stop price</label>
+      <input id="stopPrice" type="number" inputmode="decimal" value="2385.00" min="0" step="any">
+    </div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label for="rrTarget">Reward:risk target</label>
+      <input id="rrTarget" type="number" inputmode="decimal" value="2" min="0.1" step="any">
+    </div>
+  </div>
+
+  <div class="out">
+    <div class="big" id="lots">—<small> lots</small></div>
+    <dl class="grid3">
+      <div class="stat"><dt>Risk budget</dt><dd id="riskAmount">—</dd></div>
+      <div class="stat"><dt>Actual risk</dt><dd id="actualRisk">—</dd></div>
+      <div class="stat"><dt>Stop distance</dt><dd id="slPipsOut">—</dd></div>
+      <div class="stat"><dt>Stop price</dt><dd id="stopOut">—</dd></div>
+      <div class="stat"><dt>1R (break-even)</dt><dd id="tp1Out">—</dd></div>
+      <div class="stat"><dt>Target</dt><dd id="tp2Out">—</dd></div>
+    </dl>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+
+
+<div class="note">
+<strong>This runs the same code as the product.</strong> The figures above come from
+<code>buildPlan()</code> in BullionEdge Pro's sizing engine, inlined into this page rather
+than reimplemented for it. If the calculator and the desk ever disagreed, the calculator
+would be the liability — so they are not allowed to.
+</div>
+
+<h2>The rule: size is an output, never an input</h2>
+<p>
+Most gold accounts do not fail from bad analysis. They fail because a lot size was chosen
+because it felt about right, a stop was placed wherever the chart suggested, and the two
+numbers were never reconciled. Fixed-fractional sizing reconciles them by turning the
+question around: you nominate the money, and the stop distance decides the size.
+</p>
+<p class="mono">
+risk budget&nbsp;=&nbsp;balance × risk %<br>
+lots&nbsp;=&nbsp;risk budget ÷ (stop distance in price × $100 per lot)
+</p>
+<p>
+That <code>$100</code> is the value of a 1.00 move in XAU/USD for one standard lot — gold's
+hundred-ounce contract. A 150-pip stop, at gold's 0.10 pip, is a 15.00 price move, so one
+standard lot puts $1,500 at risk. Against a $50 budget that is 0.03 lots, and no amount of
+conviction about the setup changes the number.
+</p>
+
+<h2>Two things this gets right that free calculators often do not</h2>
+
+<h3>1. It rounds down, never up</h3>
+<p>
+Lots trade in 0.01 steps, so the exact figure almost never lands on one. Round 0.037 up to
+0.04 and you have quietly exceeded the maximum you just set — by roughly 8% on that trade,
+and by more as stops get tighter. This calculator truncates to 0.03, and shows the
+consequence honestly as <em>actual risk</em> beside your budget. It is always at or below
+the budget, never above it.
+</p>
+
+<h3>2. It says something useful when the trade cannot be placed</h3>
+<p>
+If your balance and stop produce less than 0.01 lots, there is no trade — the broker cannot
+fill it. A calculator that prints "0.00" and stops there has told you nothing. This one names
+the three things that actually change the outcome: tighten the stop, raise the risk
+percentage deliberately, or grow the account. Try a $200 balance against a 300-pip stop at
+1% and you will see it.
+</p>
+
+<h2>What a risk percentage costs you</h2>
+<table>
+<thead><tr><th>Risk per trade</th><th>Consecutive losses to halve the account</th><th>Typically suits</th></tr></thead>
+<tbody>
+<tr><td>0.5%</td><td>about 138</td><td>Small accounts, or a strategy that is not yet proven</td></tr>
+<tr><td>1%</td><td>about 69</td><td>The common default among discretionary traders</td></tr>
+<tr><td>2%</td><td>about 34</td><td>A documented edge, and the stomach to sit through it</td></tr>
+<tr><td>5%</td><td>about 13</td><td>Very few people. Thirteen losses in a row is not rare.</td></tr>
+</tbody>
+</table>
+<p>
+Those are compounding figures, not opinions: each loss shrinks the balance the next
+percentage is taken from, which is why an account decays rather than falling in a straight
+line. None of it is a recommendation for your situation — it is arithmetic to weigh against
+your own tolerance and your own record.
+</p>
+
+<div class="note">
+<strong>Confirm the contract size with your broker.</strong> Everything here assumes a 1.00
+move in XAU/USD is worth $100 per standard lot. Not every broker matches that, and a
+position size that is wrong by a multiple is not a rounding error. Check it once, then trust
+it.
+</div>
+
+<h2>Sizing is one input to the decision, not the decision</h2>
+<p>
+Getting the lot size right prevents one specific kind of damage. It says nothing about
+whether the trade was worth taking, and a perfectly sized entry into a setup you would have
+rejected on a calmer day is still a bad trade. That is what
+<a href="../pre-trade-checklist/">a pre-trade checklist</a> is for — and the session you place
+it in matters too, which is
+<a href="../best-time-to-trade-gold/">the best time to trade gold</a>.
+</p>
+<p>
+<a href="../">BullionEdge Pro</a> puts the three together: sizing, a scored checklist, and a
+journal that records what you actually did rather than what you meant to do.
+</p>
+
+<script>
+/**
+ * domain/instruments.js — contract specs for position sizing.
+ *
+ * `valuePerPricePerLot` is the money value of a 1.00 move in the quote price
+ * for one standard lot. Gold is 100 (a 100 oz contract), which reproduces the
+ * original build's `GOLD_POINT = 100` exactly.
+ *
+ * ONE INSTRUMENT, ON PURPOSE.
+ *
+ * This used to carry nine: silver, four FX majors, two indices and BTC. They
+ * have been removed, because the rest of the product is gold and only gold. The
+ * live feed is gold. The auto-setup rules are tuned to gold's volatility. The
+ * session windows are the ones that move gold. The landing page says "XAU/USD
+ * only — one market, mastered".
+ *
+ * Offering NAS100 in the analyser alongside all of that was not a feature, it
+ * was a trap: the score, the stop suggestion and the session read would all have
+ * been computed with gold's assumptions and presented as though they applied.
+ * Sizing was worse still — an index CFD's contract varies enormously between
+ * brokers, so one broker's "1 lot" of NAS100 can be ten times another's, and a
+ * position size that is wrong by a multiple is not a rounding error.
+ *
+ * The shape here stays a map rather than collapsing to a single constant. The
+ * sizing engine is genuinely instrument-agnostic and tested as such, and this
+ * is the seam where a second market would arrive if one ever earned its place.
+ *
+ * Contract sizes still differ between brokers, so the spec remains overridable
+ * from Settings and the UI still says so.
+ */
+
+const INSTRUMENTS = {
+  XAUUSD: { label: 'XAU/USD · Gold', pip: 0.1, dp: 2, valuePerPricePerLot: 100, typicalSpreadPips: 2.5, group: 'Metals', standard: true },
+};
+
+const DEFAULT_INSTRUMENT = 'XAUUSD';
+
+function getInstrument(symbol) {
+  return INSTRUMENTS[symbol] || INSTRUMENTS[DEFAULT_INSTRUMENT];
+}
+
+/**
+ * Grouped list for a <select>.
+ *
+ * Nothing calls this while there is one instrument — the Analyse view prints a
+ * fixed label instead of a picker. It is kept because it is the other half of
+ * the seam described above: a second market means restoring a dropdown, and
+ * this is the function that would fill it.
+ */
+function instrumentGroups() {
+  const groups = new Map();
+  for (const [symbol, spec] of Object.entries(INSTRUMENTS)) {
+    if (!groups.has(spec.group)) groups.set(spec.group, []);
+    groups.get(spec.group).push([symbol, spec.label]);
+  }
+  return Array.from(groups.entries());
+}
+
+/** Pip-size options offered for the active instrument. */
+function pipOptions(symbol) {
+  const spec = getInstrument(symbol);
+  if (symbol === 'XAUUSD') {
+    return [
+      { value: 0.01, label: '0.01' },
+      { value: 0.1,  label: '0.10 (gold standard)' },
+      { value: 1,    label: '1.00' },
+    ];
+  }
+  return [
+    { value: spec.pip,      label: String(spec.pip) + ' (default)' },
+    { value: spec.pip * 10, label: String(spec.pip * 10) },
+  ];
+}
+
+/**
+ * domain/sizing.js — risk-first position sizing.
+ *
+ * The rule is fixed-fractional: you nominate the money you are willing to lose,
+ * and the lot size falls out of the stop distance. Size is never the input.
+ *
+ *   riskAmount = capital × riskPct / 100
+ *   lots       = riskAmount / (stopDistanceInPrice × valuePerPricePerLot)
+ *
+ * For XAU/USD with valuePerPricePerLot = 100 this is identical to the original
+ * build's `riskAmt / (dist * GOLD_POINT)`.
+ */
+
+
+
+/** Lots are traded in 0.01 steps; anything below that cannot be placed. */
+const MIN_LOT = 0.01;
+
+/**
+ * @param {object} input
+ * @param {'long'|'short'} input.dir
+ * @param {'pips'|'price'} input.stopMode
+ * @returns {object} a fully-populated plan, with `valid` and `message`
+ */
+function buildPlan(input) {
+  const {
+    instrument = 'XAUUSD', dir = 'long', stopMode = 'pips',
+    entry, slPips, tpPips, stopPrice, rrTarget = 2,
+    pipSize, capital = 0, riskPct = 0,
+  } = input;
+
+  const spec = getInstrument(instrument);
+  const pip = Number.isFinite(pipSize) && pipSize > 0 ? pipSize : spec.pip;
+  const sign = dir === 'long' ? 1 : -1;
+  const riskAmount = capital * riskPct / 100;
+
+  const plan = {
+    instrument, spec, pip, dir, stopMode,
+    entry, riskAmount,
+    stopDistance: 0, targetDistance: 0,
+    slPips: NaN, tpPips: NaN, rr: NaN,
+    lots: 0, lotsRounded: 0,
+    stopPrice: NaN, tp1: NaN, tp2: NaN,
+    reward: NaN, riskPerLot: NaN,
+    valid: false, message: '', severity: 'info',
+  };
+
+  if (!Number.isFinite(entry) || entry <= 0) {
+    plan.message = 'Enter an entry price above zero.';
+    plan.severity = 'error';
+    return plan;
+  }
+  if (!(capital > 0)) {
+    plan.message = 'Set your account balance before sizing a position.';
+    plan.severity = 'error';
+    return plan;
+  }
+
+  /* ---- Resolve the stop and target distances ------------------------- */
+  if (stopMode === 'pips') {
+    if (!Number.isFinite(slPips) || slPips <= 0) {
+      plan.message = 'Enter a stop-loss in pips greater than zero.';
+      plan.severity = 'error';
+      return plan;
+    }
+    plan.slPips = slPips;
+    plan.stopDistance = slPips * pip;
+    if (Number.isFinite(tpPips) && tpPips > 0) {
+      plan.tpPips = tpPips;
+      plan.targetDistance = tpPips * pip;
+      plan.rr = tpPips / slPips;
+    }
+  } else {
+    if (!Number.isFinite(stopPrice)) {
+      plan.message = 'Enter a stop-loss price.';
+      plan.severity = 'error';
+      return plan;
+    }
+    if (dir === 'long' && stopPrice >= entry) {
+      plan.message = 'For a long, your stop must sit below the entry.';
+      plan.severity = 'error';
+      return plan;
+    }
+    if (dir === 'short' && stopPrice <= entry) {
+      plan.message = 'For a short, your stop must sit above the entry.';
+      plan.severity = 'error';
+      return plan;
+    }
+    plan.stopDistance = Math.abs(entry - stopPrice);
+    plan.slPips = plan.stopDistance / pip;
+    plan.rr = Number.isFinite(rrTarget) && rrTarget > 0 ? rrTarget : NaN;
+    plan.targetDistance = plan.stopDistance * (plan.rr || 0);
+    plan.tpPips = plan.slPips * (plan.rr || 0);
+  }
+
+  if (!(plan.stopDistance > 0)) {
+    plan.message = 'Stop distance must be greater than zero.';
+    plan.severity = 'error';
+    return plan;
+  }
+
+  /* ---- Price levels --------------------------------------------------- */
+  plan.stopPrice = entry - sign * plan.stopDistance;
+  plan.tp1 = entry + sign * plan.stopDistance;                    // 1R — move to break-even
+  plan.tp2 = plan.targetDistance > 0 ? entry + sign * plan.targetDistance : NaN;
+
+  /* ---- Size ----------------------------------------------------------- */
+  plan.riskPerLot = plan.stopDistance * spec.valuePerPricePerLot;
+  plan.lots = plan.riskPerLot > 0 ? riskAmount / plan.riskPerLot : 0;
+  plan.lotsRounded = Math.floor(plan.lots * 100) / 100;           // never round up into extra risk
+  plan.reward = Number.isFinite(plan.rr) ? riskAmount * plan.rr : NaN;
+
+  // Money actually at risk once the lot size is truncated to 0.01 steps.
+  plan.actualRisk = plan.lotsRounded * plan.riskPerLot;
+
+  plan.valid = plan.lotsRounded >= MIN_LOT;
+  if (!plan.valid) {
+    plan.severity = 'error';
+    plan.message = `Position rounds to 0.00 lot. A ${Math.round(plan.slPips)}-pip stop risking ${riskPct}% of ${fmtUsd(capital)} is smaller than the 0.01-lot minimum. Tighten the stop, raise risk %, or grow the account.`;
+  } else if (capital <= 100) {
+    plan.severity = 'warn';
+    plan.message = `Starter account: at ${fmtUsd(capital)} even one 0.01-lot trade risks a large share of the balance on a normal stop. Treat this as capital you can afford to lose outright — position size, not prediction, is what compounds.`;
+  } else if (plan.actualRisk > riskAmount * 1.5) {
+    plan.severity = 'warn';
+    plan.message = `Lot rounding pushes real risk to ${fmtUsd(plan.actualRisk)} against a ${fmtUsd(riskAmount)} budget. Tighten the stop or accept the overshoot deliberately.`;
+  }
+
+  return plan;
+}
+
+function fmtUsd(n) {
+  return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/**
+ * Suggest a stop just beyond the structural level, with a buffer scaled to the
+ * range. Used by "apply this direction to the builder".
+ */
+function suggestStop(dir, support, resistance, minBuffer = 0.5) {
+  if (!Number.isFinite(support) || !Number.isFinite(resistance) || resistance <= support) return NaN;
+  const buffer = Math.max(minBuffer, (resistance - support) * 0.08);
+  return dir === 'long' ? support - buffer : resistance + buffer;
+}
+
+/** Expected value in R, given a win probability and the plan's reward ratio. */
+function expectancyR(winProbability, rr) {
+  if (!Number.isFinite(winProbability) || !Number.isFinite(rr)) return NaN;
+  const p = Math.max(0, Math.min(1, winProbability));
+  return p * rr - (1 - p) * 1;
+}
+
+/** The win rate a given R multiple needs just to break even. */
+function breakevenWinRate(rr) {
+  return Number.isFinite(rr) && rr > 0 ? 1 / (1 + rr) : NaN;
+}
+
+
+(function () {
+  function $(id) { return document.getElementById(id); }
+  var ids = ['capital','riskPct','dir','entry','stopMode','slPips','stopPrice','rrTarget'];
+
+  function usd(n) {
+    return Number.isFinite(n)
+      ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '\u2014';
+  }
+  function px(n) { return Number.isFinite(n) ? n.toFixed(2) : '\u2014'; }
+
+  function run() {
+    var mode = $('stopMode').value;
+    $('stopPipsField').hidden = mode !== 'pips';
+    $('stopPriceField').hidden = mode !== 'price';
+
+    var slPips = parseFloat($('slPips').value);
+    var rr = parseFloat($('rrTarget').value);
+
+    // In price mode buildPlan() reads rrTarget directly. In pips mode it only
+    // ever derives the target from tpPips and ignores rrTarget entirely, so the
+    // ratio has to be turned into a pip distance here or the target silently
+    // never computes. This is the glue adapting an input, not a second opinion
+    // about the sizing rules.
+    var tpPips = (Number.isFinite(slPips) && Number.isFinite(rr) && rr > 0)
+      ? slPips * rr
+      : NaN;
+
+    var plan = buildPlan({
+      instrument: 'XAUUSD',
+      dir: $('dir').value,
+      stopMode: mode,
+      entry: parseFloat($('entry').value),
+      slPips: slPips,
+      tpPips: tpPips,
+      stopPrice: parseFloat($('stopPrice').value),
+      rrTarget: rr,
+      capital: parseFloat($('capital').value),
+      riskPct: parseFloat($('riskPct').value)
+    });
+
+    $('lots').innerHTML = (plan.valid ? plan.lotsRounded.toFixed(2) : '\u2014') + '<small> lots</small>';
+    $('riskAmount').textContent = usd(plan.riskAmount);
+    $('actualRisk').textContent = plan.valid ? usd(plan.actualRisk) : '\u2014';
+    $('slPipsOut').textContent = Number.isFinite(plan.slPips) ? Math.round(plan.slPips) + ' pips' : '\u2014';
+    $('stopOut').textContent = px(plan.stopPrice);
+    $('tp1Out').textContent = px(plan.tp1);
+    $('tp2Out').textContent = px(plan.tp2);
+
+    var msg = $('msg');
+    msg.textContent = plan.message || '';
+    msg.className = 'msg' + (plan.message ? ' ' + plan.severity : '');
+  }
+
+  ids.forEach(function (id) {
+    $(id).addEventListener('input', run);
+    $(id).addEventListener('change', run);
+  });
+  run();
+})();
+
+</script>
+
+</main>
+<footer class="site">
+  <div class="wrap">
+    <p><strong>Not financial advice.</strong> BullionEdge Pro is analytical planning and
+    journaling software. It is not a signal service, it does not predict prices, and it
+    cannot guarantee a profit. Gold and leveraged FX are highly volatile and you can lose
+    money, including on news gaps that jump straight past your stop.</p>
+    <p>Contract sizes differ between brokers. Everything here assumes a 1.00 move in
+    XAU/USD is worth $100 per standard lot — confirm your own broker's contract size, pip
+    size, spread and swap rates before trading.</p>
+    <p><a href="../">BullionEdge Pro</a> · <a href="../lot-size-calculator/">Lot size calculator</a>
+    · <a href="../pre-trade-checklist/">Pre-trade checklist</a>
+    · <a href="../best-time-to-trade-gold/">Best time to trade gold</a></p>
+  </div>
+</footer>
+</body>
+</html>
