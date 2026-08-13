@@ -8128,7 +8128,12 @@ async function askTheApp(question) {
   const review = reviewReply(text, facts, { mode: 'coach' });
   helpTurns.push({ role: 'model', text, notices: review.notices });
   } catch (err) {
-  helpTurns.push({ role: 'model', text: err.message, error: true });
+
+  const local = answerLocally(question, { analysis: state.analysis });
+  helpTurns.push({
+  role: 'model', text: local.text, title: local.title,
+  source: 'local', unsure: !local.confident, fallbackFrom: err.message,
+  });
   } finally {
   helpBusy = false;
   renderHelp();
@@ -8154,6 +8159,7 @@ function renderHelp() {
   return `<div class="amsg ${t.unsure ? 'warn' : 'reply'}">
   <div class="atitle">${esc(t.title || 'Answer')}</div>
   <div>${esc(t.text).replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>')}</div>
+  ${t.fallbackFrom ? `<div class="anotice">Answered here — Gemini could not be reached. ${esc(t.fallbackFrom)}</div>` : ''}
   </div>`;
   }
   return `<div class="amsg ${t.error ? 'bad' : 'reply'}">
@@ -12440,6 +12446,7 @@ function turnMarkup(turn) {
   return `<div class="xaiturn model${turn.unsure ? ' err' : ''}">
   <span class="xair">${esc(turn.title || 'Answer')} · on this device</span>
   <div class="xait">${paragraphs(turn.text)}</div>
+  ${turn.fallbackFrom ? `<div class="xainotice">Gemini could not be reached, so this was answered here instead. ${esc(turn.fallbackFrom)}</div>` : ''}
   </div>`;
   }
   return `<div class="xaiturn model${turn.error ? ' err' : ''}">
@@ -12552,7 +12559,16 @@ async function askModel(question) {
   const review = reviewReply(text, facts);
   aiTurns.push({ role: 'model', text, notices: review.notices });
   } catch (err) {
-  aiTurns.push({ role: 'model', text: err.message, error: true });
+
+  const local = answerLocally(question, { analysis });
+  aiTurns.push({
+  role: 'model',
+  text: local.text,
+  source: 'local',
+  title: local.title,
+  unsure: !local.confident,
+  fallbackFrom: err.message,
+  });
   } finally {
   aiBusy = false;
   paintAsk();
