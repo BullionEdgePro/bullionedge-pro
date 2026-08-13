@@ -1886,6 +1886,46 @@ kbd {
   .xchartwrap.panes-3 { height: clamp(430px, 66vh, 620px); }
 }
 
+/* ------------------------------------------------------------- AI panel */
+
+.xaithread { display: grid; gap: var(--sp-3); max-height: 420px; overflow-y: auto; }
+.xaithread:empty { display: none; }
+
+.xaiturn { display: grid; gap: 4px; }
+.xair {
+  font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint);
+}
+.xait {
+  padding: var(--sp-3); border-radius: var(--r-sm);
+  border: 1px solid var(--line-2); background: var(--panel-2);
+  font-size: var(--fs-sm); line-height: 1.65; color: var(--ink-soft);
+}
+.xait p { margin: 0 0 var(--sp-2); }
+.xait p:last-child { margin-bottom: 0; }
+.xaiturn.user .xait { background: rgba(224,166,60,.07); border-color: rgba(224,166,60,.28); color: var(--ink); }
+.xaiturn.err .xait { background: rgba(224,112,74,.07); border-color: rgba(224,112,74,.4); color: var(--short-bright); }
+
+/* A number the engine never computed, or a claim about the future. Loud on
+   purpose — this is the one thing on the panel that means "do not act on the
+   sentence you just read". */
+.xainotice {
+  font-size: var(--fs-2xs); line-height: 1.55; color: var(--gold-bright);
+  background: rgba(224,166,60,.09); border-left: 2px solid var(--gold);
+  padding: 6px var(--sp-3); border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+
+.xaisuggest { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--sp-3); }
+.xaisuggest .cbtn { text-align: left; white-space: normal; }
+
+.xaitest { font-size: var(--fs-xs); line-height: 1.6; margin-top: var(--sp-2); }
+.xaitest.ok { color: var(--long); }
+.xaitest.bad { color: var(--short); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
 /* ===== assets/css/guide.css ===== */
 /* ==========================================================================
    Guide — the walkthrough from access key to logged trade.
@@ -3381,6 +3421,22 @@ const state = {
     confirm: {},               // the final human-confirmation ticks
   },
 
+  /* --- the AI assistant (persisted per profile) ------------------------ */
+  // Off until the trader turns it on. Nothing is sent anywhere while `enabled`
+  // is false, and the whole app works without it — the analysis itself is
+  // computed locally and does not involve a model at any point.
+  //
+  // `apiKey` is the reader's own Google key, stored on their device like the
+  // rest of their data. It is never in the shipped file: tools/build.mjs
+  // refuses to emit a build containing anything shaped like a key.
+  ai: {
+    enabled: false,
+    transport: 'direct',        // 'direct' (their key) | 'proxy' (a URL you host)
+    apiKey: '',
+    proxyUrl: '',
+    model: 'gemini-2.5-flash',
+  },
+
   /** Manual checklist answers, keyed by factor id. */
   checks: {},
 
@@ -3397,7 +3453,7 @@ const state = {
   analysis: null,
 };
 
-const PERSIST_KEYS = ['ui', 'settings', 'setup', 'market', 'xau', 'checks', 'psych', 'copy'];
+const PERSIST_KEYS = ['ui', 'settings', 'setup', 'market', 'xau', 'ai', 'checks', 'psych', 'copy'];
 
 let saveTimer = null;
 let suppressPersist = false;
@@ -9017,8 +9073,8 @@ __def("src/ui/owner-access.js", function (__exports, __req) {
 
 const OWNER_ACCESS = {
   user: 'be.owner',
-  salt: 'ffafb44b07d75cc881004122465b5920',
-  hash: 'pbkdf2$120000$6fc42506b15494431fde014cb581e89e195c4acc49bf72edc8a99efa0457fb9b',
+  salt: '38c26e73aae3bdc52965356ba9930530',
+  hash: 'pbkdf2$120000$b04afb09891134b22536db3eab9103682861c89678c80510f5f6ea20a3d177f0',
 };
 
 
@@ -11656,6 +11712,8 @@ const { readRiskState } = __req("src/domain/risk.js");
 const { uid } = __req("src/core/crypto.js");
 const { logTradePlan } = __req("src/app-actions.js");
 const { fibLevels } = __req("src/domain/premium.js");
+const { buildFacts, reviewReply } = __req("src/domain/aigrounding.js");
+const { askGemini, testConnection, GEMINI_MODELS } = __req("src/integrations/gemini.js");
 
 const EVERY = { spot: 5000, exec: 30_000, full: 300_000 };
 
@@ -11902,6 +11960,66 @@ __exports.default = {
           <div class="card gold reveal" id="xau-verdict-card">
             <p class="eyebrow">AI pre-trade analysis</p>
             <div id="xau-verdict"></div>
+          </div>
+
+          <div class="card reveal" id="xau-ask-card">
+            <p class="eyebrow">Ask about this setup</p>
+            <h2>Gemini ${tip('The model is given only what the engine measured — no chart, no live price. It explains the analysis; it never performs it. Any price it mentions that the engine did not compute is flagged before you see it.')}</h2>
+
+            <div id="xau-ask-body"></div>
+
+            <details class="xspec" id="xau-ai-config">
+              <summary>AI connection <span class="chip" id="xau-ai-state"></span></summary>
+
+              <div class="field" style="margin-top:var(--sp-3)">
+                <label>How to reach the model</label>
+                <div class="seg" id="xau-ai-transport" role="group" aria-label="Transport">
+                  <button type="button" data-transport="direct" class="${s.ai.transport !== 'proxy' ? 'on' : ''}">My own key</button>
+                  <button type="button" data-transport="proxy" class="${s.ai.transport === 'proxy' ? 'on' : ''}">A proxy I host</button>
+                </div>
+              </div>
+
+              <div class="field" id="xau-ai-key-field" ${s.ai.transport === 'proxy' ? 'hidden' : ''}>
+                <label for="xau-ai-key">Google AI Studio API key</label>
+                <input id="xau-ai-key" type="password" autocomplete="off" spellcheck="false"
+                       placeholder="AIza…" value="${esc(s.ai.apiKey)}">
+                <div class="field-note">
+                  Free at <b>aistudio.google.com/apikey</b>. Stored on this device only and never in the app's own files —
+                  but it is in your browser, so restrict it to this site in the Google console and treat it as spendable.
+                </div>
+              </div>
+
+              <div class="field" id="xau-ai-proxy-field" ${s.ai.transport === 'proxy' ? '' : 'hidden'}>
+                <label for="xau-ai-proxy">Proxy URL</label>
+                <input id="xau-ai-proxy" type="url" autocomplete="off" spellcheck="false"
+                       placeholder="https://your-worker.example.workers.dev" value="${esc(s.ai.proxyUrl)}">
+                <div class="field-note">
+                  An endpoint you host that holds the key server-side, so your members need no key of their own.
+                  A ready-to-deploy one is in <b>docs/AI-PROXY.md</b>.
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="xau-ai-model">Model</label>
+                <div class="selwrap"><select id="xau-ai-model">
+                  ${GEMINI_MODELS.map((m) => `<option value="${esc(m.id)}" ${s.ai.model === m.id ? 'selected' : ''}>${esc(m.label)}</option>`).join('')}
+                </select></div>
+              </div>
+
+              <div class="row tight">
+                <button class="btn sm" id="xau-ai-test" type="button">Test the connection</button>
+                <button class="btn ghost sm" id="xau-ai-toggle" type="button">
+                  ${s.ai.enabled ? 'Turn the assistant off' : 'Turn the assistant on'}
+                </button>
+              </div>
+              <div id="xau-ai-testresult" class="xaitest"></div>
+
+              <p class="t-faint" style="font-size:var(--fs-2xs);margin-top:var(--sp-3)">
+                Nothing is sent anywhere while the assistant is off, and the analysis above never involves a model at any
+                point — it is computed on this device from candle data. What is sent when you ask a question is the
+                engine's measurements and your question. Not your journal, not your notes, not your profile.
+              </p>
+            </details>
           </div>
 
           <div class="card reveal">
@@ -12155,11 +12273,82 @@ __exports.default = {
       toast('Weights reset to the defaults.', 'ok');
     };
 
+    /* ---- AI assistant ---------------------------------------------------- */
+    on(root, 'click', '#xau-ai-transport button', (_e, btn) => {
+      const transport = btn.dataset.transport;
+      root.querySelectorAll('#xau-ai-transport button').forEach((b) => b.classList.toggle('on', b === btn));
+      patch({ ai: { transport } });
+      byId('xau-ai-key-field').hidden = transport === 'proxy';
+      byId('xau-ai-proxy-field').hidden = transport !== 'proxy';
+      paintAsk();
+    });
+
+    for (const [id, key] of [['xau-ai-key', 'apiKey'], ['xau-ai-proxy', 'proxyUrl']]) {
+      const node = byId(id);
+      if (node) {
+        node.addEventListener('input', debounce(() => {
+          patch({ ai: { [key]: node.value.trim() } });
+          paintAsk();
+        }, 400));
+      }
+    }
+
+    byId('xau-ai-model').onchange = (e) => patch({ ai: { model: e.target.value } });
+
+    byId('xau-ai-toggle').onclick = (e) => {
+      const enabled = !state.ai.enabled;
+      patch({ ai: { enabled } });
+      e.currentTarget.textContent = enabled ? 'Turn the assistant off' : 'Turn the assistant on';
+      paintAsk();
+      toast(enabled ? 'Assistant on. Nothing is sent until you ask a question.' : 'Assistant off. Nothing will be sent anywhere.', 'ok');
+    };
+
+    byId('xau-ai-test').onclick = async (e) => {
+      const btn = e.currentTarget;
+      const out = byId('xau-ai-testresult');
+      btn.disabled = true;
+      btn.textContent = 'Testing…';
+      out.textContent = '';
+      const result = await testConnection(state.ai);
+      btn.disabled = false;
+      btn.textContent = 'Test the connection';
+      out.className = 'xaitest ' + (result.ok ? 'ok' : 'bad');
+      out.textContent = result.message;
+      if (result.ok && !state.ai.enabled) {
+        patch({ ai: { enabled: true } });
+        byId('xau-ai-toggle').textContent = 'Turn the assistant off';
+        paintAsk();
+      }
+    };
+
+    on(root, 'click', '#xau-ai-send', () => {
+      const input = byId('xau-ai-input');
+      if (!input) return;
+      const q = input.value;
+      input.value = '';
+      askModel(q);
+    });
+
+    on(root, 'click', '[data-ask]', (_e, btn) => askModel(btn.dataset.ask));
+
+    on(root, 'click', '#xau-ai-clear', () => { aiTurns = []; paintAsk(); });
+
+    on(root, 'keydown', '#xau-ai-input', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const input = byId('xau-ai-input');
+        const q = input.value;
+        input.value = '';
+        askModel(q);
+      }
+    });
+
     /* ---- Go ------------------------------------------------------------ */
     syncChartHeight({ ...DEFAULT_LAYERS, ...state.xau.layers });
     paintChecklist();
     paintLevels();
     paintWeights();
+    paintAsk();
     paintVerdict();
     startPolling();
   },
@@ -12301,6 +12490,10 @@ function runAnalysis() {
   paintNews(news);
   paintConditions();
   paintLimits();
+  // Repainted with every analysis: the suggested questions are about *this*
+  // reading, and a stale "why is this a no-trade?" beside a buy candidate would
+  // be the panel arguing with the screen it sits on.
+  paintAsk();
   paintVerdict();
   paintMatrix();
   paintPlan();
@@ -12773,6 +12966,119 @@ function syncWeightTotal() {
   const total = Object.values(current).reduce((a, b) => a + b, 0);
   chip.textContent = total === 100 ? '100 · default scale' : `${total} points total`;
   chip.className = 'chip ' + (total === 100 ? 'long' : 'gold');
+}
+
+/* ------------------------------------------------------------ AI panel */
+
+/**
+ * The conversation, kept in memory only.
+ *
+ * Not persisted, deliberately. A saved transcript of "should I take this?" from
+ * three weeks ago is a thing to be re-read as though it were about today's
+ * chart, and the facts it was grounded on are gone. It clears on navigation for
+ * the same reason.
+ */
+let aiTurns = [];
+let aiBusy = false;
+
+function paintAsk() {
+  const node = byId('xau-ask-body');
+  if (!node) return;
+  const cfg = state.ai;
+  const configured = cfg.transport === 'proxy' ? !!cfg.proxyUrl : !!cfg.apiKey;
+
+  const chip = byId('xau-ai-state');
+  if (chip) {
+    chip.textContent = !cfg.enabled ? 'off' : configured ? 'ready' : 'needs a key';
+    chip.className = 'chip ' + (!cfg.enabled ? '' : configured ? 'long' : 'gold');
+  }
+
+  if (!cfg.enabled || !configured) {
+    node.innerHTML = callout('', `<b>The assistant is off.</b> The analysis above does not need it — it is computed on this
+      device from candle data, and a model is never involved in producing it. Turn the assistant on below if you want to
+      ask questions about what the engine found.`);
+    return;
+  }
+
+  const suggestions = suggestedQuestions();
+
+  node.innerHTML = `
+    <div class="xaithread" id="xau-ai-thread">${aiTurns.map(turnMarkup).join('')}</div>
+
+    ${aiTurns.length ? '' : `<div class="xaisuggest">
+      ${suggestions.map((q) => `<button type="button" class="cbtn" data-ask="${esc(q)}">${esc(q)}</button>`).join('')}
+    </div>`}
+
+    <div class="row tight" style="margin-top:var(--sp-3)">
+      <div class="field" style="flex:1 1 220px">
+        <label class="sr-only" for="xau-ai-input">Your question</label>
+        <input id="xau-ai-input" type="text" maxlength="400" placeholder="Ask about this analysis…" ${aiBusy ? 'disabled' : ''}>
+      </div>
+      <button class="btn sm" id="xau-ai-send" ${aiBusy ? 'disabled' : ''}>${aiBusy ? 'Thinking…' : 'Ask'}</button>
+      ${aiTurns.length ? '<button class="btn ghost sm" id="xau-ai-clear" type="button">Clear</button>' : ''}
+    </div>`;
+}
+
+/** Questions worth asking about *this* analysis, not a generic list. */
+function suggestedQuestions() {
+  const a = analysis;
+  if (!a) return ['What does this screen actually measure?'];
+  if (a.hardStops && a.hardStops.length) return ['Why is this a no-trade?', 'What would have to change for this to become tradeable?'];
+  if (a.decision === 'WAIT') return ['What is this waiting for?', 'What would invalidate the idea before it triggers?'];
+  return ['Walk me through why this scored what it did.', 'What is the weakest part of this setup?', 'Where would I be wrong?'];
+}
+
+function turnMarkup(turn) {
+  if (turn.role === 'user') {
+    return `<div class="xaiturn user"><span class="xair">You</span><div class="xait">${esc(turn.text)}</div></div>`;
+  }
+  const notices = (turn.notices || []).map((n) => `<div class="xainotice">⚠ ${esc(n)}</div>`).join('');
+  return `<div class="xaiturn model${turn.error ? ' err' : ''}">
+    <span class="xair">${turn.error ? 'Error' : 'Gemini'}</span>
+    <div class="xait">${paragraphs(turn.text)}</div>
+    ${notices}
+  </div>`;
+}
+
+/** Plain text to paragraphs. No markdown renderer — no HTML from a model. */
+function paragraphs(text) {
+  return String(text || '').split(/\n{2,}/).map((p) => `<p>${esc(p.trim()).replace(/\n/g, '<br>')}</p>`).join('');
+}
+
+async function askModel(question) {
+  if (aiBusy || !question.trim()) return;
+  if (!analysis) { toast('Run the analysis first — there is nothing to ask about yet.', 'bad'); return; }
+
+  aiTurns.push({ role: 'user', text: question.trim() });
+  aiBusy = true;
+  paintAsk();
+
+  try {
+    const session = state.analysis && state.analysis.session;
+    const news = { ...newsProximity(state.settings.tz, session ? session.dec : new Date().getHours()), live: hasLiveFeed() };
+    const facts = buildFacts(analysis, { news });
+
+    const { text } = await askGemini({
+      facts,
+      question: question.trim(),
+      // Only the last two exchanges: enough for "and if it breaks that low?" to
+      // resolve, short enough that an old set of facts cannot quietly become the
+      // context for a question about the current chart.
+      history: aiTurns.slice(-5, -1).map((t) => ({ role: t.role, text: t.text })),
+      config: state.ai,
+    });
+
+    // The prompt asked it not to invent prices. This checks whether it did.
+    const review = reviewReply(text, facts);
+    aiTurns.push({ role: 'model', text, notices: review.notices });
+  } catch (err) {
+    aiTurns.push({ role: 'model', text: err.message, error: true });
+  } finally {
+    aiBusy = false;
+    paintAsk();
+    const thread = byId('xau-ai-thread');
+    if (thread) thread.scrollTop = thread.scrollHeight;
+  }
 }
 
 /* ---------------------------------------------------------------- Utils */
@@ -18078,6 +18384,496 @@ function readImage(file, maxBytes = 1_500_000) {
 
 /* --- exports --- */
 Object.assign(__exports, { logPlannedTrade, logTradePlan, updateTrade, deleteTrade, clearJournal, exportCsv, exportBackup, importBackup, readImage });
+
+});
+
+__def("src/domain/aigrounding.js", function (__exports, __req) {
+/**
+ * domain/aigrounding.js — what the model is told, and what it is allowed to say.
+ *
+ * The rule this whole feature hangs on
+ * ------------------------------------
+ * A language model must never be the source of a price. It cannot see the
+ * market, it cannot measure a swing, and it will produce a confident, plausible,
+ * wrong number if the sentence seems to want one — which on a trading screen is
+ * the single most expensive failure available.
+ *
+ * So the split is absolute and it is enforced here, not by asking nicely in a
+ * prompt:
+ *
+ *   `buildFacts()`        the ONLY thing sent. Engine-measured values, nothing else.
+ *   `checkGrounding()`    the reply is scanned, and any price-like number the
+ *                         engine did not compute is flagged before it is shown.
+ *
+ * The prompt asks the model not to invent numbers. The validator assumes it did
+ * anyway. Only the second one is a guarantee.
+ *
+ * Pure functions over plain data — no DOM, no network, no clock.
+ */
+
+/* ------------------------------------------------------------------ Facts */
+
+/**
+ * The exact object sent to a remote model.
+ *
+ * Note what is absent, deliberately: no profile name, no user id, no passkey or
+ * hash, no journal notes, no screenshots, no licence key, no broker credentials.
+ * A trader's journal is a diary; it is not context for a third party.
+ */
+function buildFacts(analysis, extra = {}) {
+  if (!analysis) return null;
+  const n = (v) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : null);
+
+  const plan = analysis.plan && analysis.plan.valid ? analysis.plan : null;
+  const structure = analysis.structures ? analysis.structures[analysis.timeframe] : null;
+
+  return {
+    symbol: analysis.symbol || 'XAUUSD',
+    executionTimeframe: analysis.timeframe,
+
+    // Stated on every request, because it changes what the levels below mean.
+    dataQuality: analysis.dataQuality,
+    feedStatus: analysis.dataStatus,
+
+    decision: analysis.decision,
+    verdict: analysis.verdict,
+    confluenceScore: analysis.score,
+    scoreBand: analysis.bandLabel,
+    setupType: analysis.setupType || null,
+    scoreIsNotAProbability: true,
+
+    bias: analysis.biasDetail ? {
+      d1: analysis.biasDetail.d1,
+      h4: analysis.biasDetail.h4,
+      h1: analysis.biasDetail.h1,
+      m30: analysis.biasDetail.m30,
+      execution: analysis.biasDetail.exec,
+      higherTimeframe: analysis.htfBias,
+    } : null,
+
+    price: n(analysis.price),
+    atr: n(analysis.atr),
+    volatility: analysis.volatility ? {
+      current: n(analysis.volatility.atr),
+      average: n(analysis.volatility.average),
+      ratio: n(analysis.volatility.ratio),
+      state: analysis.volatility.state,
+      suggestedMinimumStop: n(analysis.volatility.suggestedMinStop),
+    } : null,
+
+    tradePlan: plan ? {
+      direction: plan.dir,
+      entryLow: n(plan.entryLow),
+      entryHigh: n(plan.entryHigh),
+      stopLoss: n(plan.stopLoss),
+      invalidation: n(plan.invalidation),
+      stopDistance: n(plan.stopDistance),
+      stopAtrMultiple: n(plan.stopAtr),
+      stopReasoning: plan.stopSource,
+      targets: (plan.targets || []).map((t) => ({
+        n: t.n, price: n(t.price), rewardToRisk: n(t.rr),
+        from: t.labels.join(' / '), projected: !!t.projected,
+      })),
+      positionSize: plan.size && plan.size.available
+        ? { lots: n(plan.size.lotsRounded), moneyAtRisk: n(plan.size.actualRisk), specAssumed: !!plan.size.assumed }
+        : { available: false, reason: plan.size ? plan.size.reason : 'not calculated' },
+    } : null,
+
+    lifecycle: analysis.lifecycle ? { state: analysis.lifecycle.state, note: analysis.lifecycle.note } : null,
+
+    structureRead: structure ? {
+      trend: structure.trend,
+      regime: structure.regime,
+      lastEvent: structure.lastEvent
+        ? { type: structure.lastEvent.type, direction: structure.lastEvent.dir, level: n(structure.lastEvent.level) }
+        : null,
+      rangeHigh: structure.legHigh ? n(structure.legHigh.price) : null,
+      rangeLow: structure.legLow ? n(structure.legLow.price) : null,
+    } : null,
+
+    premiumDiscount: analysis.premium && analysis.premium.valid
+      ? { zone: analysis.premium.zone, equilibrium: n(analysis.premium.eq) }
+      : null,
+
+    liquidity: analysis.liquidity ? {
+      recentSweep: analysis.liquidity.recentSweep
+        ? { level: analysis.liquidity.recentSweep.code, price: n(analysis.liquidity.recentSweep.price),
+          barsAgo: analysis.liquidity.recentSweep.swept.barsAgo }
+        : null,
+      pools: analysis.liquidity.pools.slice(0, 14).map((p) => ({
+        level: p.code, price: n(p.price), side: p.tag, swept: !!p.swept, yours: !!p.custom,
+      })),
+    } : null,
+
+    zones: {
+      fairValueGaps: (analysis.fvgs || []).filter((g) => g.state !== 'mitigated').slice(-5)
+        .map((g) => ({ direction: g.dir, low: n(g.bottom), high: n(g.top), state: g.state })),
+      orderBlocks: (analysis.blocks || []).filter((b) => b.state !== 'mitigated').slice(-5)
+        .map((b) => ({ direction: b.activeDir, low: n(b.bottom), high: n(b.top), state: b.state })),
+    },
+
+    trigger: analysis.trigger ? { pattern: analysis.trigger.label, strength: n(analysis.trigger.strength) } : null,
+    momentum: analysis.momentum ? { rsi: n(analysis.momentum.rsi), macdHistogram: n(analysis.momentum.macdHist), overextended: !!analysis.momentum.overextended } : null,
+    session: analysis.session ? { name: analysis.session.label, isPeak: !!analysis.session.peak } : null,
+    spread: analysis.spread ? { available: analysis.spread.available, value: n(analysis.spread.spread), threshold: n(analysis.spread.max) } : null,
+
+    news: extra.news ? {
+      level: extra.news.level,
+      nearestEvent: extra.news.nearest ? extra.news.nearest.n : null,
+      minutesAway: Number.isFinite(extra.news.minutes) ? Math.abs(extra.news.minutes) : null,
+      fromLiveCalendar: !!extra.news.live,
+    } : null,
+
+    deskLimits: analysis.riskLimits ? {
+      shut: !!analysis.riskLimits.deskShut,
+      reason: analysis.riskLimits.shutReason || null,
+      tradesToday: analysis.riskLimits.tradesToday,
+      maxTradesPerDay: analysis.riskLimits.maxTradesPerDay,
+    } : null,
+
+    confirmations: analysis.confirmations || [],
+    warnings: analysis.warnings || [],
+    missingConfirmations: analysis.missingConfirmations || [],
+    conflicts: (analysis.conflicts || []).map((c) => c.title),
+    blockingReasons: analysis.hardStops || [],
+
+    traderChecklistLeans: analysis.checklistBias ? analysis.checklistBias.dir : null,
+  };
+}
+
+/* --------------------------------------------------------------- Prompt */
+
+/**
+ * The instruction. Kept in the client, not on the proxy, so the constraints the
+ * model is under are readable by anyone auditing this file.
+ */
+const XAU_SYSTEM_PROMPT = `You are a pre-trade analyst inside a gold trading journal. You explain an analysis that has already been computed. You do not perform it.
+
+WHAT YOU HAVE
+A JSON object of measurements taken by a deterministic engine from candle data. That is your entire view of the market. You cannot see a chart and you have no live price.
+
+ABSOLUTE RULES
+1. Never state a price, level, stop, target or figure that is not present in the JSON. If asked for one that is not there, say the engine did not produce it and say what would be needed.
+2. Never predict direction. Never say what gold "will" do, is "likely" to do, or is "going to" do. You describe what has been measured and what the rules concluded.
+3. The confluence score is a rules-based measure of setup quality against a fixed rulebook. It is NOT a probability of profit and must never be described as one.
+4. If blockingReasons is non-empty, lead with it. Do not soften it, do not offer a way around it, and do not suggest the trade might still work.
+5. If dataQuality says INDICATIVE / PROXY DATA, say so whenever you quote a level, because those levels may differ from the reader's broker.
+6. Never tell the reader to place a trade. The decision is theirs. You may explain what the plan says and what would invalidate it.
+7. If the answer is "wait" or "there is no trade here", say it plainly. That is the most useful thing this tool produces.
+
+STYLE
+Direct and specific. Short paragraphs. Quote the engine's own numbers when they support a point. No emoji, no hype, no filler. If you are uncertain, say so.`;
+
+/** Build the user-turn text: the facts, then the question. */
+function buildPrompt(facts, question) {
+  const ask = String(question || '').trim() || 'Explain this analysis and what would have to change for it to become a trade.';
+  return [
+    'ENGINE MEASUREMENTS (your only view of the market):',
+    '```json',
+    JSON.stringify(facts, null, 1),
+    '```',
+    '',
+    `TRADER'S QUESTION: ${ask}`,
+  ].join('\n');
+}
+
+/* ----------------------------------------------------------- Grounding */
+
+/**
+ * Every number the engine actually produced, as strings for comparison.
+ * Includes 0, 1 and 2 decimal renderings, because a model will happily write
+ * 4382.7 for a value stored as 4382.70 and mean the same thing.
+ */
+function allowedNumbers(facts) {
+  const out = new Set();
+  const visit = (value) => {
+    if (value === null || value === undefined) return;
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      out.add(String(value));
+      out.add(value.toFixed(0));
+      out.add(value.toFixed(1));
+      out.add(value.toFixed(2));
+      out.add(String(Math.round(value)));
+      return;
+    }
+    if (Array.isArray(value)) { value.forEach(visit); return; }
+    if (typeof value === 'object') { Object.values(value).forEach(visit); }
+  };
+  visit(facts);
+  return out;
+}
+
+/**
+ * Minimum value at which an unrecognised number is treated as a price claim.
+ *
+ * Gold trades in four figures, so anything at this magnitude in a sentence is
+ * almost certainly being offered as a level. Below it the number is far more
+ * likely to be an ATR multiple, an R figure, a bar count, an RSI reading or a
+ * period ("the 20 EMA") — flagging those would produce so much noise that the
+ * warning would stop being read, which is the only way this check fails.
+ */
+const PRICE_LIKE_MIN = 500;
+
+/**
+ * Scan a reply for prices the engine never computed.
+ *
+ * @returns {{ok: boolean, suspect: string[], checked: number}}
+ */
+function checkGrounding(text, facts) {
+  const allowed = allowedNumbers(facts);
+  const suspect = [];
+  let checked = 0;
+
+  // Numbers with optional thousands separators and decimals.
+  const matches = String(text || '').match(/\d[\d,]*(?:\.\d+)?/g) || [];
+
+  for (const raw of matches) {
+    const cleaned = raw.replace(/,/g, '');
+    const value = Number(cleaned);
+    if (!Number.isFinite(value) || value < PRICE_LIKE_MIN) continue;
+    checked++;
+    if (allowed.has(cleaned) || allowed.has(String(value))
+      || allowed.has(value.toFixed(0)) || allowed.has(value.toFixed(1)) || allowed.has(value.toFixed(2))) continue;
+    if (!suspect.includes(raw)) suspect.push(raw);
+  }
+
+  return { ok: suspect.length === 0, suspect, checked };
+}
+
+/**
+ * Language that claims to know the future.
+ *
+ * Reported alongside the grounding check rather than used to reject the reply:
+ * a false positive on the word "expect" is not worth suppressing an otherwise
+ * useful answer, but the reader should see that it slipped in.
+ */
+const FORECAST_PATTERNS = [
+  /\bwill (?:rise|fall|drop|climb|reach|hit|go|move|continue|reverse|break)\b/i,
+  /\b(?:price|gold|xau(?:\/?usd)?) (?:is going to|should reach|should hit|will likely)\b/i,
+  /\bguaranteed\b/i,
+  /\b(?:certain|sure) to (?:rise|fall|profit|win)\b/i,
+  /\b\d{1,3}% (?:chance|probability|likely) (?:of|to) (?:profit|win)/i,
+  /\bhigh(?:ly)? probability (?:of|to) (?:profit|win)/i,
+];
+
+function checkForecasting(text) {
+  const hits = [];
+  for (const pattern of FORECAST_PATTERNS) {
+    const m = String(text || '').match(pattern);
+    if (m && !hits.includes(m[0])) hits.push(m[0]);
+  }
+  return { ok: hits.length === 0, hits };
+}
+
+/** Both checks, as the UI consumes them. */
+function reviewReply(text, facts) {
+  const grounding = checkGrounding(text, facts);
+  const forecasting = checkForecasting(text);
+  return {
+    ok: grounding.ok && forecasting.ok,
+    grounding,
+    forecasting,
+    notices: [
+      ...(grounding.ok ? [] : [`This reply mentions ${grounding.suspect.join(', ')}, which the engine did not compute. Treat those figures as unverified — check them on your chart before acting on anything that depends on them.`]),
+      ...(forecasting.ok ? [] : [`This reply contains forecasting language ("${forecasting.hits.join('", "')}"). Nothing here can know what price will do.`]),
+    ],
+  };
+}
+
+
+/* --- exports --- */
+Object.assign(__exports, { XAU_SYSTEM_PROMPT, PRICE_LIKE_MIN, buildFacts, buildPrompt, allowedNumbers, checkGrounding, checkForecasting, reviewReply });
+
+});
+
+__def("src/integrations/gemini.js", function (__exports, __req) {
+/**
+ * integrations/gemini.js — the Gemini transport.
+ *
+ * Two ways to reach the model, and the difference matters:
+ *
+ *   proxy   POST to a URL you host. The key lives on your server; the browser
+ *           never sees it. Your users need no key of their own. This is the one
+ *           to use if you are shipping this to customers.
+ *
+ *   direct  The browser calls Google with a key the *reader* pasted into
+ *           Settings. It never leaves their device and it is never in the
+ *           bundle — but it is in their browser, so it is theirs to spend and
+ *           theirs to restrict. Zero infrastructure, which is why it exists.
+ *
+ * The one thing that is never an option is a key in the shipped file.
+ * `docs/ARCHITECTURE.md` has always said a key in a web page is a public key,
+ * and this repo has already learned that lesson once with an owner password.
+ * `tools/build.mjs` now refuses to emit a build containing anything shaped like
+ * an API key, so this cannot regress quietly.
+ *
+ * What is sent is built by `domain/aigrounding.js` and nothing else: engine
+ * measurements and the reader's question. No journal notes, no profile, no
+ * screenshots.
+ */
+
+const { XAU_SYSTEM_PROMPT, buildPrompt } = __req("src/domain/aigrounding.js");
+
+const GEMINI_MODELS = [
+  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash — fast, cheap, fine for this' },
+  { id: 'gemini-2.5-pro',   label: 'Gemini 2.5 Pro — slower, better at nuance' },
+];
+
+const DEFAULT_MODEL = 'gemini-2.5-flash';
+const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_TIMEOUT = 30000;
+
+/**
+ * Ask Gemini a question about an analysis.
+ *
+ * @param {object} input
+ * @param {object} input.facts    from buildFacts() — the only market view sent
+ * @param {string} input.question the reader's question
+ * @param {Array}  [input.history] prior [{role:'user'|'model', text}] turns
+ * @param {object} input.config   { transport, apiKey, proxyUrl, model, timeoutMs }
+ * @returns {Promise<{text: string, model: string, transport: string}>}
+ */
+async function askGemini({ facts, question, history = [], config = {} }) {
+  const {
+    transport = 'direct',
+    apiKey = '',
+    proxyUrl = '',
+    model = DEFAULT_MODEL,
+    timeoutMs = DEFAULT_TIMEOUT,
+  } = config;
+
+  if (!facts) throw new Error('There is no analysis to ask about yet. Run the analysis first.');
+
+  const contents = [
+    // Prior turns first so follow-ups ("and if it breaks that low?") have their
+    // referent. Capped by the caller — an unbounded history would eventually
+    // cost more than the answer is worth.
+    ...history.map((turn) => ({ role: turn.role === 'model' ? 'model' : 'user', parts: [{ text: turn.text }] })),
+    { role: 'user', parts: [{ text: buildPrompt(facts, question) }] },
+  ];
+
+  const body = {
+    contents,
+    systemInstruction: { parts: [{ text: XAU_SYSTEM_PROMPT }] },
+    generationConfig: {
+      // Low, not zero: this is explanation, and zero produces the same stilted
+      // phrasing every time in a panel somebody reads twenty times a day.
+      temperature: 0.3,
+      maxOutputTokens: 1200,
+      topP: 0.9,
+    },
+    safetySettings: [],
+  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    let response;
+    if (transport === 'proxy') {
+      if (!proxyUrl) throw new Error('No proxy URL is configured. Add one in Settings, or switch to a direct key.');
+      response = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({ provider: 'gemini', model, ...body }),
+      });
+    } else {
+      if (!apiKey) throw new Error('No Gemini API key is configured. Add one in Settings → AI assistant.');
+      response = await fetch(`${ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
+        method: 'POST',
+        // The key goes in a header, not the query string: URLs end up in
+        // referrers, proxy logs and browser history, and a key in any of those
+        // is a key you have to rotate.
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+        signal: controller.signal,
+        body: JSON.stringify(body),
+      });
+    }
+
+    if (!response.ok) throw new Error(await describeFailure(response, transport));
+
+    const data = await response.json();
+    const text = extractText(data);
+    if (!text) throw new Error(blockedReason(data) || 'The model returned an empty response.');
+
+    return { text, model, transport };
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`The model did not answer within ${Math.round(timeoutMs / 1000)} seconds. The analysis on screen is unaffected — it was computed locally.`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Turn an HTTP failure into something a trader can act on. */
+async function describeFailure(response, transport) {
+  let detail = '';
+  try {
+    const body = await response.json();
+    detail = body && body.error && body.error.message ? body.error.message : '';
+  } catch { /* a non-JSON error body tells us nothing extra */ }
+
+  const where = transport === 'proxy' ? 'proxy' : 'Gemini';
+  switch (response.status) {
+    case 400: return `${where} rejected the request as malformed. ${detail}`.trim();
+    case 401:
+    case 403: return transport === 'proxy'
+      ? `The proxy refused the request (${response.status}). Check its own key and any allowed-origin rules. ${detail}`.trim()
+      : `Gemini rejected the API key (${response.status}). Check it is correct, that the Generative Language API is enabled, and that any HTTP-referrer restriction includes this site. ${detail}`.trim();
+    case 429: return 'Rate limit or quota reached. Wait a moment, or use a key with more headroom — the free tier is small.';
+    case 500:
+    case 502:
+    case 503: return `${where} is having trouble (${response.status}). This is their end; try again shortly.`;
+    default: return `${where} returned ${response.status}. ${detail}`.trim();
+  }
+}
+
+function extractText(data) {
+  const parts = data && data.candidates && data.candidates[0]
+    && data.candidates[0].content && data.candidates[0].content.parts;
+  if (!Array.isArray(parts)) return '';
+  return parts.map((p) => p.text || '').join('').trim();
+}
+
+/**
+ * Why an empty answer came back. Worth surfacing rather than showing "empty
+ * response": a safety block and a token cap need different responses from the
+ * reader, and "MAX_TOKENS" in particular means the answer existed and was cut.
+ */
+function blockedReason(data) {
+  const candidate = data && data.candidates && data.candidates[0];
+  const finish = candidate && candidate.finishReason;
+  if (finish === 'SAFETY') return 'The model stopped on its own safety filter. Rephrasing the question usually clears it.';
+  if (finish === 'MAX_TOKENS') return 'The answer hit the length limit before it finished. Ask something narrower.';
+  if (finish === 'RECITATION') return 'The model stopped because the answer was reciting source material.';
+  const blocked = data && data.promptFeedback && data.promptFeedback.blockReason;
+  if (blocked) return `The request was blocked before it reached the model (${blocked}).`;
+  return '';
+}
+
+/**
+ * Confirm a configuration works, without spending a real analysis on it.
+ * Returns a short human sentence either way.
+ */
+async function testConnection(config = {}) {
+  try {
+    const { text } = await askGemini({
+      facts: { symbol: 'XAUUSD', note: 'connection test — no analysis attached' },
+      question: 'Reply with exactly: connection ok',
+      config: { ...config, timeoutMs: 15000 },
+    });
+    return { ok: true, message: `Connected. The model replied: "${text.slice(0, 80)}"` };
+  } catch (err) {
+    return { ok: false, message: err.message };
+  }
+}
+
+
+/* --- exports --- */
+Object.assign(__exports, { GEMINI_MODELS, DEFAULT_MODEL, askGemini, testConnection });
 
 });
 
