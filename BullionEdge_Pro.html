@@ -1926,6 +1926,52 @@ kbd {
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
+/* --------------------------------------------------------- The path */
+
+.jpath { display: grid; gap: var(--sp-2); }
+
+.jstage {
+  display: grid; grid-template-columns: 30px 1fr; gap: var(--sp-3);
+  padding: var(--sp-3); border-radius: var(--r-md);
+  border: 1px solid var(--line-2); background: var(--panel-2);
+}
+.jstage.met { border-color: rgba(70,185,140,.35); }
+.jstage.here { border-color: var(--gold); background: rgba(224,166,60,.06); }
+
+.jsn {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(255,255,255,.06); color: var(--faint);
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+}
+.jstage.met .jsn { background: var(--long); color: #04231A; }
+.jstage.here .jsn { background: var(--gold); color: var(--gold-ink); }
+
+.jsname { font-family: var(--font-display); font-size: var(--fs-md); color: var(--ink); }
+.jshere {
+  margin-left: var(--sp-2); font-family: var(--font-body); font-size: 9px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--gold-bright);
+}
+.jspremise { font-size: var(--fs-sm); color: var(--muted); margin-top: 2px; line-height: 1.5; }
+
+.jsmeter {
+  height: 4px; border-radius: 2px; background: rgba(255,255,255,.07);
+  overflow: hidden; margin: var(--sp-2) 0 6px;
+}
+.jsmeter i { display: block; height: 100%; background: var(--gold); }
+.jstage.met .jsmeter i { background: var(--long); }
+
+.jsdetail { font-size: var(--fs-xs); color: var(--ink-soft); font-family: var(--font-mono); }
+.jsgate { font-size: var(--fs-2xs); color: var(--faint); margin-top: 3px; }
+
+.jnext {
+  margin-top: var(--sp-4); padding: var(--sp-3);
+  border-left: 2px solid var(--gold); background: rgba(224,166,60,.06);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.jnext p { font-size: var(--fs-sm); color: var(--ink-soft); line-height: 1.65; margin: 0; }
+
+.jcoach { margin-top: var(--sp-2); }
+
 /* ===== assets/css/guide.css ===== */
 /* ==========================================================================
    Guide — the walkthrough from access key to logged trade.
@@ -3435,6 +3481,7 @@ const state = {
     apiKey: '',
     proxyUrl: '',
     model: 'gemini-2.5-flash',
+    autoBrief: false,           // write a brief on every manual Analyze
   },
 
   /** Manual checklist answers, keyed by factor id. */
@@ -11713,7 +11760,8 @@ const { uid } = __req("src/core/crypto.js");
 const { logTradePlan } = __req("src/app-actions.js");
 const { fibLevels } = __req("src/domain/premium.js");
 const { buildFacts, reviewReply } = __req("src/domain/aigrounding.js");
-const { askGemini, testConnection, GEMINI_MODELS } = __req("src/integrations/gemini.js");
+const { askGemini, testConnection, briefSetup, reviewChartImage, GEMINI_MODELS } = __req("src/integrations/gemini.js");
+const { readImage } = __req("src/app-actions.js");
 
 const EVERY = { spot: 5000, exec: 30_000, full: 300_000 };
 
@@ -12006,6 +12054,16 @@ __exports.default = {
                 </select></div>
               </div>
 
+              <div class="field">
+                <label>Automatic brief</label>
+                <div class="seg" id="xau-ai-autobrief" role="group" aria-label="Automatic brief">
+                  <button type="button" data-auto="off" class="${s.ai.autoBrief ? '' : 'on'}">Only when I ask</button>
+                  <button type="button" data-auto="on" class="${s.ai.autoBrief ? 'on' : ''}">Write one every analysis</button>
+                </div>
+                <div class="field-note">One API call each time you press Analyze. The panel above is unaffected either
+                  way — it never involves a model.</div>
+              </div>
+
               <div class="row tight">
                 <button class="btn sm" id="xau-ai-test" type="button">Test the connection</button>
                 <button class="btn ghost sm" id="xau-ai-toggle" type="button">
@@ -12190,7 +12248,13 @@ __exports.default = {
       queueAnalyse();
     });
 
-    byId('xau-analyse').onclick = () => refreshAll();
+    // The brief rides the Analyze button, not the recompute loop. The engine
+    // re-runs on every closed candle; a paid API call on that cadence would be
+    // expensive and, four briefs deep, unread.
+    byId('xau-analyse').onclick = async () => {
+      await refreshAll();
+      if (state.ai.autoBrief && aiReady() && analysis) writeBrief();
+    };
 
     /* ---- Final confirmation and saving --------------------------------- */
     on(root, 'click', '[data-final]', (_e, btn) => {
@@ -12332,6 +12396,22 @@ __exports.default = {
     on(root, 'click', '[data-ask]', (_e, btn) => askModel(btn.dataset.ask));
 
     on(root, 'click', '#xau-ai-clear', () => { aiTurns = []; paintAsk(); });
+
+    on(root, 'click', '#xau-ai-autobrief button', (_e, btn) => {
+      const autoBrief = btn.dataset.auto === 'on';
+      root.querySelectorAll('#xau-ai-autobrief button').forEach((b) => b.classList.toggle('on', b === btn));
+      patch({ ai: { autoBrief } });
+    });
+
+    on(root, 'click', '#xau-ai-brief', () => writeBrief());
+
+    on(root, 'click', '#xau-ai-shot', () => byId('xau-ai-file').click());
+
+    on(root, 'change', '#xau-ai-file', (_e, input) => {
+      const file = input.files && input.files[0];
+      input.value = '';                       // so re-picking the same file fires again
+      if (file) compareChartImage(file);
+    });
 
     on(root, 'keydown', '#xau-ai-input', (e) => {
       if (e.key === 'Enter') {
@@ -13016,7 +13096,17 @@ function paintAsk() {
       </div>
       <button class="btn sm" id="xau-ai-send" ${aiBusy ? 'disabled' : ''}>${aiBusy ? 'Thinking…' : 'Ask'}</button>
       ${aiTurns.length ? '<button class="btn ghost sm" id="xau-ai-clear" type="button">Clear</button>' : ''}
-    </div>`;
+    </div>
+
+    <div class="row tight" style="margin-top:var(--sp-2)">
+      <button class="btn ghost sm" id="xau-ai-brief" ${aiBusy ? 'disabled' : ''}>Write a brief</button>
+      <button class="btn ghost sm" id="xau-ai-shot" ${aiBusy ? 'disabled' : ''}>Compare my broker's chart</button>
+      <input type="file" id="xau-ai-file" accept="image/png,image/jpeg,image/webp" hidden>
+    </div>
+    <p class="t-faint" style="font-size:var(--fs-2xs);margin-top:6px">
+      A screenshot of your own broker's XAUUSD chart is checked against these levels — the app's candles are a proxy,
+      and a disagreement between the two is worth knowing about before you place anything.
+    </p>`;
 }
 
 /** Questions worth asking about *this* analysis, not a generic list. */
@@ -13043,6 +13133,81 @@ function turnMarkup(turn) {
 /** Plain text to paragraphs. No markdown renderer — no HTML from a model. */
 function paragraphs(text) {
   return String(text || '').split(/\n{2,}/).map((p) => `<p>${esc(p.trim()).replace(/\n/g, '<br>')}</p>`).join('');
+}
+
+/** Current facts, with the news read attached. Shared by every AI mode. */
+function currentFacts() {
+  if (!analysis) return null;
+  const session = state.analysis && state.analysis.session;
+  const news = { ...newsProximity(state.settings.tz, session ? session.dec : new Date().getHours()), live: hasLiveFeed() };
+  return buildFacts(analysis, { news });
+}
+
+const aiConfigured = () => (state.ai.transport === 'proxy' ? !!state.ai.proxyUrl : !!state.ai.apiKey);
+const aiReady = () => state.ai.enabled && aiConfigured();
+
+/**
+ * Run one AI call and land its result in the thread.
+ *
+ * Every mode goes through here so that "busy" state, error handling and the
+ * grounding review cannot end up implemented three slightly different ways.
+ */
+async function runAi({ label, mode, call }) {
+  if (aiBusy) return;
+  if (!analysis) { toast('Run the analysis first — there is nothing to work from yet.', 'bad'); return; }
+  if (!aiReady()) { toast('Turn the assistant on and add a key first.', 'bad'); return; }
+
+  aiTurns.push({ role: 'user', text: label });
+  aiBusy = true;
+  paintAsk();
+
+  try {
+    const facts = currentFacts();
+    const { text } = await call(facts);
+    const review = reviewReply(text, facts, { mode });
+    aiTurns.push({ role: 'model', text, notices: review.notices });
+  } catch (err) {
+    aiTurns.push({ role: 'model', text: err.message, error: true });
+  } finally {
+    aiBusy = false;
+    paintAsk();
+    const thread = byId('xau-ai-thread');
+    if (thread) thread.scrollTop = thread.scrollHeight;
+  }
+}
+
+/**
+ * The unprompted brief.
+ *
+ * Fired from the Analyze button rather than from every recompute: the engine
+ * re-runs on each closed candle, and a paid API call on that cadence would be
+ * both expensive and unread.
+ */
+async function writeBrief() {
+  await runAi({
+    label: 'Write a brief on this setup.',
+    mode: 'facts',
+    call: (facts) => briefSetup({ facts, config: state.ai }),
+  });
+}
+
+/** Compare the reader's own broker screenshot against the engine's levels. */
+async function compareChartImage(file) {
+  let dataUrl;
+  try {
+    // Reuses the journal's own image reader, size guard included — a 6 MB
+    // screenshot is a slow, expensive request that adds nothing over a 1 MB one.
+    dataUrl = await readImage(file);
+  } catch (err) {
+    toast(err.message, 'bad');
+    return;
+  }
+
+  await runAi({
+    label: 'Does my broker\'s chart agree with this?',
+    mode: 'vision',
+    call: (facts) => reviewChartImage({ imageDataUrl: dataUrl, facts, config: state.ai }),
+  });
 }
 
 async function askModel(question) {
@@ -18564,6 +18729,86 @@ ABSOLUTE RULES
 STYLE
 Direct and specific. Short paragraphs. Quote the engine's own numbers when they support a point. No emoji, no hype, no filler. If you are uncertain, say so.`;
 
+/**
+ * The auto-brief instruction (§32/§33 of the brief, written by a model instead
+ * of a template).
+ *
+ * Same hard rules, different shape: no conversation, one structured read of the
+ * setup, produced without being asked. The length cap is load-bearing — a brief
+ * nobody finishes reading is a brief that did not happen, and the deterministic
+ * panel above it already carries every number.
+ */
+const BRIEF_SYSTEM_PROMPT = `${XAU_SYSTEM_PROMPT}
+
+You are writing an unprompted pre-trade brief. Structure it exactly:
+
+THE READ — two sentences on what the engine found, in plain language.
+FOR — the strongest two or three things supporting this direction.
+AGAINST — the honest counterweight. If the verdict is no-trade, this is the main section.
+WHAT WOULD CHANGE IT — the specific, observable thing that would move this to a trade, or invalidate it.
+
+Under 200 words total. No preamble, no sign-off, no restating the numbers already on screen.`;
+
+/**
+ * The journal coach.
+ *
+ * Given aggregates, never rows. The instruction leans hard on "say the
+ * uncomfortable thing", because a coach that only finds encouraging patterns in
+ * a losing account is worse than no coach — it is a reason to keep going.
+ */
+const COACH_SYSTEM_PROMPT = `You are reviewing a gold trader's own logged results inside their journal app.
+
+WHAT YOU HAVE
+Aggregate statistics computed from their journal: win rates and expectancy grouped by session, direction, setup score band, recorded emotion and setup type, plus a six-stage development path the app evaluates from the same data. You do not have individual trades, notes or screenshots.
+
+ABSOLUTE RULES
+1. Every claim must cite a number you were given. No number, no claim.
+2. A bucket with fewer than about ten trades is not a pattern. Say so rather than reading a story into it.
+3. Never predict future results. Past expectancy is a description, not a forecast.
+4. Say the uncomfortable thing. A coach that only finds encouragement in a losing account is a reason to keep losing.
+5. Never suggest increasing size or risk to recover. That is how accounts end, and it is the one piece of advice that must never appear here.
+6. Correlation in a small sample is not a cause. "You lose in the Asian session" from twelve trades is a hypothesis to test, and you must label it as one.
+
+STRUCTURE
+WHAT THE DATA SAYS — the two or three findings that are actually supported.
+THE STAGE YOU ARE AT — what the app's development path says, and whether the data agrees.
+ONE THING TO CHANGE — a single, specific, checkable behaviour. Not a list.
+
+Under 250 words. Direct. No hype.`;
+
+/**
+ * Chart-image review.
+ *
+ * The one mode where the model is allowed to read numbers off something the
+ * engine cannot see — because that is the entire purpose. The app's candles are
+ * a gold-backed proxy; the reader's screenshot is their broker's actual tape,
+ * and comparing the two is a genuinely useful thing no other part of this app
+ * can do.
+ *
+ * The safeguard is different in kind: numbers it reports are labelled as read
+ * from the image and unverified, rather than flagged as invented. Flagging them
+ * would mark every sentence and the warning would stop meaning anything.
+ */
+const VISION_SYSTEM_PROMPT = `You are comparing a trader's own broker screenshot against an analysis computed from a different data source.
+
+WHY THIS MATTERS
+The app's candles come from a gold-backed proxy market, not the reader's broker. Levels can differ by a few dollars. Your job is to say whether the screenshot supports, contradicts, or is silent on what the engine measured.
+
+ABSOLUTE RULES
+1. Describe only what is visible in the image. If a level is not legible, say it is not legible. Never estimate a price you cannot read.
+2. Prefix any number you read from the image with "from your chart:" so the reader knows its source.
+3. Never predict direction. Never say what price will do next.
+4. If the screenshot clearly contradicts the engine's read — different structure, different levels, a different instrument or timeframe entirely — lead with that. A contradiction is the most valuable thing you can find here.
+5. If the image is not a price chart, say so and stop.
+6. Never tell the reader to place a trade.
+
+STRUCTURE
+WHAT I CAN SEE — instrument, timeframe and structure, if legible.
+AGREES WITH THE ENGINE — where the screenshot supports the analysis.
+DISAGREES OR UNCLEAR — where it does not, or where you cannot tell.
+
+Under 180 words.`;
+
 /** Build the user-turn text: the facts, then the question. */
 function buildPrompt(facts, question) {
   const ask = String(question || '').trim() || 'Explain this analysis and what would have to change for it to become a trade.';
@@ -18665,24 +18910,99 @@ function checkForecasting(text) {
   return { ok: hits.length === 0, hits };
 }
 
-/** Both checks, as the UI consumes them. */
-function reviewReply(text, facts) {
-  const grounding = checkGrounding(text, facts);
+/* ------------------------------------------------------- Coach & vision */
+
+/** The coach's user turn: aggregates, then the question. */
+function buildCoachPrompt(summary, question) {
+  const ask = String(question || '').trim() || 'Review these results and tell me the one thing to change.';
+  return [
+    'JOURNAL AGGREGATES (computed from the trader\'s own logged trades):',
+    '```json',
+    JSON.stringify(summary, null, 1),
+    '```',
+    '',
+    `QUESTION: ${ask}`,
+  ].join('\n');
+}
+
+/** The vision turn: the engine's levels, so the model has something to compare against. */
+function buildVisionPrompt(facts, question) {
+  const ask = String(question || '').trim()
+    || 'Does this screenshot agree with what the engine measured?';
+  const levels = facts ? {
+    symbol: facts.symbol,
+    executionTimeframe: facts.executionTimeframe,
+    dataQuality: facts.dataQuality,
+    price: facts.price,
+    structure: facts.structureRead,
+    tradePlan: facts.tradePlan
+      ? { direction: facts.tradePlan.direction, entryLow: facts.tradePlan.entryLow, entryHigh: facts.tradePlan.entryHigh, stopLoss: facts.tradePlan.stopLoss, targets: facts.tradePlan.targets }
+      : null,
+    liquidity: facts.liquidity ? facts.liquidity.pools : null,
+    zones: facts.zones,
+  } : null;
+
+  return [
+    'WHAT THE ENGINE MEASURED, from a gold-backed proxy feed rather than the reader\'s broker:',
+    '```json',
+    JSON.stringify(levels, null, 1),
+    '```',
+    '',
+    `QUESTION: ${ask}`,
+  ].join('\n');
+}
+
+/* --------------------------------------------------------- The review */
+
+/**
+ * Both checks, as the UI consumes them.
+ *
+ * `mode` changes what an unrecognised number means, which is the whole point:
+ *
+ *   facts   the engine is the only legitimate source, so an unknown price is an
+ *           invention and is flagged as one.
+ *   vision  the model is reading a chart the engine cannot see, so an unknown
+ *           price is expected — it is labelled unverified instead. Flagging
+ *           every number here would mark every sentence, and a warning on
+ *           everything is a warning on nothing.
+ *   coach   the numbers are the trader's own aggregates. Only the forecasting
+ *           check applies; percentages and R figures are not price claims.
+ */
+function reviewReply(text, facts, options = {}) {
+  const mode = options.mode || 'facts';
   const forecasting = checkForecasting(text);
+  const notices = [];
+
+  let grounding = { ok: true, suspect: [], checked: 0 };
+
+  if (mode === 'facts') {
+    grounding = checkGrounding(text, facts);
+    if (!grounding.ok) {
+      notices.push(`This reply mentions ${grounding.suspect.join(', ')}, which the engine did not compute. Treat those figures as unverified — check them on your chart before acting on anything that depends on them.`);
+    }
+  } else if (mode === 'vision') {
+    grounding = checkGrounding(text, facts);
+    if (!grounding.ok) {
+      notices.push(`${grounding.suspect.join(', ')} came from your screenshot, not from the engine. Nothing has verified them — read them off your own chart before you use them.`);
+    }
+  }
+
+  if (!forecasting.ok) {
+    notices.push(`This reply contains forecasting language ("${forecasting.hits.join('", "')}"). Nothing here can know what price will do.`);
+  }
+
   return {
-    ok: grounding.ok && forecasting.ok,
+    ok: notices.length === 0,
+    mode,
     grounding,
     forecasting,
-    notices: [
-      ...(grounding.ok ? [] : [`This reply mentions ${grounding.suspect.join(', ')}, which the engine did not compute. Treat those figures as unverified — check them on your chart before acting on anything that depends on them.`]),
-      ...(forecasting.ok ? [] : [`This reply contains forecasting language ("${forecasting.hits.join('", "')}"). Nothing here can know what price will do.`]),
-    ],
+    notices,
   };
 }
 
 
 /* --- exports --- */
-Object.assign(__exports, { XAU_SYSTEM_PROMPT, PRICE_LIKE_MIN, buildFacts, buildPrompt, allowedNumbers, checkGrounding, checkForecasting, reviewReply });
+Object.assign(__exports, { XAU_SYSTEM_PROMPT, BRIEF_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, VISION_SYSTEM_PROMPT, PRICE_LIKE_MIN, buildFacts, buildPrompt, allowedNumbers, checkGrounding, checkForecasting, buildCoachPrompt, buildVisionPrompt, reviewReply });
 
 });
 
@@ -18712,7 +19032,7 @@ __def("src/integrations/gemini.js", function (__exports, __req) {
  * screenshots.
  */
 
-const { XAU_SYSTEM_PROMPT, buildPrompt } = __req("src/domain/aigrounding.js");
+const { XAU_SYSTEM_PROMPT, BRIEF_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, VISION_SYSTEM_PROMPT, buildPrompt, buildCoachPrompt, buildVisionPrompt } = __req("src/domain/aigrounding.js");
 
 const GEMINI_MODELS = [
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash — fast, cheap, fine for this' },
@@ -18854,6 +19174,130 @@ function blockedReason(data) {
   return '';
 }
 
+/* --------------------------------------------------------------- Modes */
+
+/**
+ * The unprompted pre-trade brief.
+ *
+ * Same facts, different instruction, and deliberately no conversation history —
+ * a brief is a fresh read of the current setup, and letting an earlier exchange
+ * colour it would make it the continuation of a conversation the reader never
+ * had.
+ */
+async function briefSetup({ facts, config = {} }) {
+  if (!facts) throw new Error('There is no analysis to brief on yet. Run the analysis first.');
+  return callGemini({
+    system: BRIEF_SYSTEM_PROMPT,
+    parts: [{ text: buildPrompt(facts, 'Write the brief.') }],
+    config,
+    maxOutputTokens: 700,
+  });
+}
+
+/** Review the trader's own logged results. Aggregates only — see progression.js. */
+async function coachJournal({ summary, question, config = {} }) {
+  if (!summary || !summary.sample || !summary.sample.completed) {
+    throw new Error('There are no completed trades to review yet. Log a few outcomes first — the coach reads results, not intentions.');
+  }
+  return callGemini({
+    system: COACH_SYSTEM_PROMPT,
+    parts: [{ text: buildCoachPrompt(summary, question) }],
+    config,
+    maxOutputTokens: 900,
+  });
+}
+
+/**
+ * Compare the reader's own broker screenshot against the engine's read.
+ *
+ * @param {string} imageDataUrl a `data:image/...;base64,...` URL
+ */
+async function reviewChartImage({ imageDataUrl, facts, question, config = {} }) {
+  const parsed = parseDataUrl(imageDataUrl);
+  if (!parsed) throw new Error('That does not look like an image this can read. Use a PNG, JPEG or WebP screenshot.');
+
+  return callGemini({
+    system: VISION_SYSTEM_PROMPT,
+    // Image first, then the question: the question is what the model should be
+    // answering *about* the image, and it attends to what it read last.
+    parts: [
+      { inlineData: { mimeType: parsed.mimeType, data: parsed.base64 } },
+      { text: buildVisionPrompt(facts, question) },
+    ],
+    config,
+    maxOutputTokens: 800,
+  });
+}
+
+/** Split a data URL without pulling in a dependency to do it. */
+function parseDataUrl(dataUrl) {
+  const m = /^data:(image\/(?:png|jpeg|jpg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
+  if (!m) return null;
+  return { mimeType: m[1] === 'image/jpg' ? 'image/jpeg' : m[1], base64: m[2] };
+}
+
+/**
+ * One request path for every mode.
+ *
+ * `askGemini` above predates it and keeps its own copy for the conversational
+ * case; everything added since routes through here, so a change to timeouts,
+ * transports or error handling cannot land in three of the four places it
+ * matters.
+ */
+async function callGemini({ system, parts, config, maxOutputTokens = 1200, history = [] }) {
+  const {
+    transport = 'direct', apiKey = '', proxyUrl = '',
+    model = DEFAULT_MODEL, timeoutMs = DEFAULT_TIMEOUT,
+  } = config;
+
+  const body = {
+    contents: [
+      ...history.map((t) => ({ role: t.role === 'model' ? 'model' : 'user', parts: [{ text: t.text }] })),
+      { role: 'user', parts },
+    ],
+    systemInstruction: { parts: [{ text: system }] },
+    generationConfig: { temperature: 0.3, maxOutputTokens, topP: 0.9 },
+  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    let response;
+    if (transport === 'proxy') {
+      if (!proxyUrl) throw new Error('No proxy URL is configured. Add one in Settings, or switch to a direct key.');
+      response = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({ provider: 'gemini', model, ...body }),
+      });
+    } else {
+      if (!apiKey) throw new Error('No Gemini API key is configured. Add one in Settings → AI assistant.');
+      response = await fetch(`${ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+        signal: controller.signal,
+        body: JSON.stringify(body),
+      });
+    }
+
+    if (!response.ok) throw new Error(await describeFailure(response, transport));
+
+    const data = await response.json();
+    const text = extractText(data);
+    if (!text) throw new Error(blockedReason(data) || 'The model returned an empty response.');
+    return { text, model, transport };
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`The model did not answer within ${Math.round(timeoutMs / 1000)} seconds. The analysis on screen is unaffected — it was computed locally.`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Confirm a configuration works, without spending a real analysis on it.
  * Returns a short human sentence either way.
@@ -18873,7 +19317,7 @@ async function testConnection(config = {}) {
 
 
 /* --- exports --- */
-Object.assign(__exports, { GEMINI_MODELS, DEFAULT_MODEL, askGemini, testConnection });
+Object.assign(__exports, { GEMINI_MODELS, DEFAULT_MODEL, askGemini, briefSetup, coachJournal, reviewChartImage, parseDataUrl, testConnection });
 
 });
 
@@ -20031,6 +20475,10 @@ const { money, signedMoney, dateTime, price, EM } = __req("src/core/format.js");
 const { state } = __req("src/core/state.js");
 const { updateTrade, deleteTrade, clearJournal, exportCsv, readImage } = __req("src/app-actions.js");
 const { summarise, sessionExtremes, narrate } = __req("src/domain/analytics.js");
+const { readProgression, summariseForCoach } = __req("src/domain/progression.js");
+const { equityCurve } = __req("src/domain/risk.js");
+const { reviewReply } = __req("src/domain/aigrounding.js");
+const { coachJournal } = __req("src/integrations/gemini.js");
 const { disciplineScore } = __req("src/domain/psychology.js");
 const { modal, confirm, toast } = __req("src/ui/overlays.js");
 const { emptyState } = __req("src/ui/components.js");
@@ -20053,6 +20501,23 @@ __exports.default = {
       <div class="card gold reveal" style="margin-bottom:var(--sp-4)">
         <p class="eyebrow">Read of your log</p>
         <div class="jsummary" id="j-summary"></div>
+      </div>
+
+      <div class="card reveal" style="margin-bottom:var(--sp-4)">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">Measured from your own trades</p>
+            <h2>The path</h2>
+          </div>
+        </div>
+        <p class="t-muted" style="font-size:var(--fs-sm);line-height:1.65;margin-bottom:var(--sp-3)">
+          Six stages, each with a numeric gate this app checks against your journal. It is deliberately not a story
+          about how somebody became a better trader — every version of that is written after the fact by someone whose
+          account happened to go up. Where you are is wherever the first gate stops you.
+        </p>
+        <div id="j-path"></div>
+
+        <div id="j-coach-wrap"></div>
       </div>
 
       <div class="card reveal">
@@ -20100,6 +20565,8 @@ __exports.default = {
 
     on(root, 'click', '#btn-csv', () => exportCsv());
 
+    on(root, 'click', '#j-coach-run', () => runCoach());
+
     on(root, 'click', '#btn-clear', async () => {
       if (!state.journal.length) { toast('Journal is already empty.', 'info'); return; }
       const ok = await confirm(
@@ -20135,8 +20602,109 @@ __exports.default = {
     const stats = summarise(s.journal, s.settings.tz);
     const lines = narrate(stats, sessionExtremes(stats.bySession), disciplineScore(s.journal));
     setHtml('j-summary', lines.map((l) => `<p style="margin-bottom:10px">${l}</p>`).join(''));
+
+    paintPath(s);
   },
 };
+
+/* -------------------------------------------------------------- The path */
+
+/** Kept out of `state` — a coach reply is about a moment, not a preference. */
+let coachTurn = null;
+let coachBusy = false;
+
+function paintPath(s) {
+  const node = byId('j-path');
+  if (!node) return;
+
+  const curve = equityCurve(s.journal, s.settings.capital);
+  const path = readProgression(s.journal, { maxDrawdownPct: curve.maxDrawdownPct });
+
+  node.innerHTML = `
+    <div class="jpath">
+      ${path.stages.map((stage) => `
+        <div class="jstage ${stage.met ? 'met' : ''} ${stage.id === path.current.id && !path.complete ? 'here' : ''}">
+          <div class="jsn">${stage.met ? '✓' : stage.n}</div>
+          <div class="jsbody">
+            <div class="jsname">${esc(stage.name)}${stage.id === path.current.id && !path.complete ? '<span class="jshere">you are here</span>' : ''}</div>
+            <div class="jspremise">${esc(stage.premise)}</div>
+            <div class="jsmeter"><i style="width:${Math.round(stage.progress * 100)}%"></i></div>
+            <div class="jsdetail">${esc(stage.detail)}</div>
+            <div class="jsgate">Gate: ${esc(stage.gate)}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <div class="jnext">
+      <p class="eyebrow">Next</p>
+      <p>${esc(path.nextAction)}</p>
+      ${path.aheadOfThemselves.length
+    ? `<p class="t-faint" style="font-size:var(--fs-2xs);margin-top:var(--sp-2)">You already clear ${esc(path.aheadOfThemselves.join(' and '))}, which sits beyond this stage. The gap is a habit rather than a skill you have yet to learn.</p>`
+    : ''}
+    </div>`;
+
+  paintCoach(s);
+}
+
+/* ------------------------------------------------------------- The coach */
+
+function paintCoach(s) {
+  const node = byId('j-coach-wrap');
+  if (!node) return;
+
+  const configured = s.ai.transport === 'proxy' ? !!s.ai.proxyUrl : !!s.ai.apiKey;
+  const ready = s.ai.enabled && configured;
+  const completed = s.journal.filter((t) => t.outcome && t.outcome !== 'open').length;
+
+  if (!ready) {
+    node.innerHTML = `<p class="t-faint" style="font-size:var(--fs-2xs);margin-top:var(--sp-4)">
+      The path above is measured on this device and needs no AI. Turn the assistant on from the XAU/USD screen if you
+      also want a written review of these results.</p>`;
+    return;
+  }
+
+  node.innerHTML = `
+    <div class="jcoach">
+      <p class="eyebrow" style="margin-top:var(--sp-4)">Review</p>
+      <div class="row tight">
+        <button class="btn sm" id="j-coach-run" ${coachBusy || completed < 5 ? 'disabled' : ''}>
+          ${coachBusy ? 'Reading your trades…' : 'Ask for a review'}
+        </button>
+        <span class="t-faint" style="font-size:var(--fs-2xs);align-self:center">
+          ${completed < 5
+    ? `${completed} completed trades — a review needs at least five to say anything honest.`
+    : `Sends aggregates from ${completed} completed trades. Not your notes, not individual trades.`}
+        </span>
+      </div>
+      ${coachTurn ? `
+        <div class="xaiturn model${coachTurn.error ? ' err' : ''}" style="margin-top:var(--sp-3)">
+          <span class="xair">${coachTurn.error ? 'Error' : 'Coach'}</span>
+          <div class="xait">${coachTurn.text.split(/\n{2,}/).map((p) => `<p>${esc(p.trim()).replace(/\n/g, '<br>')}</p>`).join('')}</div>
+          ${(coachTurn.notices || []).map((n) => `<div class="xainotice">⚠ ${esc(n)}</div>`).join('')}
+        </div>` : ''}
+    </div>`;
+}
+
+async function runCoach() {
+  if (coachBusy) return;
+  coachBusy = true;
+  paintCoach(state);
+
+  try {
+    const curve = equityCurve(state.journal, state.settings.capital);
+    const summary = summariseForCoach(state.journal, { maxDrawdownPct: curve.maxDrawdownPct });
+    const { text } = await coachJournal({ summary, config: state.ai });
+    // Coach mode: percentages and R figures are the trader's own aggregates, so
+    // only the forecasting check applies. See domain/aigrounding.js.
+    const review = reviewReply(text, summary, { mode: 'coach' });
+    coachTurn = { text, notices: review.notices };
+  } catch (err) {
+    coachTurn = { text: err.message, error: true };
+  } finally {
+    coachBusy = false;
+    paintCoach(state);
+  }
+}
 
 /* ------------------------------------------------------------- Table */
 
@@ -20335,6 +20903,330 @@ async function openTradeEditor(id) {
 }
 
 function setHtml(id, html) { const n = byId(id); if (n) n.innerHTML = html; }
+
+});
+
+__def("src/domain/progression.js", function (__exports, __req) {
+/**
+ * domain/progression.js — how a trader actually gets better, measured.
+ *
+ * The problem with "how I became a better gold trader"
+ * ----------------------------------------------------
+ * Every version of that story ever written is unfalsifiable. It is a narrative
+ * assembled after the fact by somebody whose account happened to go up, and it
+ * is the single most reliably useless genre in trading. A language model asked
+ * to write one will produce a very good example of it, which is worse.
+ *
+ * So this file does not tell that story. It defines six stages with numeric
+ * gates, evaluates them against the trader's own journal, and reports which
+ * gate they are standing at and what the actual numbers are. The path is real
+ * because it is measured; the model's only job is to narrate what was measured.
+ *
+ * The order is not arbitrary. Each stage is a prerequisite for the next being
+ * meaningful: expectancy over a sample of six trades is noise, selectivity you
+ * cannot verify because you did not log the score is a claim, and a discipline
+ * score computed from trades with no recorded outcome is a rounding of zero.
+ *
+ * Pure functions over journal rows. No DOM, no network, no model.
+ */
+
+/* -------------------------------------------------------------- Helpers */
+
+const withOutcome = (rows) => rows.filter((t) => t.outcome && t.outcome !== 'open');
+const closed = (rows) => rows.filter((t) => Number.isFinite(t.pnl));
+const recent = (rows, n) => rows.slice(0, n);          // journal is newest first
+const pct = (part, whole) => (whole > 0 ? part / whole : 0);
+const round1 = (n) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : NaN);
+
+/**
+ * Expectancy in R over a set of rows, using the R the app recorded rather than
+ * recomputing from money — a trade closed at a different size than planned
+ * would otherwise quietly distort it.
+ */
+function expectancyR(rows) {
+  const withR = rows.filter((t) => Number.isFinite(t.resultR));
+  if (!withR.length) return NaN;
+  return withR.reduce((a, t) => a + t.resultR, 0) / withR.length;
+}
+
+/* --------------------------------------------------------------- Stages */
+
+/**
+ * Each stage: an id, what it is for, the gate, and — when it is not met — the
+ * one thing to do about it. `evaluate` returns { met, progress, detail }.
+ *
+ * `progress` is 0..1 and is used for the bar. It is deliberately allowed to sit
+ * at 0 with a `detail` explaining why, rather than being hidden: "you have not
+ * logged enough trades to know" is the honest state for most people most of the
+ * time, and a path that only appears once you are already good is a path nobody
+ * uses.
+ */
+const STAGES = [
+  {
+    id: 'record',
+    n: 1,
+    name: 'Record',
+    premise: 'You cannot improve what you do not measure.',
+    gate: '10 trades logged with an outcome',
+    action: 'Log every trade you take, and record whether it won, lost or broke even. Include the ones you are not proud of — those are the data.',
+    evaluate(journal) {
+      const done = withOutcome(journal).length;
+      return {
+        met: done >= 10,
+        progress: Math.min(1, done / 10),
+        detail: `${done} of 10 trades logged with a recorded outcome.`,
+      };
+    },
+  },
+  {
+    id: 'risk',
+    n: 2,
+    name: 'Defined risk',
+    premise: 'Every trade had a stop, and the size respected it.',
+    gate: '90% of the last 20 trades carry a stop and a risk figure',
+    action: 'Size from the stop distance, never the other way round. A trade with no recorded stop is a trade whose loss you had not decided in advance.',
+    evaluate(journal) {
+      const rows = recent(withOutcome(journal), 20);
+      if (rows.length < 5) return { met: false, progress: 0, detail: `Only ${rows.length} completed trades — not enough to judge yet.` };
+      const defined = rows.filter((t) => Number.isFinite(t.stop) && Number.isFinite(t.riskAmount) && t.riskAmount > 0).length;
+      const share = pct(defined, rows.length);
+      return {
+        met: share >= 0.9,
+        progress: Math.min(1, share / 0.9),
+        detail: `${defined} of the last ${rows.length} trades had both a stop and a risk figure (${Math.round(share * 100)}%).`,
+      };
+    },
+  },
+  {
+    id: 'discipline',
+    n: 3,
+    name: 'Discipline',
+    premise: 'You followed the plan you wrote, including when it cost you.',
+    gate: '80% of the last 20 trades followed the plan, and no logged revenge trades',
+    action: 'The plan is written before the trade for exactly the moment you want to abandon it. If you moved a stop, log that you moved it — the record is the point.',
+    evaluate(journal) {
+      const rows = recent(withOutcome(journal), 20);
+      const answered = rows.filter((t) => t.followedPlan !== null && t.followedPlan !== undefined);
+      if (answered.length < 5) return { met: false, progress: 0, detail: `Only ${answered.length} trades record whether you followed the plan.` };
+      const followed = answered.filter((t) => t.followedPlan === true).length;
+      const revenge = rows.filter((t) => t.emotion === 'revenge').length;
+      const share = pct(followed, answered.length);
+      return {
+        met: share >= 0.8 && revenge === 0,
+        progress: Math.min(1, share / 0.8) * (revenge === 0 ? 1 : 0.6),
+        detail: `Followed the plan on ${followed} of ${answered.length} (${Math.round(share * 100)}%)`
+          + (revenge ? `, and ${revenge} trade${revenge > 1 ? 's were' : ' was'} logged as revenge.` : ', with no revenge trades logged.'),
+      };
+    },
+  },
+  {
+    id: 'selectivity',
+    n: 4,
+    name: 'Selectivity',
+    premise: 'You stopped taking the setups you already knew were weak.',
+    gate: '70% of taken trades scored 55 or better',
+    action: 'The score is written down before you enter. Taking a 40 and hoping is the habit this whole app exists to interrupt — the skipped trade costs nothing.',
+    evaluate(journal) {
+      const rows = recent(withOutcome(journal), 20).filter((t) => Number.isFinite(t.score100));
+      if (rows.length < 5) return { met: false, progress: 0, detail: `Only ${rows.length} completed trades carry a score.` };
+      const good = rows.filter((t) => t.score100 >= 55).length;
+      const share = pct(good, rows.length);
+      const avg = rows.reduce((a, t) => a + t.score100, 0) / rows.length;
+      return {
+        met: share >= 0.7,
+        progress: Math.min(1, share / 0.7),
+        detail: `${good} of the last ${rows.length} scored 55+ (${Math.round(share * 100)}%), averaging ${Math.round(avg)}/100.`,
+      };
+    },
+  },
+  {
+    id: 'expectancy',
+    n: 5,
+    name: 'Positive expectancy',
+    premise: 'Over a real sample, the maths comes out ahead.',
+    gate: '30 closed trades and expectancy above zero',
+    action: 'Keep doing what stages 1 to 4 describe and let the sample grow. Expectancy over ten trades is noise; over thirty it starts to mean something.',
+    evaluate(journal) {
+      const rows = closed(journal);
+      const exp = expectancyR(rows);
+      if (rows.length < 30) {
+        return {
+          met: false,
+          progress: Math.min(0.95, rows.length / 30),
+          detail: `${rows.length} of 30 closed trades.`
+            + (Number.isFinite(exp) ? ` Running expectancy ${round1(exp)}R — too small a sample to trust yet.` : ''),
+        };
+      }
+      return {
+        met: exp > 0,
+        progress: exp > 0 ? 1 : 0.5,
+        detail: `${rows.length} closed trades at ${round1(exp)}R expectancy.`,
+      };
+    },
+  },
+  {
+    id: 'consistency',
+    n: 6,
+    name: 'Consistency',
+    premise: 'It holds up over time, not just over one good month.',
+    gate: '60 closed trades, positive expectancy in two of the last three blocks of twenty, drawdown under 15%',
+    action: 'Nothing new to learn here — this stage is passed by not undoing the previous five. Most accounts die between stage 5 and stage 6.',
+    evaluate(journal, context = {}) {
+      const rows = closed(journal);
+      if (rows.length < 60) {
+        return { met: false, progress: Math.min(0.95, rows.length / 60), detail: `${rows.length} of 60 closed trades.` };
+      }
+      const blocks = [rows.slice(0, 20), rows.slice(20, 40), rows.slice(40, 60)];
+      const positive = blocks.filter((b) => expectancyR(b) > 0).length;
+      const dd = Number.isFinite(context.maxDrawdownPct) ? context.maxDrawdownPct : NaN;
+      const ddOk = !Number.isFinite(dd) || dd < 15;
+      return {
+        met: positive >= 2 && ddOk,
+        progress: Math.min(1, positive / 2) * (ddOk ? 1 : 0.7),
+        detail: `${positive} of the last 3 blocks of 20 were profitable`
+          + (Number.isFinite(dd) ? `, peak drawdown ${round1(dd)}%.` : '.'),
+      };
+    },
+  },
+];
+
+/* ------------------------------------------------------------ The read */
+
+/**
+ * Evaluate every stage and work out where the trader actually is.
+ *
+ * "Where they are" is the first *unmet* stage, not the highest met one. Stages
+ * can un-meet themselves — a run of undisciplined trades pulls stage 3 back
+ * below its gate even though stage 5 was reached months ago — and reporting the
+ * high-water mark would hide exactly the regression worth knowing about.
+ */
+function readProgression(journal = [], context = {}) {
+  const rows = Array.isArray(journal) ? journal : [];
+  const stages = STAGES.map((stage) => {
+    const result = stage.evaluate(rows, context);
+    return {
+      id: stage.id, n: stage.n, name: stage.name,
+      premise: stage.premise, gate: stage.gate, action: stage.action,
+      met: !!result.met,
+      progress: Math.max(0, Math.min(1, result.progress || 0)),
+      detail: result.detail,
+    };
+  });
+
+  const currentIndex = stages.findIndex((s) => !s.met);
+  const current = currentIndex === -1 ? stages[stages.length - 1] : stages[currentIndex];
+  const reached = currentIndex === -1 ? stages.length : currentIndex;
+
+  // A stage met *after* an unmet one. Worth naming: it is evidence the trader
+  // can already do the harder thing, and that the gap is a habit rather than a
+  // skill they have yet to acquire.
+  const aheadOfThemselves = currentIndex === -1
+    ? []
+    : stages.slice(currentIndex + 1).filter((s) => s.met).map((s) => s.name);
+
+  return {
+    stages,
+    reached,                       // how many consecutive stages are met
+    total: stages.length,
+    current,
+    complete: currentIndex === -1,
+    aheadOfThemselves,
+    nextAction: current.action,
+    headline: currentIndex === -1
+      ? 'All six stages are holding. The work now is not undoing them.'
+      : `Stage ${current.n} of ${stages.length} — ${current.name}. ${current.detail}`,
+    sample: {
+      logged: rows.length,
+      withOutcome: withOutcome(rows).length,
+      closed: closed(rows).length,
+    },
+  };
+}
+
+/* -------------------------------------------------------- Journal facts */
+
+/**
+ * Aggregates for the coach. Counts and averages only.
+ *
+ * Deliberately no raw rows: no notes, no lesson text, no mistake text, no
+ * screenshots, no timestamps precise enough to reconstruct a day. A trading
+ * journal is a diary, and the useful signal for coaching is entirely in the
+ * aggregate — "you lose in the Asian session" needs the bucket, not the entries.
+ */
+function summariseForCoach(journal = [], context = {}) {
+  const rows = Array.isArray(journal) ? journal : [];
+  const done = withOutcome(rows);
+  const done30 = recent(done, 30);
+
+  const bucket = (keyFn) => {
+    const map = new Map();
+    for (const t of done) {
+      const key = keyFn(t);
+      if (!key) continue;
+      if (!map.has(key)) map.set(key, { n: 0, wins: 0, r: 0, withR: 0 });
+      const b = map.get(key);
+      b.n++;
+      if (t.outcome === 'win') b.wins++;
+      if (Number.isFinite(t.resultR)) { b.r += t.resultR; b.withR++; }
+    }
+    return [...map.entries()]
+      .filter(([, b]) => b.n >= 3)                 // three trades is not a pattern, but two is nothing
+      .map(([key, b]) => ({
+        key, trades: b.n,
+        winRate: Math.round(pct(b.wins, b.n) * 100),
+        expectancyR: b.withR ? round1(b.r / b.withR) : null,
+      }))
+      .sort((a, b) => b.trades - a.trades);
+  };
+
+  const scoreBand = (t) => {
+    if (!Number.isFinite(t.score100)) return null;
+    if (t.score100 >= 80) return 'scored 80+';
+    if (t.score100 >= 70) return 'scored 70-79';
+    if (t.score100 >= 55) return 'scored 55-69';
+    return 'scored under 55';
+  };
+
+  return {
+    sample: { logged: rows.length, completed: done.length, closed: closed(rows).length },
+    overall: {
+      winRate: done.length ? Math.round(pct(done.filter((t) => t.outcome === 'win').length, done.length) * 100) : null,
+      expectancyR: round1(expectancyR(closed(rows))),
+      last30ExpectancyR: round1(expectancyR(done30.filter((t) => Number.isFinite(t.pnl)))),
+      maxDrawdownPct: Number.isFinite(context.maxDrawdownPct) ? round1(context.maxDrawdownPct) : null,
+    },
+    bySession: bucket((t) => t.session),
+    byDirection: bucket((t) => t.dir),
+    byScoreBand: bucket(scoreBand),
+    byEmotion: bucket((t) => (t.emotion && t.emotion !== 'unrecorded' ? t.emotion : null)),
+    bySetupType: bucket((t) => t.setupType || null),
+    discipline: {
+      planFollowedRate: (() => {
+        const answered = done.filter((t) => t.followedPlan !== null && t.followedPlan !== undefined);
+        return answered.length ? Math.round(pct(answered.filter((t) => t.followedPlan === true).length, answered.length) * 100) : null;
+      })(),
+      revengeTrades: done.filter((t) => t.emotion === 'revenge').length,
+      averageScoreTaken: (() => {
+        const scored = done.filter((t) => Number.isFinite(t.score100));
+        return scored.length ? Math.round(scored.reduce((a, t) => a + t.score100, 0) / scored.length) : null;
+      })(),
+    },
+    progression: (() => {
+      const p = readProgression(rows, context);
+      return {
+        stageReached: p.reached,
+        of: p.total,
+        currentStage: p.current.name,
+        currentDetail: p.current.detail,
+        stagesMet: p.stages.filter((s) => s.met).map((s) => s.name),
+      };
+    })(),
+  };
+}
+
+
+/* --- exports --- */
+Object.assign(__exports, { STAGES, readProgression, summariseForCoach });
 
 });
 
