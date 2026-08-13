@@ -753,6 +753,9 @@ tr:last-child td { border-bottom: none; }
 .aask input::placeholder { color: var(--faint); }
 
 .ahelp { display: grid; gap: var(--sp-2); margin-top: var(--sp-2); }
+
+.asuggest { display: flex; flex-wrap: wrap; gap: 6px; }
+.asuggest .cbtn { text-align: left; white-space: normal; }
 .amsg.ask {
   background: rgba(224,166,60,.09); border-color: rgba(224,166,60,.28);
   color: var(--ink);
@@ -6103,7 +6106,7 @@ const FEATURES = [
   body: 'Feed down, network gone — it still scores, still sizes, still tells you the truth about the trade.' },
   { slug: 'privacy', icon: '▨', title: 'Your data stays yours',
 
-  body: 'Your journal, settings and profile live in your browser and are never uploaded. The optional AI assistant sends the engine\'s measurements and your question — nothing else, and only when you ask it something.' },
+  body: 'Your journal, settings and profile live in your browser and are never uploaded. The assistant answers on your device and sends nothing at all; only if you connect Gemini yourself does a question leave, carrying the engine\'s measurements and nothing else.' },
 ];
 
 const pct = (n, dp = 1) => `${(n * 100).toFixed(dp)}%`;
@@ -7990,7 +7993,7 @@ const { emit, on: busOn, EV } = __req("src/core/bus.js");
 const { getExplainer } = __req("src/integrations/ai.js");
 const { askHelp } = __req("src/integrations/gemini.js");
 const { buildHelpFacts, reviewReply } = __req("src/domain/aigrounding.js");
-const { answerLocally } = __req("src/domain/helpdesk.js");
+const { answerLocally, starterQuestions } = __req("src/domain/helpdesk.js");
 const { prefersReducedMotion } = __req("src/ui/motion.js");
 
 let panel = null;
@@ -8037,6 +8040,7 @@ function initAssistant() {
   askTheApp(q);
   };
   on(panel, 'click', '#assistant-send', send);
+  on(panel, 'click', '[data-ahelp]', (_e, btn) => askTheApp(btn.dataset.ahelp));
   on(panel, 'keydown', '#assistant-input', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); send(); }
   });
@@ -8083,7 +8087,7 @@ function render(analysis) {
   const messages = getExplainer()(analysis, state);
   body.innerHTML = messages.map(renderMessage).join('');
 
-  if (helpTurns.length || helpBusy) renderHelp();
+  renderHelp();
   syncAskBox();
 }
 
@@ -8150,6 +8154,13 @@ function renderHelp() {
   host = document.createElement('div');
   host.className = 'ahelp';
   body.appendChild(host);
+  }
+
+  if (!helpTurns.length && !helpBusy) {
+  host.innerHTML = `<div class="asuggest">
+  ${starterQuestions(state.analysis).map((q) => `<button type="button" class="cbtn" data-ahelp="${esc(q)}">${esc(q)}</button>`).join('')}
+  </div>`;
+  return;
   }
 
   host.innerHTML = helpTurns.map((t) => {
@@ -9485,7 +9496,15 @@ function isDefinitional(raw) {
   return asksWhatSomethingIs && !pointsAtTheScreen;
 }
 
-function answerAboutAnalysis(question, analysis) {
+function usableAnalysis(a) {
+  if (!a || typeof a !== 'object') return null;
+  if (!Number.isFinite(a.score)) return null;
+  if (typeof a.decision !== 'string') return null;
+  return a;
+}
+
+function answerAboutAnalysis(question, rawAnalysis) {
+  const analysis = usableAnalysis(rawAnalysis);
   if (!analysis) return null;
   const raw = String(question || '').toLowerCase();
   if (isDefinitional(raw)) return null;
@@ -9611,7 +9630,9 @@ function answerLocally(question, { analysis = null } = {}) {
   };
 }
 
-function starterQuestions(analysis) {
+function starterQuestions(rawAnalysis) {
+
+  const analysis = usableAnalysis(rawAnalysis);
   if (analysis && (analysis.hardStops || []).length) {
   return ['Why is this blocked?', 'What would have to change?', 'What does the confluence score mean?'];
   }
@@ -19621,16 +19642,17 @@ const STEPS = [
   note: 'The score measures a setup against a fixed rulebook. It is not a probability of profit, and nothing here can know what price will do next.',
   },
   {
-  n: 5, title: 'Ask the assistant, if you turned it on',
-  lead: 'Optional, off by default, and structurally unable to invent a price. It explains what the engine measured — it never does the measuring.',
+  n: 5, title: 'Ask the assistant',
+  lead: 'It explains what the engine measured — it never does the measuring, and it is structurally unable to invent a price.',
   fig: figAssistant,
   body: [
-  'Add a Gemini key under <b>Ask about this setup → AI connection</b>, or use a proxy if one has been set up for you. Nothing is sent anywhere until you ask a question.',
-  'Ask why a setup failed, what would have to change, or where the weakest part of it is. It can also write a <b>brief</b> on every analysis automatically.',
-  'Send a <b>screenshot of your own broker chart</b> and it will say whether that agrees with these levels — useful precisely because the app\'s candles are a proxy and yours are not.',
+  'Type into <b>Ask about this setup</b>, or the box in the floating ◈ panel on any screen. It answers straight away, on your device, with no key and no connection — replies about a setup are assembled from the numbers the engine just computed.',
+  'Ask why a setup failed, what would have to change, or where the weakest part of it is. Ask what the score means, where the stop came from, or how the daily limits work.',
+  'If it does not have an answer it says so and lists what it does cover, rather than producing a confident paragraph. Ask it where gold is going and it will decline — nothing in this app forecasts.',
+  'Connecting <b>Gemini</b> under <b>AI connection</b> is optional and adds three things: free-form phrasing, an automatic <b>brief</b> on every analysis, and comparing a <b>screenshot of your own broker chart</b> against these levels — useful precisely because the app\'s candles are a proxy and yours are not. If it is ever unreachable, answers fall back to the device rather than failing.',
   'The <b>journal coach</b> reads your logged results and finds the patterns in them. It sees aggregates only: win rates by session, by score band, by emotion. Never your notes or individual trades.',
   ],
-  note: 'Every reply is scanned before you see it. A price the engine did not compute, or any language claiming to know the future, is flagged above the answer.',
+  note: 'Every remote reply is scanned before you see it. A price the engine did not compute, or any language claiming to know the future, is flagged above the answer. Answers computed on your device cannot contain either.',
   },
   {
   n: 6, title: 'Start from a setup, or your own idea',
