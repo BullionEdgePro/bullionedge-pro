@@ -66,10 +66,13 @@
   "image": "https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp",
   "description": "BullionEdge Pro scores a gold or FX trade plan before it is placed. It is a rules-based pre-trade checklist, position-size risk manager, session clock and trading journal that runs entirely in the browser and keeps working with no connection. It is not a signal service and does not predict prices.",
   "featureList": [
-    "Rules-based pre-trade checklist and trade score",
-    "Buy and sell zones derived from levels you enter",
+    "XAU/USD pre-trade analysis engine reading market structure, liquidity, fair value gaps and order blocks from the chart",
+    "Buy, sell or no-trade verdict with entry zone, structural stop, targets and reward-to-risk",
+    "MT5-style gold chart with the detected structures drawn on it",
+    "Rules-based pre-trade checklist and 100-point confluence score",
     "Position and lot sizing that never exceeds your nominated risk",
-    "Trading journal with full local export",
+    "Optional AI assistant that explains the analysis and is checked for invented prices",
+    "Trading journal with a measured six-stage development path and full local export",
     "Trading psychology and discipline prompts",
     "Live XAU/USD price and interactive candle chart",
     "Trading session clock and news schedule",
@@ -2816,6 +2819,58 @@ kbd {
   .lp-flowline { gap: 6px; }
   .lp-step { font-size: var(--fs-2xs); padding: 5px 9px; }
 }
+
+/* ---- What to expect --------------------------------------------------------
+   Two columns that must read as equals. The temptation is to style the "will
+   not" side as a warning — muted, smaller, tucked away — and that instinct is
+   exactly what makes every other trading page untrustworthy. It gets the same
+   weight, the same size, and a colour that reads as a fact rather than a
+   failure. */
+.lp-expect {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--sp-4); margin-top: var(--sp-5);
+}
+
+.lp-exwill, .lp-exwont, .lp-exday {
+  padding: var(--sp-5); border-radius: var(--r-lg);
+  border: 1px solid var(--line-2); background: var(--panel-2);
+}
+.lp-exwill { border-color: rgba(70, 185, 140, .28); }
+.lp-exwont { border-color: rgba(224, 166, 60, .28); }
+
+.lp-exhead {
+  font-size: var(--fs-2xs); letter-spacing: .16em; text-transform: uppercase;
+  margin: 0 0 var(--sp-3);
+}
+.lp-exwill .lp-exhead { color: var(--long); }
+.lp-exwont .lp-exhead { color: var(--gold); }
+.lp-exday .lp-exhead { color: var(--muted); }
+
+.lp-expect ul { margin: 0; padding-left: 18px; }
+.lp-expect li {
+  font-size: var(--fs-sm); line-height: 1.7; color: var(--muted);
+  margin-bottom: var(--sp-3);
+}
+.lp-expect li:last-child { margin-bottom: 0; }
+.lp-expect li b { color: var(--ink); font-weight: 500; }
+.lp-exwill li::marker { color: var(--long); }
+.lp-exwont li::marker { color: var(--gold); }
+
+.lp-exday { margin-top: var(--sp-4); }
+.lp-exday ol { margin: 0; padding-left: 20px; counter-reset: exday; }
+.lp-exday li {
+  font-size: var(--fs-sm); line-height: 1.7; color: var(--muted);
+  margin-bottom: var(--sp-2);
+}
+.lp-exday li b { color: var(--ink); font-weight: 500; }
+.lp-exday li::marker { color: var(--gold-dim); font-family: var(--font-mono); }
+
+.lp-exnote {
+  margin: var(--sp-4) 0 0; padding-top: var(--sp-3);
+  border-top: 1px solid var(--line-2);
+  font-size: var(--fs-sm); line-height: 1.7; color: var(--muted);
+}
+.lp-exnote b { color: var(--gold-bright); }
 
 </style>
 </head>
@@ -6470,6 +6525,7 @@ function markup() {
       <div class="wordmark"><span class="b">Bullion</span>Edge<span class="prochip">PRO</span></div>
     </div>
     <nav class="lp-navbtns" aria-label="Page sections">
+      <button class="lp-link" data-to="lp-expect">What to expect</button>
       <button class="lp-link" data-to="lp-how">How it works</button>
       <button class="lp-link" data-to="lp-features">Features</button>
       <button class="lp-link" data-to="lp-method">The maths</button>
@@ -6535,7 +6591,7 @@ function markup() {
 
     <section class="lp-sec" id="lp-features">
       <h2>Everything the decision needs, on one screen.</h2>
-      <p class="lp-lead">Thirteen tools that all feed the same verdict, so nothing you check gets forgotten by the time you click.</p>
+      <p class="lp-lead">Every tool feeds the same verdict, so nothing you check gets forgotten by the time you click.</p>
 
       <figure class="lp-tray">
         <div class="lp-trayimg">
@@ -6574,6 +6630,39 @@ function markup() {
         ${style('Day trading', '15m / 30m', 'Open and close the same day. No overnight risk.')}
         ${style('Swing trading', '1h / 4h', 'Ride bigger moves over hours to days. Less screen time.')}
         ${style('Position trading', '1d / 1w', 'Patient trend-following. Widest stops, biggest targets.')}
+      </div>
+    </section>
+
+    <section class="lp-sec" id="lp-expect">
+      <h2>What to expect.</h2>
+      <p class="lp-lead">
+        Both halves of this, plainly. A tool that only lists what it does is selling you something.
+      </p>
+
+      <div class="lp-expect">
+        <div class="lp-exwill">
+          <p class="lp-exhead">What it will do</p>
+          <ul>
+            ${EXPECT.will.map((x) => `<li><b>${esc(x.t)}</b>${esc(x.b)}</li>`).join('')}
+          </ul>
+        </div>
+        <div class="lp-exwont">
+          <p class="lp-exhead">What it will not do</p>
+          <ul>
+            ${EXPECT.wont.map((x) => `<li><b>${esc(x.t)}</b>${esc(x.b)}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+
+      <div class="lp-exday">
+        <p class="lp-exhead">A session, start to finish</p>
+        <ol>
+          ${EXPECT.day.map((step) => `<li><b>${esc(step.t)}</b> ${esc(step.b)}</li>`).join('')}
+        </ol>
+        <p class="lp-exnote">
+          Most of the time the honest answer at step four is <b>no trade</b>. That is the outcome this was built to
+          produce — a skipped setup costs nothing, and the trades you do not take are the ones that decide the year.
+        </p>
       </div>
     </section>
 
@@ -6825,7 +6914,54 @@ const TRAY = [
   { x: 89.5, y: 80.6, object: 'Map compass',           tool: 'The guided walkthrough' },
 ];
 
+/**
+ * What a visitor gets, and what they do not.
+ *
+ * The second column is the one that matters. Every trading product on the
+ * internet lists what it does; the reason people distrust all of them is that
+ * none of them says what it cannot do, so a reader has to assume the worst and
+ * is usually right. Saying it first is both more honest and, as it happens, the
+ * only claim on this page a competitor cannot copy.
+ *
+ * Nothing here may promise an outcome. If a line ever starts implying profit,
+ * it is wrong and it goes.
+ */
+const EXPECT = {
+  will: [
+    { t: 'Give you an answer before you click. ', b: 'Buy, sell, or no trade — with the entry, stop and targets taken from levels on the chart, and every reason it used shown next to them.' },
+    { t: 'Refuse trades you would have taken. ', b: 'No placeable stop, reward-to-risk below your minimum, the daily limit hit, price already run past its own entry — each one blocks the trade whatever the score says.' },
+    { t: 'Size the position for you. ', b: 'You nominate the risk; the lot falls out of the stop distance. You never pick the size, so you never fudge it.' },
+    { t: 'Tell you when it does not know. ', b: 'No entry area, no target, an unverified contract spec, a feed that has gone quiet — it says so instead of producing a plausible number.' },
+    { t: 'Show its working. ', b: 'Every level is drawn on the chart. Every point of the score is itemised. Nothing is a black box you are asked to trust.' },
+    { t: 'Keep a record that argues with you. ', b: 'Your journal becomes a six-stage path with numeric gates. A stage you cleared can close again, and it will say so.' },
+  ],
+  wont: [
+    { t: 'Predict the price. ', b: 'Nothing here knows what gold will do next, and any tool claiming otherwise is guessing at your expense.' },
+    { t: 'Promise you profit. ', b: 'The confluence score measures a setup against a fixed rulebook. It is not a win probability and is never presented as one.' },
+    { t: 'Place a trade. ', b: 'There is no broker connection and no order button. You place it, on your own platform, deliberately.' },
+    { t: 'Send you signals. ', b: 'It analyses the setup in front of you. It will not message you at 2am telling you to buy.' },
+    { t: 'Replace your broker\'s prices. ', b: 'Candles come from a gold-backed proxy feed and are labelled as such on every screen. Verify every level before you act.' },
+    { t: 'Let an AI invent a number. ', b: 'The assistant only explains what the engine measured. Any figure it quotes that the engine did not compute is flagged before you read it.' },
+  ],
+  day: [
+    { t: 'Open the desk.', b: 'Live gold, the session clock in your own timezone, and what the higher timeframes are doing.' },
+    { t: 'Work the checklist.', b: 'You tick what you can genuinely see. The engine shows what it detected beside each box, and never ticks one for you.' },
+    { t: 'Press Analyze.', b: 'Structure, liquidity, imbalance, location and momentum are weighed into one score, with the case against stated as plainly as the case for.' },
+    { t: 'Get an answer.', b: 'Buy candidate, sell candidate, or no trade — and if it is a trade, the entry zone, stop, three targets and the exact lot size.' },
+    { t: 'Decide.', b: 'You confirm you have checked the levels on your own broker, then place it there. Or you do not.' },
+    { t: 'Log it.', b: 'Outcome, emotion, whether you followed the plan. Over time this is what turns the score from a guess into something calibrated to you.' },
+  ],
+};
+
 const FEATURES = [
+  // `slug: null` means there is no artwork for this card yet, so it renders as
+  // the glyph and its text. Pointing at a .webp that does not exist would 404 on
+  // every page load — the onerror fallback hides it visually but the request
+  // still fails, and a console full of 404s is how a page stops being trusted.
+  { slug: null, icon: '◈', title: 'XAU/USD pre-trade engine',
+    body: 'Reads structure, liquidity, imbalance and location off the chart itself — then answers buy, sell, or no trade. It says no most of the time, and shows the levels it used to decide.' },
+  { slug: null, icon: '✳', title: 'An AI that cannot make up prices',
+    body: 'Ask why a setup failed, or send a screenshot of your own broker chart to check against it. Every figure it quotes is checked against the engine first — anything invented is flagged before you read it.' },
   { slug: 'live-desk', icon: '◉', title: 'Live price &amp; chart',
     body: 'Gold spot on an interactive candlestick chart with EMA overlays, zoom and eight timeframes — and a locally drawn fallback chart when the network is not there.' },
   { slug: 'auto-setups', icon: '◈', title: 'Auto setups every 2 hours',
@@ -6851,7 +6987,10 @@ const FEATURES = [
   { slug: 'offline', icon: '⌾', title: 'Works with no network',
     body: 'Feed down, network gone — it still scores, still sizes, still tells you the truth about the trade.' },
   { slug: 'privacy', icon: '▨', title: 'Your data stays yours',
-    body: 'Everything lives in your browser, on your device. Nothing you type ever leaves it.' },
+    // This used to end "Nothing you type ever leaves it", which stopped being
+    // true the day the AI assistant shipped. A privacy claim that is 99% true is
+    // a false one, and it is the last claim a product should be loose about.
+    body: 'Your journal, settings and profile live in your browser and are never uploaded. The optional AI assistant sends the engine\'s measurements and your question — nothing else, and only when you ask it something.' },
 ];
 
 /**
@@ -7002,10 +7141,10 @@ function methodSteps() {
 
 const feature = ({ slug, icon, title, body }) => `
   <article class="lp-feat">
-    <div class="lp-featshot">
-      <img src="gallery/web/${slug}.webp" alt="${esc(body)}" loading="lazy" decoding="async"
+    <div class="lp-featshot${slug ? '' : ' noart'}">
+      ${slug ? `<img src="gallery/web/${slug}.webp" alt="${esc(body)}" loading="lazy" decoding="async"
            width="1376" height="768"
-           onerror="this.closest('.lp-featshot').classList.add('noart')">
+           onerror="this.closest('.lp-featshot').classList.add('noart')">` : ''}
       <span class="lp-ico" aria-hidden="true">${icon}</span>
     </div>
     <div class="lp-feattext">
@@ -11760,7 +11899,7 @@ const { uid } = __req("src/core/crypto.js");
 const { logTradePlan } = __req("src/app-actions.js");
 const { fibLevels } = __req("src/domain/premium.js");
 const { buildFacts, reviewReply } = __req("src/domain/aigrounding.js");
-const { askGemini, testConnection, briefSetup, reviewChartImage, listModels, isRetiredModel, GEMINI_MODELS, DEFAULT_MODEL } = __req("src/integrations/gemini.js");
+const { askGemini, testConnection, briefSetup, reviewChartImage, listModels, isRetiredModel, hasHostedProxy, HOSTED_PROXY_URL, GEMINI_MODELS, DEFAULT_MODEL } = __req("src/integrations/gemini.js");
 const { readImage } = __req("src/app-actions.js");
 
 const EVERY = { spot: 5000, exec: 30_000, full: 300_000 };
@@ -11794,6 +11933,14 @@ __exports.default = {
     // feature. Correcting it here means they see a working model rather than
     // discovering the problem through a 404 on their next request.
     if (isRetiredModel(s.ai.model)) patch({ ai: { model: DEFAULT_MODEL } });
+
+    // If the operator hosts a proxy, a reader who has configured nothing gets a
+    // working assistant rather than a switch to find. Anyone who has set their
+    // own key or their own proxy is left alone — adopting the hosted one over
+    // their choice would silently move their traffic and their bill.
+    if (hasHostedProxy() && !s.ai.apiKey && !s.ai.proxyUrl) {
+      patch({ ai: { enabled: true, transport: 'proxy', proxyUrl: HOSTED_PROXY_URL } });
+    }
 
     const x = s.xau;
     const layers = { ...DEFAULT_LAYERS, ...x.layers };
@@ -19128,6 +19275,38 @@ const GEMINI_MODELS = [
 ];
 
 const DEFAULT_MODEL = 'gemini-3.6-flash';
+
+/**
+ * A proxy the operator hosts, so members get the assistant without a key.
+ *
+ * Set this to your deployed worker URL and every visitor has a working
+ * assistant on first load — you hold the key, you pay the bill, and none of
+ * your members has to visit Google AI Studio to use a feature they are already
+ * paying you for.
+ *
+ * Leave it empty and the assistant stays off until each reader adds their own
+ * key, which is the right default for a repository somebody else may deploy:
+ * shipping a URL that bills a stranger's account is not a sensible default.
+ *
+ * This is a URL, not a secret. The key lives on the worker.
+ * See docs/AI-PROXY.md.
+ */
+const HOSTED_PROXY_URL = '';
+
+const hasHostedProxy = () => HOSTED_PROXY_URL.trim().length > 0;
+
+/**
+ * The configuration a reader who has set nothing up should get.
+ *
+ * With a hosted proxy that is a working assistant, on. Without one it is the
+ * off state — never a half-configured one that fails on first use and reads as
+ * a broken product.
+ */
+function defaultAiConfig() {
+  return hasHostedProxy()
+    ? { enabled: true, transport: 'proxy', proxyUrl: HOSTED_PROXY_URL, apiKey: '', model: DEFAULT_MODEL, autoBrief: false }
+    : { enabled: false, transport: 'direct', proxyUrl: '', apiKey: '', model: DEFAULT_MODEL, autoBrief: false };
+}
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 const DEFAULT_TIMEOUT = 30000;
 
@@ -19502,7 +19681,7 @@ async function testConnection(config = {}) {
 
 
 /* --- exports --- */
-Object.assign(__exports, { GEMINI_MODELS, DEFAULT_MODEL, isRetiredModel, askGemini, briefSetup, coachJournal, reviewChartImage, listModels, parseDataUrl, testConnection });
+Object.assign(__exports, { GEMINI_MODELS, DEFAULT_MODEL, HOSTED_PROXY_URL, hasHostedProxy, isRetiredModel, defaultAiConfig, askGemini, briefSetup, coachJournal, reviewChartImage, listModels, parseDataUrl, testConnection });
 
 });
 
@@ -22606,6 +22785,38 @@ const figJournal = () => SVG(`
 
 /* ------------------------------------------------------------------ Steps */
 
+/** 4 — the engine's verdict with the levels it derived. */
+const figEngine = () => SVG(`
+  ${panel(20, 14, 178, 122, 12)}
+  ${text(34, 32, 'XAU/USD  ·  M15', { size: 8.5, fill: 'var(--faint)' })}
+  ${[['4382.7', 'var(--gold)'], ['4371.2', 'var(--short)'], ['4400.4', 'var(--long)']]
+    .map(([v, c], i) => `
+      <line x1="34" y1="${52 + i * 24}" x2="184" y2="${52 + i * 24}" stroke="${c}" stroke-width="1.2"
+            stroke-dasharray="${i === 0 ? '4 3' : '0'}"/>
+      ${text(34, 48 + i * 24, ['ENTRY ZONE', 'STOP', 'TARGET'][i], { size: 7.5, fill: c })}
+      ${text(184, 48 + i * 24, v, { size: 8, anchor: 'end', fill: c })}`).join('')}
+  ${panel(210, 14, 90, 122, 12)}
+  ${text(255, 44, 'NO TRADE', { size: 10, anchor: 'middle', fill: 'var(--short-bright)', weight: 600 })}
+  ${text(255, 62, '64 / 100', { size: 9, anchor: 'middle', fill: 'var(--muted)' })}
+  ${[['Structure', 1], ['Liquidity', 1], ['Gap', 0], ['R:R', 0]].map(([l, ok], i) => `
+    ${text(222, 86 + i * 13, l, { size: 7.5, fill: 'var(--faint)' })}
+    ${text(288, 86 + i * 13, ok ? '✓' : '·', { size: 8, anchor: 'end', fill: ok ? 'var(--long)' : 'var(--faint)' })}`).join('')}
+`, { label: 'The engine returning a no-trade verdict with its derived levels' });
+
+/** 5 — the assistant, with a reply carrying a grounding warning. */
+const figAssistant = () => SVG(`
+  ${panel(20, 14, 280, 52, 10)}
+  ${text(34, 34, 'Why is this a no-trade?', { size: 8.5, fill: 'var(--gold-bright)' })}
+  ${text(34, 52, 'You  ·  asking about the current analysis', { size: 7.5, fill: 'var(--faint)' })}
+  ${panel(20, 74, 280, 62, 10)}
+  ${bar(34, 88, 240, 5)}
+  ${bar(34, 100, 210, 5)}
+  ${bar(34, 112, 168, 5)}
+  <rect x="20" y="124" width="280" height="12" rx="0" fill="rgba(224,166,60,.10)"/>
+  <rect x="20" y="124" width="2" height="12" fill="var(--gold)"/>
+  ${text(30, 133, '⚠ a figure the engine did not compute', { size: 7, fill: 'var(--gold-bright)' })}
+`, { label: 'An assistant reply with an ungrounded number flagged above it' });
+
 const STEPS = [
   {
     n: 1, title: 'Get in',
@@ -22650,7 +22861,31 @@ const STEPS = [
     note: 'The price is indicative, not your broker\'s dealing price. Candles come from a gold-backed proxy market aligned onto spot.',
   },
   {
-    n: 4, title: 'Start from a setup, or your own idea',
+    n: 4, title: 'Let the engine read the chart for you',
+    lead: 'The XAU/USD screen does the structural reading itself — swings, liquidity, gaps, order blocks — and answers buy, sell, or no trade.',
+    fig: figEngine,
+    body: [
+      'Work the <b>pre-trade checklist</b> down the left. Tick only what you can genuinely see; the engine shows what it detected beside each box and will never tick one for you.',
+      'Press <b>Analyze XAU/USD</b>. Structure, liquidity, imbalance, location, momentum and reward-to-risk are weighed into one score out of a hundred, with the case against stated as plainly as the case for.',
+      'If it is a trade, you get an <b>entry zone, a structural stop, up to three targets</b> and the lot size — every level taken from something on the chart, and drawn on it.',
+      'If it is not, it says why: no placeable stop, reward-to-risk below your minimum, price already run past its own entry, the desk shut on a limit. Those override the score entirely.',
+    ],
+    note: 'The score measures a setup against a fixed rulebook. It is not a probability of profit, and nothing here can know what price will do next.',
+  },
+  {
+    n: 5, title: 'Ask the assistant, if you turned it on',
+    lead: 'Optional, off by default, and structurally unable to invent a price. It explains what the engine measured — it never does the measuring.',
+    fig: figAssistant,
+    body: [
+      'Add a Gemini key under <b>Ask about this setup → AI connection</b>, or use a proxy if one has been set up for you. Nothing is sent anywhere until you ask a question.',
+      'Ask why a setup failed, what would have to change, or where the weakest part of it is. It can also write a <b>brief</b> on every analysis automatically.',
+      'Send a <b>screenshot of your own broker chart</b> and it will say whether that agrees with these levels — useful precisely because the app\'s candles are a proxy and yours are not.',
+      'The <b>journal coach</b> reads your logged results and finds the patterns in them. It sees aggregates only: win rates by session, by score band, by emotion. Never your notes or individual trades.',
+    ],
+    note: 'Every reply is scanned before you see it. A price the engine did not compute, or any language claiming to know the future, is flagged above the answer.',
+  },
+  {
+    n: 6, title: 'Start from a setup, or your own idea',
     lead: 'One click loads a generated setup into the analyser. Or ignore them entirely and type your own levels.',
     fig: figLoad,
     body: [
@@ -22660,7 +22895,7 @@ const STEPS = [
     ],
   },
   {
-    n: 5, title: 'Work the checklist honestly',
+    n: 7, title: 'Work the checklist honestly',
     lead: 'Ten factors. Four are mandatory and marked ⚡ — miss one and the verdict cannot go green, whatever the score says.',
     fig: figChecklist,
     body: [
@@ -22671,7 +22906,7 @@ const STEPS = [
     warn: 'Ticking a box you have not verified only fools you. The app cannot see your chart — the checklist is exactly as honest as you are.',
   },
   {
-    n: 6, title: 'Read the verdict',
+    n: 8, title: 'Read the verdict',
     lead: 'One of four answers, the reasons behind it, and the exact position size — which you never chose, because it falls out of your stop.',
     fig: figVerdict,
     body: [
@@ -22682,7 +22917,7 @@ const STEPS = [
     note: 'A skipped trade costs nothing. A 90/100 setup can still lose — the score ranks quality, it does not predict the outcome.',
   },
   {
-    n: 7, title: 'Place it with your broker',
+    n: 9, title: 'Place it with your broker',
     lead: 'This is where you leave. BullionEdge Pro plans and sizes trades; it does not connect to any broker and cannot place an order.',
     fig: figBroker,
     body: [
@@ -22693,7 +22928,7 @@ const STEPS = [
     warn: 'Never widen a stop. Trailing it to lock in profit is fine; moving it away to avoid being wrong is how a small loss becomes the one that matters.',
   },
   {
-    n: 8, title: 'Log it — the record is where your edge shows up',
+    n: 10, title: 'Log it — the record is where your edge shows up',
     lead: 'The journal is what turns the score from a guess into a calibration. After twenty closed trades it starts using your own numbers.',
     fig: figJournal,
     body: [
