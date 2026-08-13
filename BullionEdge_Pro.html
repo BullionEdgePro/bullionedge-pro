@@ -7990,6 +7990,7 @@ const { emit, on: busOn, EV } = __req("src/core/bus.js");
 const { getExplainer } = __req("src/integrations/ai.js");
 const { askHelp } = __req("src/integrations/gemini.js");
 const { buildHelpFacts, reviewReply } = __req("src/domain/aigrounding.js");
+const { answerLocally } = __req("src/domain/helpdesk.js");
 const { prefersReducedMotion } = __req("src/ui/motion.js");
 
 let panel = null;
@@ -8088,14 +8089,30 @@ function render(analysis) {
 
 function syncAskBox() {
   const ask = byId('assistant-ask');
-  if (ask) ask.hidden = !helpAvailable();
+  if (!ask) return;
+
+  ask.hidden = false;
+
+  const input = byId('assistant-input');
+  if (input) {
+  input.placeholder = helpAvailable()
+  ? 'Ask anything about this app…'
+  : 'Ask how something here works…';
+  }
 }
 
 async function askTheApp(question) {
   if (helpBusy || !question.trim()) return;
-  if (!helpAvailable()) return;
 
   helpTurns.push({ role: 'user', text: question.trim() });
+
+  if (!helpAvailable()) {
+  const local = answerLocally(question, { analysis: state.analysis });
+  helpTurns.push({ role: 'model', text: local.text, title: local.title, source: 'local', unsure: !local.confident });
+  renderHelp();
+  return;
+  }
+
   helpBusy = true;
   renderHelp();
 
@@ -8133,6 +8150,12 @@ function renderHelp() {
   host.innerHTML = helpTurns.map((t) => {
   if (t.role === 'user') return `<div class="amsg ask"><div>${esc(t.text)}</div></div>`;
   const notices = (t.notices || []).map((n) => `<div class="anotice">⚠ ${esc(n)}</div>`).join('');
+  if (t.source === 'local') {
+  return `<div class="amsg ${t.unsure ? 'warn' : 'reply'}">
+  <div class="atitle">${esc(t.title || 'Answer')}</div>
+  <div>${esc(t.text).replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>')}</div>
+  </div>`;
+  }
   return `<div class="amsg ${t.error ? 'bad' : 'reply'}">
   <div class="atitle">${t.error ? 'Could not answer' : 'Assistant'}</div>
   <div>${esc(t.text).replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>')}</div>
@@ -9154,6 +9177,448 @@ function reviewReply(text, facts, options = {}) {
 }
 
 Object.assign(__exports, { XAU_SYSTEM_PROMPT, BRIEF_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, VISION_SYSTEM_PROMPT, HELP_SYSTEM_PROMPT, PRICE_LIKE_MIN, buildFacts, buildHelpFacts, buildHelpPrompt, buildPrompt, allowedNumbers, checkGrounding, checkForecasting, buildCoachPrompt, buildVisionPrompt, reviewReply });
+
+});
+
+__def("src/domain/helpdesk.js", function (__exports, __req) {
+
+const TOPICS = [
+  {
+  id: 'score',
+  title: 'The confluence score',
+  keys: ['score', 'confluence', 'number', '100', 'rating', 'grade', 'points', 'scoring', 'band', 'high enough'],
+  view: 'xau',
+  text: `The confluence score is a mark out of 100 given by a fixed rulebook. Ten factors each carry a
+weight — structure 20, liquidity 15, fair value gaps 15, order blocks 10, price action 10, higher
+timeframe 10, premium/discount 5, momentum 5, session 5, reward-to-risk 5 — and the score is the
+sum of the ones your setup satisfies. You can see and change those weights under "Confluence
+weights" on the XAU/USD screen.
+
+It is not a probability of profit. An 80 does not mean eight of the next ten trades win. It means
+eight-tenths of the conditions this rulebook looks for were present, and nothing more than that.
+Two setups scoring 80 can have completely different outcomes, and the score has no opinion about
+which one you are looking at.`,
+  },
+  {
+  id: 'nottrade',
+  title: 'Why a setup gets blocked',
+  keys: ['no trade', 'no-trade', 'blocked', 'avoid', 'rejected', 'refused', 'why not', 'wont let', 'hard stop', 'stopped me'],
+  view: 'xau',
+  text: `Some conditions override the score entirely. When one of them is present the verdict is a
+no-trade regardless of how well everything else scored, and the reason is listed on the verdict card.
+
+The hard stops are: the trade plan has expired or been invalidated by price; the desk is shut by your
+own risk rules for the day; a high-impact news release is inside the window you set; the spread is
+above your threshold; there is no valid stop loss; or the reward-to-risk on the nearest target falls
+below your minimum.
+
+A blocked setup is not a prediction that it would have lost. It is the app holding you to limits you
+set earlier, at a calmer moment than the one you are in now.`,
+  },
+  {
+  id: 'notprobability',
+  title: 'Whether this predicts the market',
+  keys: ['predict', 'probability', 'win rate', 'accuracy', 'will it', 'guarantee', 'signal', 'forecast', 'sure', 'reliable', 'work'],
+  text: `It does not predict anything. There is no forecast anywhere in this app.
+
+What it does is measure the setup you are already looking at against a checklist, size the position
+against the risk you set, and refuse the trade when your own rules say no. Every number on the
+analysis screen is derived from closed candles that have already printed. Nothing is projected
+forward, and no part of the app has an opinion about where price goes next.
+
+If you want the honest version: this is a discipline tool. Its value is in the trades it stops you
+taking, not in the ones it approves.`,
+  },
+  {
+  id: 'ai',
+  title: 'What the AI does and does not do',
+  keys: ['ai', 'gemini', 'model', 'assistant', 'chatbot', 'bot', 'llm', 'api key', 'key', 'artificial'],
+  text: `The analysis itself never involves a model. It is computed on your device from candle data by
+plain arithmetic, and it works with the AI switched off, offline, forever.
+
+The optional Gemini connection only ever explains what the engine already produced. It is handed the
+measurements as JSON and nothing else — no chart, no live price, no journal notes, no account details.
+It cannot perform an analysis, and if it mentions a price the engine did not compute, that reply is
+flagged with a warning before you read it.
+
+The help you are reading right now needs no key and no connection at all.`,
+  },
+  {
+  id: 'sizing',
+  title: 'Position size and lots',
+  keys: ['size', 'lot', 'lots', 'volume', 'how much', 'position', 'quantity', 'sizing', 'contract'],
+  view: 'risk',
+  text: `Position size is worked backwards from the loss you are willing to take, never from the profit
+you would like. The app takes your account balance, your risk percentage, and the distance between
+entry and stop, and returns the lot size at which being wrong costs exactly that percentage.
+
+Change the balance and risk percentage on the Risk screen. The contract specification it assumes —
+contract size, tick value, minimum lot step — is shown under "Broker contract specification" on the
+XAU/USD screen, marked "assumed" until you confirm it against your own broker. Confirm it. Brokers
+differ, and an assumed spec means an assumed lot size.`,
+  },
+  {
+  id: 'stop',
+  title: 'Where the stop loss comes from',
+  keys: ['stop', 'sl', 'stop loss', 'invalidation', 'where is my stop', 'stoploss'],
+  view: 'xau',
+  text: `The stop is placed beyond the level that would prove the idea wrong — the swing that has to hold,
+the far side of the order block, or the edge of the zone the entry is based on — and then padded by a
+fraction of ATR so that ordinary noise does not reach it.
+
+The verdict card names which of those it used. A separate invalidation price is shown alongside it:
+that is the level at which the setup stops being the setup, whether or not you are still in the trade.
+
+If current volatility means a sensible stop would be wider than the one derived, the app says so
+rather than quietly shrinking it.`,
+  },
+  {
+  id: 'targets',
+  title: 'How targets are chosen',
+  keys: ['target', 'tp', 'take profit', 'targets', 'exit', 'profit', 'rr', 'reward', 'risk reward'],
+  view: 'xau',
+  text: `Targets are drawn from real structure — the opposite liquidity pool, the unfilled gap above,
+the previous session high — and not from a fixed multiple of the stop. They are then spaced, so that
+three targets cannot all land inside a single ATR and pretend to be three separate ideas, and the
+furthest one is always kept.
+
+Each target shows its reward-to-risk. A target marked "projected" has no structure behind it and is
+an extension of the move; treat it as the optimistic one.`,
+  },
+  {
+  id: 'repaint',
+  title: 'Repainting and hindsight',
+  keys: ['repaint', 'repainting', 'hindsight', 'past', 'historical', 'backtest', 'redraw', 'change later'],
+  text: `Nothing here repaints. Every structural read is computed by walking the candles forward, and a
+level is only allowed to exist from the bar that confirmed it — not from the bar it turns out, later,
+to have started on.
+
+That is why a break of structure appears a candle or two after the point you would mark it by eye. The
+alternative is a chart that looks brilliant about the past and is useless in the present.
+
+Only closed candles are used. The candle currently forming is drawn but never analysed.`,
+  },
+  {
+  id: 'data',
+  title: 'Where the price data comes from',
+  keys: ['data', 'feed', 'price', 'proxy', 'candles', 'accurate', 'real', 'source', 'live', 'delayed', 'spot'],
+  view: 'xau',
+  text: `The data source is labelled at the top of the XAU/USD screen, and the label is honest about
+which one you are getting. When true XAU/USD candles are unavailable it falls back to a proxy series
+and says "proxy" — the shape of the market is right, the exact prices are not.
+
+That matters for levels. On a proxy feed, treat the structure as real and the decimals as
+approximate, and check any level against your own broker before you act on it. The "Compare my
+broker's chart" button exists for exactly that: it checks a screenshot of your platform against
+these levels and tells you where they disagree.`,
+  },
+  {
+  id: 'journal',
+  title: 'The journal and what it is for',
+  keys: ['journal', 'log', 'record', 'history', 'trades', 'diary', 'entries', 'past trades'],
+  view: 'journal',
+  text: `The Journal holds every trade you have logged, with its R multiple, the emotion you recorded,
+and the plan it came from. Saving a plan from the analysis screen creates the entry; you close it out
+later with the result.
+
+It is the only part of this app that gets more useful the longer you use it. The dashboard statistics,
+the progression path and the coach all read from it, and all three are empty until you have logged
+real trades. Five closed trades is roughly where it starts saying anything worth hearing.`,
+  },
+  {
+  id: 'progression',
+  title: 'The progression path',
+  keys: ['progress', 'progression', 'path', 'stage', 'level', 'improve', 'better trader', 'journey', 'rank'],
+  view: 'journal',
+  text: `The path has six stages, and they are in this order for a reason: Record every trade, then
+Defined risk, then Discipline, then Selectivity, then Positive expectancy, then Consistency.
+
+Your current stage is the first one you have not met — not the best one you have ever touched. Each
+stage is measured from your own logged trades against a fixed threshold, so it cannot be talked into
+advancing. Expectancy sits fifth because chasing it before the four habits underneath it are in place
+is the most common way traders stall.`,
+  },
+  {
+  id: 'risklimits',
+  title: 'Risk limits and the desk shutting',
+  keys: ['risk', 'limit', 'daily', 'drawdown', 'shut', 'locked', 'max', 'stop me', 'losing streak', 'safe'],
+  view: 'risk',
+  text: `On the Risk screen you set a risk percentage per trade, a maximum number of trades per day, and
+a daily loss limit. When you hit the loss limit or the trade count, the desk shuts: the analysis still
+runs, but the verdict becomes a no-trade until the next session.
+
+This is the feature most worth leaving on. It is set when you are calm and enforced when you are not,
+which is the entire point — the moment you most want to override it is the moment it is most likely
+to be right.`,
+  },
+  {
+  id: 'news',
+  title: 'The news calendar',
+  keys: ['news', 'calendar', 'nfp', 'fomc', 'event', 'economic', 'release', 'data release', 'cpi', 'fed'],
+  view: 'xau',
+  text: `The calendar marks the releases that move gold, and it is explicit about how certain it is of
+each one. Scheduled Fed decisions are known dates. Non-farm payrolls and jobless claims are derived
+from published rules — first Friday, Thursdays — and are labelled as derived. Anything it does not
+know, it does not list, rather than inventing a plausible-looking entry.
+
+Times are computed in US Eastern and converted, so they stay correct across daylight saving. When a
+high-impact release falls inside the window you set, the verdict becomes a no-trade.`,
+  },
+  {
+  id: 'checklist',
+  title: 'The checklist you tick yourself',
+  keys: ['checklist', 'tick', 'check', 'steps', 'boxes', 'confirm', 'mandatory', 'required'],
+  view: 'xau',
+  text: `The checklist is what you can see and the engine cannot. It runs in steps, some items are
+mandatory, and the engine reads your ticks as inputs to the same score.
+
+Tick honestly. Nothing checks your answers, which means the checklist is the one place in this app
+where you can lie your way to a green verdict. A high score built on ticks you did not earn is worth
+less than an honest low one.`,
+  },
+  {
+  id: 'offline',
+  title: 'Working offline and installing',
+  keys: ['offline', 'install', 'app', 'pwa', 'phone', 'android', 'internet', 'download', 'mobile'],
+  text: `Install it from your browser's menu — "Add to Home screen" on a phone, the install icon in the
+address bar on a desktop — and it runs as an app.
+
+Once installed, everything except the price feed works with no connection at all: the analysis, the
+checklist, sizing, the journal, the dashboard. Your data lives on your device.`,
+  },
+  {
+  id: 'privacy',
+  title: 'Where your data is kept',
+  keys: ['privacy', 'data', 'stored', 'account', 'cloud', 'server', 'private', 'secure', 'delete', 'sync'],
+  view: 'settings',
+  text: `Your trades, settings and profile are stored in your browser on this device. There is no account
+server and nothing is uploaded, which also means nothing is backed up — export from Settings if the
+history matters to you, and note that clearing site data deletes it permanently.
+
+The only thing that ever leaves the device is an optional AI request, and only when you have switched
+that on. It carries the engine's measurements and nothing else.`,
+  },
+  {
+  id: 'psychology',
+  title: 'The psychology screen',
+  keys: ['psychology', 'emotion', 'tilt', 'mental', 'feeling', 'discipline', 'mindset', 'revenge'],
+  view: 'psychology',
+  text: `Psychology tracks the state you recorded against the results you got. Over enough logged trades
+it can show you something you will not see any other way — that your losses cluster in one emotional
+state, or after a particular kind of day.
+
+It needs honest inputs and a real sample. Recorded carelessly, it is noise.`,
+  },
+  {
+  id: 'getstarted',
+  title: 'Where to start',
+  keys: ['start', 'begin', 'how do i use', 'first', 'new', 'guide', 'tutorial', 'help', 'what do i do', 'how to use'],
+  view: 'guide',
+  text: `Set your balance and risk percentage on the Risk screen first — every number the app produces
+depends on those, and the defaults are not yours.
+
+Then open XAU/USD, let the engine read the candles, work down the checklist, and read the verdict.
+Save the plan to the journal whether or not you take it; the trades you passed on are data too.
+
+The Guide screen walks the whole thing in ten steps with pictures.`,
+  },
+];
+
+const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'do', 'does', 'did', 'i', 'me', 'my',
+  'you', 'your', 'it', 'its', 'this', 'that', 'these', 'those', 'to', 'of', 'in', 'on', 'for', 'and',
+  'or', 'but', 'with', 'about', 'can', 'could', 'should', 'would', 'will', 'shall', 'may', 'might',
+  'what', 'when', 'where', 'who', 'how', 'why', 'which', 'if', 'so', 'as', 'at', 'by', 'from',
+  'please', 'tell', 'explain', 'mean', 'means', 'here', 'there', 'get', 'got', 'have', 'has',
+]);
+
+function tokenise(text) {
+  return String(text || '')
+  .toLowerCase()
+  .replace(/[^a-z0-9\s/-]/g, ' ')
+  .split(/\s+/)
+  .filter((w) => w.length > 1 && !STOP_WORDS.has(w));
+}
+
+function scoreTopic(topic, words, raw) {
+  let score = 0;
+  for (const key of topic.keys) {
+  if (key.includes(' ')) {
+  if (raw.includes(key)) score += 3 + key.split(' ').length;
+  continue;
+  }
+
+  if (words.includes(key)) score += 3;
+  else if (words.some((w) => w.length > 4 && (w.startsWith(key) || key.startsWith(w)))) score += 1;
+  }
+
+  for (const w of tokenise(topic.title)) if (words.includes(w)) score += 1;
+  return score;
+}
+
+function rankTopics(question) {
+  const raw = String(question || '').toLowerCase();
+  const words = tokenise(question);
+  if (!words.length) return [];
+  return TOPICS
+  .map((t) => ({ topic: t, score: scoreTopic(t, words, raw) }))
+  .filter((r) => r.score > 0)
+  .sort((a, b) => b.score - a.score || a.topic.id.localeCompare(b.topic.id));
+}
+
+const MATCH_THRESHOLD = 4;
+
+const money = (v) => (Number.isFinite(v) ? v.toFixed(2) : null);
+
+function isDefinitional(raw) {
+  const asksWhatSomethingIs = /\bwhat (is|are|does|do)\b/.test(raw)
+  || /\bmean(s|ing)?\b/.test(raw)
+  || /\bdefine\b/.test(raw)
+  || /\bhow (does|do) .* work\b/.test(raw);
+  const pointsAtTheScreen = /\b(this|these|it|here|my|current|currently|now|above|on screen|weak|weakest)\b/.test(raw);
+  return asksWhatSomethingIs && !pointsAtTheScreen;
+}
+
+function answerAboutAnalysis(question, analysis) {
+  if (!analysis) return null;
+  const raw = String(question || '').toLowerCase();
+  if (isDefinitional(raw)) return null;
+
+  const words = tokenise(question);
+  const has = (...ws) => ws.some((w) => (w.includes(' ') ? raw.includes(w) : words.includes(w)));
+
+  const asksWhy = /\bwhy\b/.test(raw);
+  const saysNotATrade = /\bno[t]?[- ]a? ?trade\b/.test(raw);
+
+  const stops = analysis.hardStops || [];
+  const decision = String(analysis.decision || '').toUpperCase();
+
+  if ((asksWhy || saysNotATrade || has('blocked', 'avoid', 'reject')) && (stops.length || decision === 'AVOID')) {
+  const lines = stops.length
+  ? stops.map((s) => `• ${s}`).join('\n')
+  : '• The score did not reach the threshold you set.';
+
+  const waiting = decision === 'WAIT';
+  return {
+  title: waiting ? 'Why this is not a yes yet' : 'Why this one is blocked',
+  text: `The verdict is ${decision || 'a no-trade'} because of the following, which override the score:\n\n${lines}\n\n`
+  + (waiting
+  ? `None of these is a prediction. They are conditions that have not printed yet, and WAIT means exactly that — `
+  + `not a weaker version of yes.`
+  : `Each of these is a rule you set or a condition measured from the candles. Nothing here is an opinion about `
+  + `where price is going — the setup may well have worked. It is blocked because it broke a rule you wrote down `
+  + `earlier, at a calmer moment than this one.`),
+  };
+  }
+
+  if (asksWhy || has('score', 'walk', 'breakdown', 'how did', 'scored')) {
+  const conf = analysis.confirmations || [];
+  const missing = analysis.missingConfirmations || [];
+  const parts = [`This setup scored ${analysis.score}/100${analysis.bandLabel ? ` — ${analysis.bandLabel}` : ''}.`];
+  if (conf.length) parts.push(`What it has:\n${conf.slice(0, 8).map((c) => `• ${c}`).join('\n')}`);
+  if (missing.length) parts.push(`What it is missing:\n${missing.slice(0, 8).map((c) => `• ${c}`).join('\n')}`);
+  parts.push('That is a count of conditions met against a fixed rulebook. It is not a probability of profit, '
+  + 'and two setups on the same score can behave nothing alike.');
+  return { title: 'How this score was reached', text: parts.join('\n\n') };
+  }
+
+  if (has('weak', 'weakest', 'wrong', 'risk', 'worry', 'concern', 'problem', 'danger')) {
+  const warn = analysis.warnings || [];
+  const conflicts = (analysis.conflicts || []).map((c) => (typeof c === 'string' ? c : c.title));
+  const missing = analysis.missingConfirmations || [];
+  const items = [...conflicts, ...warn, ...missing.slice(0, 4)];
+  const inval = analysis.plan && analysis.plan.valid ? money(analysis.plan.invalidation) : null;
+  if (!items.length && !inval) return null;
+  return {
+  title: 'The weak points',
+  text: (items.length
+  ? `${items.map((w) => `• ${w}`).join('\n')}\n\n`
+  : 'The engine flagged no conflicts on this one.\n\n')
+  + (inval ? `The idea itself stops being the idea at ${inval}. That is the level to watch, whether or not you are in the trade.`
+  : 'There is no valid plan on screen, so there is no invalidation level to give you.'),
+  };
+  }
+
+  if (has('change', 'improve', 'better', 'tradeable', 'what if', 'fix')) {
+  const missing = analysis.missingConfirmations || [];
+  if (!missing.length && !stops.length) return null;
+  return {
+  title: 'What would have to change',
+  text: [
+  stops.length ? `These have to clear first:\n${stops.map((s) => `• ${s}`).join('\n')}` : null,
+  missing.length ? `Then these are the conditions it is short of:\n${missing.slice(0, 8).map((m) => `• ${m}`).join('\n')}` : null,
+  'Waiting for them is a decision. Talking yourself into the setup without them is the other one.',
+  ].filter(Boolean).join('\n\n'),
+  };
+  }
+
+  if (decision === 'WAIT' && has('wait', 'waiting', 'when', 'trigger')) {
+  const missing = analysis.missingConfirmations || [];
+  return {
+  title: 'What this is waiting for',
+  text: (missing.length
+  ? `The verdict is WAIT because these have not printed yet:\n\n${missing.slice(0, 8).map((m) => `• ${m}`).join('\n')}\n\n`
+  : 'The verdict is WAIT because the conditions are not complete yet.\n\n')
+  + 'WAIT is not a weaker version of yes. It means the thing that would make this a setup has not happened.',
+  };
+  }
+
+  return null;
+}
+
+function answerLocally(question, { analysis = null } = {}) {
+  const q = String(question || '').trim();
+  if (!q) return null;
+
+  const fromAnalysis = answerAboutAnalysis(q, analysis);
+  if (fromAnalysis) {
+  return { ...fromAnalysis, kind: 'analysis', topicId: null, view: 'xau', confident: true };
+  }
+
+  const ranked = rankTopics(q);
+  const best = ranked[0];
+  if (best && best.score >= MATCH_THRESHOLD) {
+  const related = ranked.slice(1, 3).filter((r) => r.score >= MATCH_THRESHOLD - 1).map((r) => r.topic.title);
+  return {
+  title: best.topic.title,
+  text: best.topic.text,
+  kind: 'app',
+  topicId: best.topic.id,
+  view: best.topic.view || null,
+  related,
+  confident: true,
+  };
+  }
+
+  return {
+  title: 'I do not have an answer for that one',
+  text: 'This help is a fixed set of topics rather than a model, so it can only answer what it has. '
+  + 'It covers:\n\n'
+  + TOPICS.map((t) => `• ${t.title}`).join('\n')
+  + '\n\nFor questions about the market itself — where gold is going, whether to take a trade — '
+  + 'nothing in this app will answer, by design. The analysis screen measures the setup in front of '
+  + 'you; it does not forecast.',
+  kind: 'miss',
+  topicId: null,
+  view: 'guide',
+  confident: false,
+  };
+}
+
+function starterQuestions(analysis) {
+  if (analysis && (analysis.hardStops || []).length) {
+  return ['Why is this blocked?', 'What would have to change?', 'What does the confluence score mean?'];
+  }
+  if (analysis && String(analysis.decision || '').toUpperCase() === 'WAIT') {
+  return ['What is this waiting for?', 'Where would I be wrong?', 'What does the confluence score mean?'];
+  }
+  if (analysis) {
+  return ['Walk me through this score.', 'What is the weakest part?', 'Where does the stop come from?'];
+  }
+  return ['What does the confluence score mean?', 'Where do I start?', 'Does this predict the market?'];
+}
+
+Object.assign(__exports, { TOPICS, MATCH_THRESHOLD, tokenise, rankTopics, answerAboutAnalysis, answerLocally, starterQuestions });
 
 });
 
@@ -10632,6 +11097,7 @@ const { whyList, whyNotList, headline, planText } = __req("src/domain/xauexplain
 const { BROKER_SPEC_DEFAULTS } = __req("src/domain/tradeplan.js");
 const { newsProximity, hasLiveFeed, agenda } = __req("src/domain/news.js");
 const { RECURRING_ONLY } = __req("src/domain/calendar.js");
+const { answerLocally, starterQuestions } = __req("src/domain/helpdesk.js");
 const { readRiskState } = __req("src/domain/risk.js");
 const { uid } = __req("src/core/crypto.js");
 const { logTradePlan } = __req("src/app-actions.js");
@@ -11918,17 +12384,12 @@ function paintAsk() {
   const cfg = state.ai;
   const configured = cfg.transport === 'proxy' ? !!cfg.proxyUrl : !!cfg.apiKey;
 
+  const ready = cfg.enabled && configured;
+
   const chip = byId('xau-ai-state');
   if (chip) {
-  chip.textContent = !cfg.enabled ? 'off' : configured ? 'ready' : 'needs a key';
-  chip.className = 'chip ' + (!cfg.enabled ? '' : configured ? 'long' : 'gold');
-  }
-
-  if (!cfg.enabled || !configured) {
-  node.innerHTML = callout('', `<b>The assistant is off.</b> The analysis above does not need it — it is computed on this
-  device from candle data, and a model is never involved in producing it. Turn the assistant on below if you want to
-  ask questions about what the engine found.`);
-  return;
+  chip.textContent = ready ? 'Gemini connected' : 'answering on this device';
+  chip.className = 'chip ' + (ready ? 'long' : '');
   }
 
   const suggestions = suggestedQuestions();
@@ -11949,6 +12410,7 @@ function paintAsk() {
   ${aiTurns.length ? '<button class="btn ghost sm" id="xau-ai-clear" type="button">Clear</button>' : ''}
   </div>
 
+  ${ready ? `
   <div class="row tight" style="margin-top:var(--sp-2)">
   <button class="btn ghost sm" id="xau-ai-brief" ${aiBusy ? 'disabled' : ''}>Write a brief</button>
   <button class="btn ghost sm" id="xau-ai-shot" ${aiBusy ? 'disabled' : ''}>Compare my broker's chart</button>
@@ -11957,22 +12419,29 @@ function paintAsk() {
   <p class="t-faint" style="font-size:var(--fs-2xs);margin-top:6px">
   A screenshot of your own broker's XAUUSD chart is checked against these levels — the app's candles are a proxy,
   and a disagreement between the two is worth knowing about before you place anything.
-  </p>`;
+  </p>` : `
+  <p class="t-faint" style="font-size:var(--fs-2xs);margin-top:var(--sp-2)">
+  Answers come from the engine on this device — no key, no connection, no cost, and they can only quote numbers
+  that were actually computed above. Connecting Gemini below adds free-form phrasing, written briefs and
+  screenshot comparison against your own broker's chart. It does not make the analysis any better; the analysis
+  never involved a model.
+  </p>`}`;
 }
 
-function suggestedQuestions() {
-  const a = analysis;
-  if (!a) return ['What does this screen actually measure?'];
-  if (a.hardStops && a.hardStops.length) return ['Why is this a no-trade?', 'What would have to change for this to become tradeable?'];
-  if (a.decision === 'WAIT') return ['What is this waiting for?', 'What would invalidate the idea before it triggers?'];
-  return ['Walk me through why this scored what it did.', 'What is the weakest part of this setup?', 'Where would I be wrong?'];
-}
+const suggestedQuestions = () => starterQuestions(analysis);
 
 function turnMarkup(turn) {
   if (turn.role === 'user') {
   return `<div class="xaiturn user"><span class="xair">You</span><div class="xait">${esc(turn.text)}</div></div>`;
   }
   const notices = (turn.notices || []).map((n) => `<div class="xainotice">⚠ ${esc(n)}</div>`).join('');
+  if (turn.source === 'local') {
+
+  return `<div class="xaiturn model${turn.unsure ? ' err' : ''}">
+  <span class="xair">${esc(turn.title || 'Answer')} · on this device</span>
+  <div class="xait">${paragraphs(turn.text)}</div>
+  </div>`;
+  }
   return `<div class="xaiturn model${turn.error ? ' err' : ''}">
   <span class="xair">${turn.error ? 'Error' : 'Gemini'}</span>
   <div class="xait">${paragraphs(turn.text)}</div>
@@ -12048,6 +12517,22 @@ async function askModel(question) {
   if (!analysis) { toast('Run the analysis first — there is nothing to ask about yet.', 'bad'); return; }
 
   aiTurns.push({ role: 'user', text: question.trim() });
+
+  if (!aiReady()) {
+  const local = answerLocally(question, { analysis });
+  aiTurns.push({
+  role: 'model',
+  text: local.text,
+  source: 'local',
+  title: local.title,
+  unsure: !local.confident,
+  });
+  paintAsk();
+  const t = byId('xau-ai-thread');
+  if (t) t.scrollTop = t.scrollHeight;
+  return;
+  }
+
   aiBusy = true;
   paintAsk();
 
