@@ -11760,7 +11760,7 @@ const { uid } = __req("src/core/crypto.js");
 const { logTradePlan } = __req("src/app-actions.js");
 const { fibLevels } = __req("src/domain/premium.js");
 const { buildFacts, reviewReply } = __req("src/domain/aigrounding.js");
-const { askGemini, testConnection, briefSetup, reviewChartImage, GEMINI_MODELS } = __req("src/integrations/gemini.js");
+const { askGemini, testConnection, briefSetup, reviewChartImage, listModels, isRetiredModel, GEMINI_MODELS, DEFAULT_MODEL } = __req("src/integrations/gemini.js");
 const { readImage } = __req("src/app-actions.js");
 
 const EVERY = { spot: 5000, exec: 30_000, full: 300_000 };
@@ -11789,6 +11789,12 @@ __exports.default = {
   icon: '◈',
 
   render(s) {
+    // A profile saved before a model generation was retired still carries that
+    // name, so raising the default fixes nothing for anyone who already used the
+    // feature. Correcting it here means they see a working model rather than
+    // discovering the problem through a 404 on their next request.
+    if (isRetiredModel(s.ai.model)) patch({ ai: { model: DEFAULT_MODEL } });
+
     const x = s.xau;
     const layers = { ...DEFAULT_LAYERS, ...x.layers };
 
@@ -12049,9 +12055,14 @@ __exports.default = {
 
               <div class="field">
                 <label for="xau-ai-model">Model</label>
-                <div class="selwrap"><select id="xau-ai-model">
-                  ${GEMINI_MODELS.map((m) => `<option value="${esc(m.id)}" ${s.ai.model === m.id ? 'selected' : ''}>${esc(m.label)}</option>`).join('')}
-                </select></div>
+                <div class="row tight">
+                  <div class="selwrap" style="flex:1"><select id="xau-ai-model">
+                    ${modelOptions(s.ai.model)}
+                  </select></div>
+                  <button class="btn ghost sm" id="xau-ai-models" type="button">Refresh</button>
+                </div>
+                <div class="field-note">Google retires model names and closes older ones to new keys. If a request
+                  comes back 404, refresh — it asks your key which models it can actually reach.</div>
               </div>
 
               <div class="field">
@@ -12359,6 +12370,25 @@ __exports.default = {
 
     byId('xau-ai-model').onchange = (e) => patch({ ai: { model: e.target.value } });
 
+    byId('xau-ai-models').onclick = async (e) => {
+      const btn = e.currentTarget;
+      const out = byId('xau-ai-testresult');
+      btn.disabled = true;
+      btn.textContent = 'Asking…';
+      try {
+        const models = await listModels(state.ai);
+        applyModelList(models);
+        out.className = 'xaitest ok';
+        out.textContent = `Your key can reach ${models.length} text model${models.length === 1 ? '' : 's'}. Selected ${state.ai.model}.`;
+      } catch (err) {
+        out.className = 'xaitest bad';
+        out.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Refresh';
+      }
+    };
+
     byId('xau-ai-toggle').onclick = (e) => {
       const enabled = !state.ai.enabled;
       patch({ ai: { enabled } });
@@ -12373,7 +12403,18 @@ __exports.default = {
       btn.disabled = true;
       btn.textContent = 'Testing…';
       out.textContent = '';
-      const result = await testConnection(state.ai);
+      let result = await testConnection(state.ai);
+
+      // A retired model name is the one failure the app can resolve on its own:
+      // it has just been handed the list of names that do work, so it picks one
+      // and retries rather than reporting a 404 and stopping.
+      if (!result.ok && result.suggestModels && result.suggestModel) {
+        applyModelList(result.suggestModels);
+        out.className = 'xaitest';
+        out.textContent = `That model is retired — trying ${result.suggestModel}…`;
+        result = await testConnection(state.ai);
+      }
+
       btn.disabled = false;
       btn.textContent = 'Test the connection';
       out.className = 'xaitest ' + (result.ok ? 'ok' : 'bad');
@@ -13278,6 +13319,37 @@ function syncChartHeight(layers) {
   wrap.classList.toggle('panes-2', panes === 2);
   wrap.classList.toggle('panes-3', panes >= 3);
   if (chart) chart.resize();
+}
+
+/**
+ * Options for the model select.
+ *
+ * Keeps whatever the trader already has selected in the list even if it is not
+ * in the known set — otherwise refreshing the list would silently switch their
+ * model, and the next request would fail for a different reason than the one
+ * they were debugging.
+ */
+/**
+ * Swap the select's options for a freshly-fetched list.
+ *
+ * If the currently-selected model is not in the new list it is dead, so the
+ * first available one is chosen — leaving a known-dead selection in place would
+ * mean the next request fails for the same reason the reader just refreshed to
+ * escape.
+ */
+function applyModelList(models) {
+  const select = byId('xau-ai-model');
+  if (!select || !models.length) return;
+  const keep = models.some((m) => m.id === state.ai.model) ? state.ai.model : models[0].id;
+  if (keep !== state.ai.model) patch({ ai: { model: keep } });
+  select.innerHTML = modelOptions(keep, models);
+  select.value = keep;
+}
+
+function modelOptions(selected, models = GEMINI_MODELS) {
+  const list = models.slice();
+  if (selected && !list.some((m) => m.id === selected)) list.unshift({ id: selected, label: `${selected} (current)` });
+  return list.map((m) => `<option value="${esc(m.id)}" ${selected === m.id ? 'selected' : ''}>${esc(m.label)}</option>`).join('');
 }
 
 function layerToggles(layers) {
@@ -19034,12 +19106,28 @@ __def("src/integrations/gemini.js", function (__exports, __req) {
 
 const { XAU_SYSTEM_PROMPT, BRIEF_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, VISION_SYSTEM_PROMPT, buildPrompt, buildCoachPrompt, buildVisionPrompt } = __req("src/domain/aigrounding.js");
 
+/**
+ * Fallback model list.
+ *
+ * Deliberately a *fallback*, not the source of truth. This list was wrong within
+ * weeks of being written — 2.5-flash was closed to new keys and every request
+ * came back 404 with a message about migrating — and any hard-coded list will go
+ * the same way. `listModels()` asks the key what it can actually reach, and the
+ * UI offers that; this is only what to show before anyone has asked.
+ *
+ * `generateContent` itself remains fully supported. Google recommends the newer
+ * Interactions API for new development, and moving to it would mean server-side
+ * conversation state and a different response shape — worth doing deliberately,
+ * not while somebody is blocked on a 404.
+ */
 const GEMINI_MODELS = [
-  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash — fast, cheap, fine for this' },
-  { id: 'gemini-2.5-pro',   label: 'Gemini 2.5 Pro — slower, better at nuance' },
+  { id: 'gemini-3.6-flash',      label: 'Gemini 3.6 Flash — fast, current, right for this' },
+  { id: 'gemini-3.5-flash',      label: 'Gemini 3.5 Flash — better at nuance, slower' },
+  { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite — cheapest' },
+  { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite' },
 ];
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = 'gemini-3.6-flash';
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 const DEFAULT_TIMEOUT = 30000;
 
@@ -19143,6 +19231,7 @@ async function describeFailure(response, transport) {
     case 403: return transport === 'proxy'
       ? `The proxy refused the request (${response.status}). Check its own key and any allowed-origin rules. ${detail}`.trim()
       : `Gemini rejected the API key (${response.status}). Check it is correct, that the Generative Language API is enabled, and that any HTTP-referrer restriction includes this site. ${detail}`.trim();
+    case 404: return `That model is not available to this key. Google retires model names and closes older ones to new keys — press "Refresh available models" to load the ones your key can actually use. ${detail}`.trim();
     case 429: return 'Rate limit or quota reached. Wait a moment, or use a key with more headroom — the free tier is small.';
     case 500:
     case 502:
@@ -19229,6 +19318,88 @@ async function reviewChartImage({ imageDataUrl, facts, question, config = {} }) 
   });
 }
 
+/**
+ * Generations Google has shut down or closed to new keys.
+ *
+ * A saved profile keeps whatever model it was configured with, so upgrading the
+ * default alone fixes nothing for anyone who already used the feature — their
+ * first request after the update still 404s on a name that stopped working.
+ * This lets the view retire a stored choice on load rather than making the
+ * reader discover it through a failure.
+ *
+ * Only whole generations, and only ones already confirmed dead. Guessing that a
+ * specific model *might* be retired would silently move somebody off a model
+ * that works.
+ */
+const RETIRED_GENERATIONS = /^gemini-(1\.|2\.)/;
+
+const isRetiredModel = (id) => RETIRED_GENERATIONS.test(String(id || ''));
+
+/**
+ * Ask the key which models it can actually reach.
+ *
+ * The fix for the whole class of bug rather than one instance of it. A hard-coded
+ * model list is a claim about Google's catalogue on the day it was typed, and
+ * this one was wrong within weeks: `gemini-2.5-flash` closed to new keys and
+ * every request came back 404 telling the reader to migrate. The catalogue is
+ * queryable, so query it.
+ *
+ * Filtered to models that support `generateContent` — the list also carries
+ * embedding, image and TTS models, none of which can answer a question, and
+ * offering them would turn one confusing failure into four.
+ *
+ * @returns {Promise<Array<{id, label}>>} newest-looking first
+ */
+async function listModels(config = {}) {
+  const { transport = 'direct', apiKey = '', proxyUrl = '', timeoutMs = 15000 } = config;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    let response;
+    if (transport === 'proxy') {
+      if (!proxyUrl) throw new Error('No proxy URL is configured.');
+      // A proxy that only forwards generateContent cannot answer this, which is
+      // fine — the caller falls back to the static list.
+      response = await fetch(`${proxyUrl.replace(/\/+$/, '')}/models`, { signal: controller.signal });
+    } else {
+      if (!apiKey) throw new Error('No Gemini API key is configured.');
+      response = await fetch(`${ENDPOINT}?pageSize=200`, {
+        headers: { 'x-goog-api-key': apiKey },
+        signal: controller.signal,
+      });
+    }
+    if (!response.ok) throw new Error(await describeFailure(response, transport));
+
+    const data = await response.json();
+    const rows = Array.isArray(data && data.models) ? data.models : [];
+
+    const usable = rows
+      .filter((m) => Array.isArray(m.supportedGenerationMethods)
+        ? m.supportedGenerationMethods.includes('generateContent')
+        : true)
+      .map((m) => ({
+        id: String(m.name || '').replace(/^models\//, ''),
+        label: m.displayName ? `${m.displayName}` : String(m.name || '').replace(/^models\//, ''),
+      }))
+      .filter((m) => m.id && /^gemini-/.test(m.id) && !/embedding|aqa|tts|image|veo|live/.test(m.id));
+
+    // Newest first, by the version number in the id. Not perfect ordering, but
+    // it reliably puts the current generation at the top of the dropdown, which
+    // is the only thing the ordering has to achieve.
+    const version = (id) => {
+      const m = /gemini-(\d+)(?:\.(\d+))?/.exec(id);
+      return m ? Number(m[1]) * 100 + Number(m[2] || 0) : 0;
+    };
+    usable.sort((a, b) => version(b.id) - version(a.id) || a.id.localeCompare(b.id));
+
+    if (!usable.length) throw new Error('The key is valid but no text-capable Gemini models came back.');
+    return usable;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Split a data URL without pulling in a dependency to do it. */
 function parseDataUrl(dataUrl) {
   const m = /^data:(image\/(?:png|jpeg|jpg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
@@ -19309,15 +19480,29 @@ async function testConnection(config = {}) {
       question: 'Reply with exactly: connection ok',
       config: { ...config, timeoutMs: 15000 },
     });
-    return { ok: true, message: `Connected. The model replied: "${text.slice(0, 80)}"` };
+    return { ok: true, message: `Connected on ${config.model || DEFAULT_MODEL}. The model replied: "${text.slice(0, 80)}"` };
   } catch (err) {
+    // A dead model name is the one failure the app can fix by itself, so it
+    // does — rather than reporting a 404 and leaving the reader to guess which
+    // of a dozen names is current this month.
+    if (/not available to this key/i.test(err.message)) {
+      try {
+        const models = await listModels(config);
+        return {
+          ok: false,
+          message: err.message,
+          suggestModels: models,
+          suggestModel: models[0] ? models[0].id : null,
+        };
+      } catch { /* the retry is a courtesy; the original error is still the answer */ }
+    }
     return { ok: false, message: err.message };
   }
 }
 
 
 /* --- exports --- */
-Object.assign(__exports, { GEMINI_MODELS, DEFAULT_MODEL, askGemini, briefSetup, coachJournal, reviewChartImage, parseDataUrl, testConnection });
+Object.assign(__exports, { GEMINI_MODELS, DEFAULT_MODEL, isRetiredModel, askGemini, briefSetup, coachJournal, reviewChartImage, listModels, parseDataUrl, testConnection });
 
 });
 
