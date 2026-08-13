@@ -739,6 +739,31 @@ tr:last-child td { border-bottom: none; }
 .reveal { opacity: 0; transform: translateY(14px); }
 .reveal.in { opacity: 1; transform: none; transition: opacity var(--dur-4) var(--ease-out), transform var(--dur-4) var(--ease-out); }
 
+.aask {
+  display: flex; gap: 6px; padding: var(--sp-3);
+  border-top: 1px solid var(--line-2);
+}
+.aask input {
+  flex: 1; min-width: 0; padding: 7px 10px;
+  background: rgba(0,0,0,.25); border: 1px solid var(--line-2);
+  border-radius: var(--r-sm); color: var(--ink);
+  font: inherit; font-size: var(--fs-sm);
+}
+.aask input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.aask input::placeholder { color: var(--faint); }
+
+.ahelp { display: grid; gap: var(--sp-2); margin-top: var(--sp-2); }
+.amsg.ask {
+  background: rgba(224,166,60,.09); border-color: rgba(224,166,60,.28);
+  color: var(--ink);
+}
+.amsg.reply { background: var(--panel-2); }
+.anotice {
+  margin-top: 6px; padding: 5px 8px; border-left: 2px solid var(--gold);
+  background: rgba(224,166,60,.09); border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-size: var(--fs-2xs); line-height: 1.5; color: var(--gold-bright);
+}
+
 /* assets/css/views.css */
 .authscreen {
   position: fixed; inset: 0; z-index: 60;
@@ -2641,6 +2666,12 @@ kbd {
     <button class="iconbtn" data-a-close aria-label="Close assistant">×</button>
   </div>
   <div class="abody"></div>
+  <div class="aask" id="assistant-ask" hidden>
+    <label class="sr-only" for="assistant-input">Ask about the app</label>
+    <input id="assistant-input" type="text" maxlength="300" autocomplete="off"
+           placeholder="Ask how something here works…">
+    <button class="btn sm" id="assistant-send">Ask</button>
+  </div>
   <div class="afoot">
     <button class="btn ghost sm" data-a-goto="analyse">Analyse</button>
     <button class="btn ghost sm" data-a-goto="psychology">Psychology</button>
@@ -7957,12 +7988,20 @@ const { byId, esc, on } = __req("src/core/dom.js");
 const { state } = __req("src/core/state.js");
 const { emit, on: busOn, EV } = __req("src/core/bus.js");
 const { getExplainer } = __req("src/integrations/ai.js");
+const { askHelp } = __req("src/integrations/gemini.js");
+const { buildHelpFacts, reviewReply } = __req("src/domain/aigrounding.js");
 const { prefersReducedMotion } = __req("src/ui/motion.js");
 
 let panel = null;
 let fab = null;
 let isOpen = false;
 let lastVerdictKey = null;
+
+let helpTurns = [];
+let helpBusy = false;
+
+const helpAvailable = () => state.ai && state.ai.enabled
+  && (state.ai.transport === 'proxy' ? !!state.ai.proxyUrl : !!state.ai.apiKey);
 
 function initAssistant() {
   fab = byId('assistant-fab');
@@ -7989,6 +8028,20 @@ function initAssistant() {
   }
   });
 
+  const send = () => {
+  const input = byId('assistant-input');
+  if (!input) return;
+  const q = input.value;
+  input.value = '';
+  askTheApp(q);
+  };
+  on(panel, 'click', '#assistant-send', send);
+  on(panel, 'keydown', '#assistant-input', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); send(); }
+  });
+
+  busOn(EV.STATE, ({ keys }) => { if (keys.includes('ai')) syncAskBox(); });
+
   document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && isOpen) setOpen(false);
   });
@@ -8001,6 +8054,11 @@ function setOpen(open) {
   if (!panel || !fab) return;
   panel.classList.toggle('on', open);
   fab.setAttribute('aria-expanded', String(open));
+
+  if (!open) helpTurns = [];
+
+  syncAskBox();
+
   if (open) {
   fab.classList.remove('has-nudge');
   render(state.analysis);
@@ -8023,6 +8081,71 @@ function render(analysis) {
 
   const messages = getExplainer()(analysis, state);
   body.innerHTML = messages.map(renderMessage).join('');
+
+  if (helpTurns.length || helpBusy) renderHelp();
+  syncAskBox();
+}
+
+function syncAskBox() {
+  const ask = byId('assistant-ask');
+  if (ask) ask.hidden = !helpAvailable();
+}
+
+async function askTheApp(question) {
+  if (helpBusy || !question.trim()) return;
+  if (!helpAvailable()) return;
+
+  helpTurns.push({ role: 'user', text: question.trim() });
+  helpBusy = true;
+  renderHelp();
+
+  try {
+  const facts = buildHelpFacts(state, null);
+  const { text } = await askHelp({
+  facts,
+  question: question.trim(),
+  history: helpTurns.slice(-5, -1).map((t) => ({ role: t.role, text: t.text })),
+  config: state.ai,
+  });
+
+  const review = reviewReply(text, facts, { mode: 'coach' });
+  helpTurns.push({ role: 'model', text, notices: review.notices });
+  } catch (err) {
+  helpTurns.push({ role: 'model', text: err.message, error: true });
+  } finally {
+  helpBusy = false;
+  renderHelp();
+  }
+}
+
+function renderHelp() {
+  if (!panel) return;
+  const body = panel.querySelector('.abody');
+  if (!body) return;
+
+  let host = body.querySelector('.ahelp');
+  if (!host) {
+  host = document.createElement('div');
+  host.className = 'ahelp';
+  body.appendChild(host);
+  }
+
+  host.innerHTML = helpTurns.map((t) => {
+  if (t.role === 'user') return `<div class="amsg ask"><div>${esc(t.text)}</div></div>`;
+  const notices = (t.notices || []).map((n) => `<div class="anotice">⚠ ${esc(n)}</div>`).join('');
+  return `<div class="amsg ${t.error ? 'bad' : 'reply'}">
+  <div class="atitle">${t.error ? 'Could not answer' : 'Assistant'}</div>
+  <div>${esc(t.text).replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>')}</div>
+  ${notices}
+  </div>`;
+  }).join('') + (helpBusy ? '<div class="amsg"><div class="t-faint">Thinking…</div></div>' : '');
+
+  const input = byId('assistant-input');
+  const send = byId('assistant-send');
+  if (input) input.disabled = helpBusy;
+  if (send) { send.disabled = helpBusy; send.textContent = helpBusy ? '…' : 'Ask'; }
+
+  body.scrollTop = body.scrollHeight;
 }
 
 function renderMessage(m) {
@@ -8322,6 +8445,715 @@ function adviceFor(key, analysis, appState) {
 }
 
 Object.assign(__exports, { localExplain });
+
+});
+
+__def("src/integrations/gemini.js", function (__exports, __req) {
+
+const { XAU_SYSTEM_PROMPT, BRIEF_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, VISION_SYSTEM_PROMPT, HELP_SYSTEM_PROMPT, buildPrompt, buildCoachPrompt, buildVisionPrompt, buildHelpPrompt } = __req("src/domain/aigrounding.js");
+
+const GEMINI_MODELS = [
+  { id: 'gemini-3.6-flash',      label: 'Gemini 3.6 Flash — fast, current, right for this' },
+  { id: 'gemini-3.5-flash',      label: 'Gemini 3.5 Flash — better at nuance, slower' },
+  { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite — cheapest' },
+  { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite' },
+];
+
+const DEFAULT_MODEL = 'gemini-3.6-flash';
+
+const HOSTED_PROXY_URL = '';
+
+const hasHostedProxy = () => HOSTED_PROXY_URL.trim().length > 0;
+
+function defaultAiConfig() {
+  return hasHostedProxy()
+  ? { enabled: true, transport: 'proxy', proxyUrl: HOSTED_PROXY_URL, apiKey: '', model: DEFAULT_MODEL, autoBrief: false }
+  : { enabled: false, transport: 'direct', proxyUrl: '', apiKey: '', model: DEFAULT_MODEL, autoBrief: false };
+}
+const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_TIMEOUT = 30000;
+
+async function askGemini({ facts, question, history = [], config = {} }) {
+  const {
+  transport = 'direct',
+  apiKey = '',
+  proxyUrl = '',
+  model = DEFAULT_MODEL,
+  timeoutMs = DEFAULT_TIMEOUT,
+  } = config;
+
+  if (!facts) throw new Error('There is no analysis to ask about yet. Run the analysis first.');
+
+  const contents = [
+
+  ...history.map((turn) => ({ role: turn.role === 'model' ? 'model' : 'user', parts: [{ text: turn.text }] })),
+  { role: 'user', parts: [{ text: buildPrompt(facts, question) }] },
+  ];
+
+  const body = {
+  contents,
+  systemInstruction: { parts: [{ text: XAU_SYSTEM_PROMPT }] },
+  generationConfig: {
+
+  temperature: 0.3,
+  maxOutputTokens: 1200,
+  topP: 0.9,
+  },
+  safetySettings: [],
+  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+  let response;
+  if (transport === 'proxy') {
+  if (!proxyUrl) throw new Error('No proxy URL is configured. Add one in Settings, or switch to a direct key.');
+  response = await fetch(proxyUrl, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  signal: controller.signal,
+  body: JSON.stringify({ provider: 'gemini', model, ...body }),
+  });
+  } else {
+  if (!apiKey) throw new Error('No Gemini API key is configured. Add one in Settings → AI assistant.');
+  response = await fetch(`${ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
+  method: 'POST',
+
+  headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+  signal: controller.signal,
+  body: JSON.stringify(body),
+  });
+  }
+
+  if (!response.ok) throw new Error(await describeFailure(response, transport));
+
+  const data = await response.json();
+  const text = extractText(data);
+  if (!text) throw new Error(blockedReason(data) || 'The model returned an empty response.');
+
+  return { text, model, transport };
+  } catch (err) {
+  if (err.name === 'AbortError') {
+  throw new Error(`The model did not answer within ${Math.round(timeoutMs / 1000)} seconds. The analysis on screen is unaffected — it was computed locally.`);
+  }
+  throw err;
+  } finally {
+  clearTimeout(timer);
+  }
+}
+
+async function describeFailure(response, transport) {
+  let detail = '';
+  try {
+  const body = await response.json();
+  detail = body && body.error && body.error.message ? body.error.message : '';
+  } catch {   }
+
+  const where = transport === 'proxy' ? 'proxy' : 'Gemini';
+  switch (response.status) {
+  case 400: return `${where} rejected the request as malformed. ${detail}`.trim();
+  case 401:
+  case 403: return transport === 'proxy'
+  ? `The proxy refused the request (${response.status}). Check its own key and any allowed-origin rules. ${detail}`.trim()
+  : `Gemini rejected the API key (${response.status}). Check it is correct, that the Generative Language API is enabled, and that any HTTP-referrer restriction includes this site. ${detail}`.trim();
+  case 404: return `That model is not available to this key. Google retires model names and closes older ones to new keys — press "Refresh available models" to load the ones your key can actually use. ${detail}`.trim();
+  case 429: return 'Rate limit or quota reached. Wait a moment, or use a key with more headroom — the free tier is small.';
+  case 500:
+  case 502:
+  case 503: return `${where} is having trouble (${response.status}). This is their end; try again shortly.`;
+  default: return `${where} returned ${response.status}. ${detail}`.trim();
+  }
+}
+
+function extractText(data) {
+  const parts = data && data.candidates && data.candidates[0]
+  && data.candidates[0].content && data.candidates[0].content.parts;
+  if (!Array.isArray(parts)) return '';
+  return parts.map((p) => p.text || '').join('').trim();
+}
+
+function blockedReason(data) {
+  const candidate = data && data.candidates && data.candidates[0];
+  const finish = candidate && candidate.finishReason;
+  if (finish === 'SAFETY') return 'The model stopped on its own safety filter. Rephrasing the question usually clears it.';
+  if (finish === 'MAX_TOKENS') return 'The answer hit the length limit before it finished. Ask something narrower.';
+  if (finish === 'RECITATION') return 'The model stopped because the answer was reciting source material.';
+  const blocked = data && data.promptFeedback && data.promptFeedback.blockReason;
+  if (blocked) return `The request was blocked before it reached the model (${blocked}).`;
+  return '';
+}
+
+async function briefSetup({ facts, config = {} }) {
+  if (!facts) throw new Error('There is no analysis to brief on yet. Run the analysis first.');
+  return callGemini({
+  system: BRIEF_SYSTEM_PROMPT,
+  parts: [{ text: buildPrompt(facts, 'Write the brief.') }],
+  config,
+  maxOutputTokens: 700,
+  });
+}
+
+async function coachJournal({ summary, question, config = {} }) {
+  if (!summary || !summary.sample || !summary.sample.completed) {
+  throw new Error('There are no completed trades to review yet. Log a few outcomes first — the coach reads results, not intentions.');
+  }
+  return callGemini({
+  system: COACH_SYSTEM_PROMPT,
+  parts: [{ text: buildCoachPrompt(summary, question) }],
+  config,
+  maxOutputTokens: 900,
+  });
+}
+
+async function reviewChartImage({ imageDataUrl, facts, question, config = {} }) {
+  const parsed = parseDataUrl(imageDataUrl);
+  if (!parsed) throw new Error('That does not look like an image this can read. Use a PNG, JPEG or WebP screenshot.');
+
+  return callGemini({
+  system: VISION_SYSTEM_PROMPT,
+
+  parts: [
+  { inlineData: { mimeType: parsed.mimeType, data: parsed.base64 } },
+  { text: buildVisionPrompt(facts, question) },
+  ],
+  config,
+  maxOutputTokens: 800,
+  });
+}
+
+const RETIRED_GENERATIONS = /^gemini-(1\.|2\.)/;
+
+const isRetiredModel = (id) => RETIRED_GENERATIONS.test(String(id || ''));
+
+async function listModels(config = {}) {
+  const { transport = 'direct', apiKey = '', proxyUrl = '', timeoutMs = 15000 } = config;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+  let response;
+  if (transport === 'proxy') {
+  if (!proxyUrl) throw new Error('No proxy URL is configured.');
+
+  response = await fetch(`${proxyUrl.replace(/\/+$/, '')}/models`, { signal: controller.signal });
+  } else {
+  if (!apiKey) throw new Error('No Gemini API key is configured.');
+  response = await fetch(`${ENDPOINT}?pageSize=200`, {
+  headers: { 'x-goog-api-key': apiKey },
+  signal: controller.signal,
+  });
+  }
+  if (!response.ok) throw new Error(await describeFailure(response, transport));
+
+  const data = await response.json();
+  const rows = Array.isArray(data && data.models) ? data.models : [];
+
+  const usable = rows
+  .filter((m) => Array.isArray(m.supportedGenerationMethods)
+  ? m.supportedGenerationMethods.includes('generateContent')
+  : true)
+  .map((m) => ({
+  id: String(m.name || '').replace(/^models\//, ''),
+  label: m.displayName ? `${m.displayName}` : String(m.name || '').replace(/^models\//, ''),
+  }))
+  .filter((m) => m.id && /^gemini-/.test(m.id) && !/embedding|aqa|tts|image|veo|live/.test(m.id));
+
+  const version = (id) => {
+  const m = /gemini-(\d+)(?:\.(\d+))?/.exec(id);
+  return m ? Number(m[1]) * 100 + Number(m[2] || 0) : 0;
+  };
+  usable.sort((a, b) => version(b.id) - version(a.id) || a.id.localeCompare(b.id));
+
+  if (!usable.length) throw new Error('The key is valid but no text-capable Gemini models came back.');
+  return usable;
+  } finally {
+  clearTimeout(timer);
+  }
+}
+
+async function askHelp({ facts, question, history = [], config = {} }) {
+  return callGemini({
+  system: HELP_SYSTEM_PROMPT,
+  parts: [{ text: buildHelpPrompt(facts, question) }],
+  history,
+  config,
+  maxOutputTokens: 500,
+  });
+}
+
+function parseDataUrl(dataUrl) {
+  const m = /^data:(image\/(?:png|jpeg|jpg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
+  if (!m) return null;
+  return { mimeType: m[1] === 'image/jpg' ? 'image/jpeg' : m[1], base64: m[2] };
+}
+
+async function callGemini({ system, parts, config, maxOutputTokens = 1200, history = [] }) {
+  const {
+  transport = 'direct', apiKey = '', proxyUrl = '',
+  model = DEFAULT_MODEL, timeoutMs = DEFAULT_TIMEOUT,
+  } = config;
+
+  const body = {
+  contents: [
+  ...history.map((t) => ({ role: t.role === 'model' ? 'model' : 'user', parts: [{ text: t.text }] })),
+  { role: 'user', parts },
+  ],
+  systemInstruction: { parts: [{ text: system }] },
+  generationConfig: { temperature: 0.3, maxOutputTokens, topP: 0.9 },
+  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+  let response;
+  if (transport === 'proxy') {
+  if (!proxyUrl) throw new Error('No proxy URL is configured. Add one in Settings, or switch to a direct key.');
+  response = await fetch(proxyUrl, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  signal: controller.signal,
+  body: JSON.stringify({ provider: 'gemini', model, ...body }),
+  });
+  } else {
+  if (!apiKey) throw new Error('No Gemini API key is configured. Add one in Settings → AI assistant.');
+  response = await fetch(`${ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+  signal: controller.signal,
+  body: JSON.stringify(body),
+  });
+  }
+
+  if (!response.ok) throw new Error(await describeFailure(response, transport));
+
+  const data = await response.json();
+  const text = extractText(data);
+  if (!text) throw new Error(blockedReason(data) || 'The model returned an empty response.');
+  return { text, model, transport };
+  } catch (err) {
+  if (err.name === 'AbortError') {
+  throw new Error(`The model did not answer within ${Math.round(timeoutMs / 1000)} seconds. The analysis on screen is unaffected — it was computed locally.`);
+  }
+  throw err;
+  } finally {
+  clearTimeout(timer);
+  }
+}
+
+async function testConnection(config = {}) {
+  try {
+  const { text } = await askGemini({
+  facts: { symbol: 'XAUUSD', note: 'connection test — no analysis attached' },
+  question: 'Reply with exactly: connection ok',
+  config: { ...config, timeoutMs: 15000 },
+  });
+  return { ok: true, message: `Connected on ${config.model || DEFAULT_MODEL}. The model replied: "${text.slice(0, 80)}"` };
+  } catch (err) {
+
+  if (/not available to this key/i.test(err.message)) {
+  try {
+  const models = await listModels(config);
+  return {
+  ok: false,
+  message: err.message,
+  suggestModels: models,
+  suggestModel: models[0] ? models[0].id : null,
+  };
+  } catch {   }
+  }
+  return { ok: false, message: err.message };
+  }
+}
+
+Object.assign(__exports, { GEMINI_MODELS, DEFAULT_MODEL, HOSTED_PROXY_URL, hasHostedProxy, isRetiredModel, defaultAiConfig, askGemini, briefSetup, coachJournal, reviewChartImage, listModels, askHelp, parseDataUrl, testConnection });
+
+});
+
+__def("src/domain/aigrounding.js", function (__exports, __req) {
+
+function buildFacts(analysis, extra = {}) {
+  if (!analysis) return null;
+  const n = (v) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : null);
+
+  const plan = analysis.plan && analysis.plan.valid ? analysis.plan : null;
+  const structure = analysis.structures ? analysis.structures[analysis.timeframe] : null;
+
+  return {
+  symbol: analysis.symbol || 'XAUUSD',
+  executionTimeframe: analysis.timeframe,
+
+  dataQuality: analysis.dataQuality,
+  feedStatus: analysis.dataStatus,
+
+  decision: analysis.decision,
+  verdict: analysis.verdict,
+  confluenceScore: analysis.score,
+  scoreBand: analysis.bandLabel,
+  setupType: analysis.setupType || null,
+  scoreIsNotAProbability: true,
+
+  bias: analysis.biasDetail ? {
+  d1: analysis.biasDetail.d1,
+  h4: analysis.biasDetail.h4,
+  h1: analysis.biasDetail.h1,
+  m30: analysis.biasDetail.m30,
+  execution: analysis.biasDetail.exec,
+  higherTimeframe: analysis.htfBias,
+  } : null,
+
+  price: n(analysis.price),
+  atr: n(analysis.atr),
+  volatility: analysis.volatility ? {
+  current: n(analysis.volatility.atr),
+  average: n(analysis.volatility.average),
+  ratio: n(analysis.volatility.ratio),
+  state: analysis.volatility.state,
+  suggestedMinimumStop: n(analysis.volatility.suggestedMinStop),
+  } : null,
+
+  tradePlan: plan ? {
+  direction: plan.dir,
+  entryLow: n(plan.entryLow),
+  entryHigh: n(plan.entryHigh),
+  stopLoss: n(plan.stopLoss),
+  invalidation: n(plan.invalidation),
+  stopDistance: n(plan.stopDistance),
+  stopAtrMultiple: n(plan.stopAtr),
+  stopReasoning: plan.stopSource,
+  targets: (plan.targets || []).map((t) => ({
+  n: t.n, price: n(t.price), rewardToRisk: n(t.rr),
+  from: t.labels.join(' / '), projected: !!t.projected,
+  })),
+  positionSize: plan.size && plan.size.available
+  ? { lots: n(plan.size.lotsRounded), moneyAtRisk: n(plan.size.actualRisk), specAssumed: !!plan.size.assumed }
+  : { available: false, reason: plan.size ? plan.size.reason : 'not calculated' },
+  } : null,
+
+  lifecycle: analysis.lifecycle ? { state: analysis.lifecycle.state, note: analysis.lifecycle.note } : null,
+
+  structureRead: structure ? {
+  trend: structure.trend,
+  regime: structure.regime,
+  lastEvent: structure.lastEvent
+  ? { type: structure.lastEvent.type, direction: structure.lastEvent.dir, level: n(structure.lastEvent.level) }
+  : null,
+  rangeHigh: structure.legHigh ? n(structure.legHigh.price) : null,
+  rangeLow: structure.legLow ? n(structure.legLow.price) : null,
+  } : null,
+
+  premiumDiscount: analysis.premium && analysis.premium.valid
+  ? { zone: analysis.premium.zone, equilibrium: n(analysis.premium.eq) }
+  : null,
+
+  liquidity: analysis.liquidity ? {
+  recentSweep: analysis.liquidity.recentSweep
+  ? { level: analysis.liquidity.recentSweep.code, price: n(analysis.liquidity.recentSweep.price),
+  barsAgo: analysis.liquidity.recentSweep.swept.barsAgo }
+  : null,
+  pools: analysis.liquidity.pools.slice(0, 14).map((p) => ({
+  level: p.code, price: n(p.price), side: p.tag, swept: !!p.swept, yours: !!p.custom,
+  })),
+  } : null,
+
+  zones: {
+  fairValueGaps: (analysis.fvgs || []).filter((g) => g.state !== 'mitigated').slice(-5)
+  .map((g) => ({ direction: g.dir, low: n(g.bottom), high: n(g.top), state: g.state })),
+  orderBlocks: (analysis.blocks || []).filter((b) => b.state !== 'mitigated').slice(-5)
+  .map((b) => ({ direction: b.activeDir, low: n(b.bottom), high: n(b.top), state: b.state })),
+  },
+
+  trigger: analysis.trigger ? { pattern: analysis.trigger.label, strength: n(analysis.trigger.strength) } : null,
+  momentum: analysis.momentum ? { rsi: n(analysis.momentum.rsi), macdHistogram: n(analysis.momentum.macdHist), overextended: !!analysis.momentum.overextended } : null,
+  session: analysis.session ? { name: analysis.session.label, isPeak: !!analysis.session.peak } : null,
+  spread: analysis.spread ? { available: analysis.spread.available, value: n(analysis.spread.spread), threshold: n(analysis.spread.max) } : null,
+
+  news: extra.news ? {
+  level: extra.news.level,
+  nearestEvent: extra.news.nearest ? extra.news.nearest.n : null,
+  minutesAway: Number.isFinite(extra.news.minutes) ? Math.abs(extra.news.minutes) : null,
+  fromLiveCalendar: !!extra.news.live,
+  } : null,
+
+  deskLimits: analysis.riskLimits ? {
+  shut: !!analysis.riskLimits.deskShut,
+  reason: analysis.riskLimits.shutReason || null,
+  tradesToday: analysis.riskLimits.tradesToday,
+  maxTradesPerDay: analysis.riskLimits.maxTradesPerDay,
+  } : null,
+
+  confirmations: analysis.confirmations || [],
+  warnings: analysis.warnings || [],
+  missingConfirmations: analysis.missingConfirmations || [],
+  conflicts: (analysis.conflicts || []).map((c) => c.title),
+  blockingReasons: analysis.hardStops || [],
+
+  traderChecklistLeans: analysis.checklistBias ? analysis.checklistBias.dir : null,
+  };
+}
+
+const XAU_SYSTEM_PROMPT = `You are a pre-trade analyst inside a gold trading journal. You explain an analysis that has already been computed. You do not perform it.
+
+WHAT YOU HAVE
+A JSON object of measurements taken by a deterministic engine from candle data. That is your entire view of the market. You cannot see a chart and you have no live price.
+
+ABSOLUTE RULES
+1. Never state a price, level, stop, target or figure that is not present in the JSON. If asked for one that is not there, say the engine did not produce it and say what would be needed.
+2. Never predict direction. Never say what gold "will" do, is "likely" to do, or is "going to" do. You describe what has been measured and what the rules concluded.
+3. The confluence score is a rules-based measure of setup quality against a fixed rulebook. It is NOT a probability of profit and must never be described as one.
+4. If blockingReasons is non-empty, lead with it. Do not soften it, do not offer a way around it, and do not suggest the trade might still work.
+5. If dataQuality says INDICATIVE / PROXY DATA, say so whenever you quote a level, because those levels may differ from the reader's broker.
+6. Never tell the reader to place a trade. The decision is theirs. You may explain what the plan says and what would invalidate it.
+7. If the answer is "wait" or "there is no trade here", say it plainly. That is the most useful thing this tool produces.
+
+STYLE
+Direct and specific. Short paragraphs. Quote the engine's own numbers when they support a point. No emoji, no hype, no filler. If you are uncertain, say so.`;
+
+const BRIEF_SYSTEM_PROMPT = `${XAU_SYSTEM_PROMPT}
+
+You are writing an unprompted pre-trade brief. Structure it exactly:
+
+THE READ — two sentences on what the engine found, in plain language.
+FOR — the strongest two or three things supporting this direction.
+AGAINST — the honest counterweight. If the verdict is no-trade, this is the main section.
+WHAT WOULD CHANGE IT — the specific, observable thing that would move this to a trade, or invalidate it.
+
+Under 200 words total. No preamble, no sign-off, no restating the numbers already on screen.`;
+
+const COACH_SYSTEM_PROMPT = `You are reviewing a gold trader's own logged results inside their journal app.
+
+WHAT YOU HAVE
+Aggregate statistics computed from their journal: win rates and expectancy grouped by session, direction, setup score band, recorded emotion and setup type, plus a six-stage development path the app evaluates from the same data. You do not have individual trades, notes or screenshots.
+
+ABSOLUTE RULES
+1. Every claim must cite a number you were given. No number, no claim.
+2. A bucket with fewer than about ten trades is not a pattern. Say so rather than reading a story into it.
+3. Never predict future results. Past expectancy is a description, not a forecast.
+4. Say the uncomfortable thing. A coach that only finds encouragement in a losing account is a reason to keep losing.
+5. Never suggest increasing size or risk to recover. That is how accounts end, and it is the one piece of advice that must never appear here.
+6. Correlation in a small sample is not a cause. "You lose in the Asian session" from twelve trades is a hypothesis to test, and you must label it as one.
+
+STRUCTURE
+WHAT THE DATA SAYS — the two or three findings that are actually supported.
+THE STAGE YOU ARE AT — what the app's development path says, and whether the data agrees.
+ONE THING TO CHANGE — a single, specific, checkable behaviour. Not a list.
+
+Under 250 words. Direct. No hype.`;
+
+const VISION_SYSTEM_PROMPT = `You are comparing a trader's own broker screenshot against an analysis computed from a different data source.
+
+WHY THIS MATTERS
+The app's candles come from a gold-backed proxy market, not the reader's broker. Levels can differ by a few dollars. Your job is to say whether the screenshot supports, contradicts, or is silent on what the engine measured.
+
+ABSOLUTE RULES
+1. Describe only what is visible in the image. If a level is not legible, say it is not legible. Never estimate a price you cannot read.
+2. Prefix any number you read from the image with "from your chart:" so the reader knows its source.
+3. Never predict direction. Never say what price will do next.
+4. If the screenshot clearly contradicts the engine's read — different structure, different levels, a different instrument or timeframe entirely — lead with that. A contradiction is the most valuable thing you can find here.
+5. If the image is not a price chart, say so and stop.
+6. Never tell the reader to place a trade.
+
+STRUCTURE
+WHAT I CAN SEE — instrument, timeframe and structure, if legible.
+AGREES WITH THE ENGINE — where the screenshot supports the analysis.
+DISAGREES OR UNCLEAR — where it does not, or where you cannot tell.
+
+Under 180 words.`;
+
+const HELP_SYSTEM_PROMPT = `You are the help assistant inside BullionEdge Pro, a gold pre-trade analysis app. You explain how to use the software.
+
+WHAT THE APP DOES
+- XAU/USD screen: reads market structure, liquidity, fair value gaps and order blocks from candle data, scores the setup out of 100, and answers buy candidate, sell candidate, or no trade. Produces an entry zone, a structural stop, up to three targets and a position size.
+- Analyse screen: scores a setup the trader types in themselves, against a ten-factor checklist with four mandatory factors.
+- Live screen: gold spot, a candle chart, and four rules-based setups refreshed every two hours.
+- Journal: logged trades, outcomes, and a six-stage development path measured from them.
+- Psychology: readiness questions that can block a trade outright.
+- Risk: daily, weekly and monthly loss limits that shut the desk when hit.
+- Guide: a ten-step walkthrough.
+
+ABSOLUTE RULES
+1. You explain the app. You do not analyse the market, name a price, suggest a direction, or say whether a trade is good. If asked, say that the XAU/USD screen answers that and point them to it.
+2. Never invent a feature. If you do not know whether the app does something, say so rather than guessing — a confident wrong answer sends somebody hunting for a button that does not exist.
+3. Never tell anyone to place a trade. The app has no broker connection and never will.
+4. The confluence score measures a setup against a rulebook. It is not a probability of profit.
+5. Keep it short. Two or three sentences, or a few steps. This is a small panel beside a chart, not a manual.
+
+If the question is about what the current analysis means, answer from the state you were given, and if that is not enough say which screen shows it.`;
+
+function buildHelpFacts(state, analysis) {
+  const s = state || {};
+  return {
+  currentScreen: s.view || 'unknown',
+  mode: s.ui ? s.ui.mode : 'beginner',
+  hasLoggedTrades: Array.isArray(s.journal) ? s.journal.length > 0 : false,
+  xauAnalysis: analysis ? {
+  verdict: analysis.verdict,
+  score: analysis.score,
+  blocked: (analysis.hardStops || []).length > 0,
+  blockingReasons: analysis.hardStops || [],
+  } : null,
+  deskAnalysis: s.analysis ? {
+  verdict: s.analysis.decision ? s.analysis.decision.title : null,
+  missingMandatory: s.analysis.score ? s.analysis.score.missingMandatory : [],
+  } : null,
+  };
+}
+
+function buildHelpPrompt(facts, question) {
+  const ask = String(question || '').trim() || 'How do I use this?';
+  return [
+  'WHERE THE TRADER IS RIGHT NOW:',
+  '```json',
+  JSON.stringify(facts, null, 1),
+  '```',
+  '',
+  `QUESTION: ${ask}`,
+  ].join('\n');
+}
+
+function buildPrompt(facts, question) {
+  const ask = String(question || '').trim() || 'Explain this analysis and what would have to change for it to become a trade.';
+  return [
+  'ENGINE MEASUREMENTS (your only view of the market):',
+  '```json',
+  JSON.stringify(facts, null, 1),
+  '```',
+  '',
+  `TRADER'S QUESTION: ${ask}`,
+  ].join('\n');
+}
+
+function allowedNumbers(facts) {
+  const out = new Set();
+  const visit = (value) => {
+  if (value === null || value === undefined) return;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+  out.add(String(value));
+  out.add(value.toFixed(0));
+  out.add(value.toFixed(1));
+  out.add(value.toFixed(2));
+  out.add(String(Math.round(value)));
+  return;
+  }
+  if (Array.isArray(value)) { value.forEach(visit); return; }
+  if (typeof value === 'object') { Object.values(value).forEach(visit); }
+  };
+  visit(facts);
+  return out;
+}
+
+const PRICE_LIKE_MIN = 500;
+
+function checkGrounding(text, facts) {
+  const allowed = allowedNumbers(facts);
+  const suspect = [];
+  let checked = 0;
+
+  const matches = String(text || '').match(/\d[\d,]*(?:\.\d+)?/g) || [];
+
+  for (const raw of matches) {
+  const cleaned = raw.replace(/,/g, '');
+  const value = Number(cleaned);
+  if (!Number.isFinite(value) || value < PRICE_LIKE_MIN) continue;
+  checked++;
+  if (allowed.has(cleaned) || allowed.has(String(value))
+  || allowed.has(value.toFixed(0)) || allowed.has(value.toFixed(1)) || allowed.has(value.toFixed(2))) continue;
+  if (!suspect.includes(raw)) suspect.push(raw);
+  }
+
+  return { ok: suspect.length === 0, suspect, checked };
+}
+
+const FORECAST_PATTERNS = [
+  /\bwill (?:rise|fall|drop|climb|reach|hit|go|move|continue|reverse|break)\b/i,
+  /\b(?:price|gold|xau(?:\/?usd)?) (?:is going to|should reach|should hit|will likely)\b/i,
+  /\bguaranteed\b/i,
+  /\b(?:certain|sure) to (?:rise|fall|profit|win)\b/i,
+  /\b\d{1,3}% (?:chance|probability|likely) (?:of|to) (?:profit|win)/i,
+  /\bhigh(?:ly)? probability (?:of|to) (?:profit|win)/i,
+];
+
+function checkForecasting(text) {
+  const hits = [];
+  for (const pattern of FORECAST_PATTERNS) {
+  const m = String(text || '').match(pattern);
+  if (m && !hits.includes(m[0])) hits.push(m[0]);
+  }
+  return { ok: hits.length === 0, hits };
+}
+
+function buildCoachPrompt(summary, question) {
+  const ask = String(question || '').trim() || 'Review these results and tell me the one thing to change.';
+  return [
+  'JOURNAL AGGREGATES (computed from the trader\'s own logged trades):',
+  '```json',
+  JSON.stringify(summary, null, 1),
+  '```',
+  '',
+  `QUESTION: ${ask}`,
+  ].join('\n');
+}
+
+function buildVisionPrompt(facts, question) {
+  const ask = String(question || '').trim()
+  || 'Does this screenshot agree with what the engine measured?';
+  const levels = facts ? {
+  symbol: facts.symbol,
+  executionTimeframe: facts.executionTimeframe,
+  dataQuality: facts.dataQuality,
+  price: facts.price,
+  structure: facts.structureRead,
+  tradePlan: facts.tradePlan
+  ? { direction: facts.tradePlan.direction, entryLow: facts.tradePlan.entryLow, entryHigh: facts.tradePlan.entryHigh, stopLoss: facts.tradePlan.stopLoss, targets: facts.tradePlan.targets }
+  : null,
+  liquidity: facts.liquidity ? facts.liquidity.pools : null,
+  zones: facts.zones,
+  } : null;
+
+  return [
+  'WHAT THE ENGINE MEASURED, from a gold-backed proxy feed rather than the reader\'s broker:',
+  '```json',
+  JSON.stringify(levels, null, 1),
+  '```',
+  '',
+  `QUESTION: ${ask}`,
+  ].join('\n');
+}
+
+function reviewReply(text, facts, options = {}) {
+  const mode = options.mode || 'facts';
+  const forecasting = checkForecasting(text);
+  const notices = [];
+
+  let grounding = { ok: true, suspect: [], checked: 0 };
+
+  if (mode === 'facts') {
+  grounding = checkGrounding(text, facts);
+  if (!grounding.ok) {
+  notices.push(`This reply mentions ${grounding.suspect.join(', ')}, which the engine did not compute. Treat those figures as unverified — check them on your chart before acting on anything that depends on them.`);
+  }
+  } else if (mode === 'vision') {
+  grounding = checkGrounding(text, facts);
+  if (!grounding.ok) {
+  notices.push(`${grounding.suspect.join(', ')} came from your screenshot, not from the engine. Nothing has verified them — read them off your own chart before you use them.`);
+  }
+  }
+
+  if (!forecasting.ok) {
+  notices.push(`This reply contains forecasting language ("${forecasting.hits.join('", "')}"). Nothing here can know what price will do.`);
+  }
+
+  return {
+  ok: notices.length === 0,
+  mode,
+  grounding,
+  forecasting,
+  notices,
+  };
+}
+
+Object.assign(__exports, { XAU_SYSTEM_PROMPT, BRIEF_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, VISION_SYSTEM_PROMPT, HELP_SYSTEM_PROMPT, PRICE_LIKE_MIN, buildFacts, buildHelpFacts, buildHelpPrompt, buildPrompt, allowedNumbers, checkGrounding, checkForecasting, buildCoachPrompt, buildVisionPrompt, reviewReply });
 
 });
 
@@ -10067,6 +10899,7 @@ __exports.default = {
 
   <div id="xau-ask-body"></div>
 
+  ${hasHostedProxy() ? '' : `
   <details class="xspec" id="xau-ai-config">
   <summary>AI connection <span class="chip" id="xau-ai-state"></span></summary>
 
@@ -10133,7 +10966,7 @@ __exports.default = {
   point — it is computed on this device from candle data. What is sent when you ask a question is the
   engine's measurements and your question. Not your journal, not your notes, not your profile.
   </p>
-  </details>
+  </details>`}
   </div>
 
   <div class="card reveal">
@@ -10395,6 +11228,7 @@ __exports.default = {
   }
   }
 
+  if (byId('xau-ai-config')) {
   byId('xau-ai-model').onchange = (e) => patch({ ai: { model: e.target.value } });
 
   byId('xau-ai-models').onclick = async (e) => {
@@ -10449,6 +11283,8 @@ __exports.default = {
   paintAsk();
   }
   };
+
+  }
 
   on(root, 'click', '#xau-ai-send', () => {
   const input = byId('xau-ai-input');
@@ -15424,654 +16260,6 @@ function readImage(file, maxBytes = 1_500_000) {
 
 /* --- exports --- */
 Object.assign(__exports, { logPlannedTrade, logTradePlan, updateTrade, deleteTrade, clearJournal, exportCsv, exportBackup, importBackup, readImage });
-
-});
-
-__def("src/domain/aigrounding.js", function (__exports, __req) {
-
-function buildFacts(analysis, extra = {}) {
-  if (!analysis) return null;
-  const n = (v) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : null);
-
-  const plan = analysis.plan && analysis.plan.valid ? analysis.plan : null;
-  const structure = analysis.structures ? analysis.structures[analysis.timeframe] : null;
-
-  return {
-  symbol: analysis.symbol || 'XAUUSD',
-  executionTimeframe: analysis.timeframe,
-
-  dataQuality: analysis.dataQuality,
-  feedStatus: analysis.dataStatus,
-
-  decision: analysis.decision,
-  verdict: analysis.verdict,
-  confluenceScore: analysis.score,
-  scoreBand: analysis.bandLabel,
-  setupType: analysis.setupType || null,
-  scoreIsNotAProbability: true,
-
-  bias: analysis.biasDetail ? {
-  d1: analysis.biasDetail.d1,
-  h4: analysis.biasDetail.h4,
-  h1: analysis.biasDetail.h1,
-  m30: analysis.biasDetail.m30,
-  execution: analysis.biasDetail.exec,
-  higherTimeframe: analysis.htfBias,
-  } : null,
-
-  price: n(analysis.price),
-  atr: n(analysis.atr),
-  volatility: analysis.volatility ? {
-  current: n(analysis.volatility.atr),
-  average: n(analysis.volatility.average),
-  ratio: n(analysis.volatility.ratio),
-  state: analysis.volatility.state,
-  suggestedMinimumStop: n(analysis.volatility.suggestedMinStop),
-  } : null,
-
-  tradePlan: plan ? {
-  direction: plan.dir,
-  entryLow: n(plan.entryLow),
-  entryHigh: n(plan.entryHigh),
-  stopLoss: n(plan.stopLoss),
-  invalidation: n(plan.invalidation),
-  stopDistance: n(plan.stopDistance),
-  stopAtrMultiple: n(plan.stopAtr),
-  stopReasoning: plan.stopSource,
-  targets: (plan.targets || []).map((t) => ({
-  n: t.n, price: n(t.price), rewardToRisk: n(t.rr),
-  from: t.labels.join(' / '), projected: !!t.projected,
-  })),
-  positionSize: plan.size && plan.size.available
-  ? { lots: n(plan.size.lotsRounded), moneyAtRisk: n(plan.size.actualRisk), specAssumed: !!plan.size.assumed }
-  : { available: false, reason: plan.size ? plan.size.reason : 'not calculated' },
-  } : null,
-
-  lifecycle: analysis.lifecycle ? { state: analysis.lifecycle.state, note: analysis.lifecycle.note } : null,
-
-  structureRead: structure ? {
-  trend: structure.trend,
-  regime: structure.regime,
-  lastEvent: structure.lastEvent
-  ? { type: structure.lastEvent.type, direction: structure.lastEvent.dir, level: n(structure.lastEvent.level) }
-  : null,
-  rangeHigh: structure.legHigh ? n(structure.legHigh.price) : null,
-  rangeLow: structure.legLow ? n(structure.legLow.price) : null,
-  } : null,
-
-  premiumDiscount: analysis.premium && analysis.premium.valid
-  ? { zone: analysis.premium.zone, equilibrium: n(analysis.premium.eq) }
-  : null,
-
-  liquidity: analysis.liquidity ? {
-  recentSweep: analysis.liquidity.recentSweep
-  ? { level: analysis.liquidity.recentSweep.code, price: n(analysis.liquidity.recentSweep.price),
-  barsAgo: analysis.liquidity.recentSweep.swept.barsAgo }
-  : null,
-  pools: analysis.liquidity.pools.slice(0, 14).map((p) => ({
-  level: p.code, price: n(p.price), side: p.tag, swept: !!p.swept, yours: !!p.custom,
-  })),
-  } : null,
-
-  zones: {
-  fairValueGaps: (analysis.fvgs || []).filter((g) => g.state !== 'mitigated').slice(-5)
-  .map((g) => ({ direction: g.dir, low: n(g.bottom), high: n(g.top), state: g.state })),
-  orderBlocks: (analysis.blocks || []).filter((b) => b.state !== 'mitigated').slice(-5)
-  .map((b) => ({ direction: b.activeDir, low: n(b.bottom), high: n(b.top), state: b.state })),
-  },
-
-  trigger: analysis.trigger ? { pattern: analysis.trigger.label, strength: n(analysis.trigger.strength) } : null,
-  momentum: analysis.momentum ? { rsi: n(analysis.momentum.rsi), macdHistogram: n(analysis.momentum.macdHist), overextended: !!analysis.momentum.overextended } : null,
-  session: analysis.session ? { name: analysis.session.label, isPeak: !!analysis.session.peak } : null,
-  spread: analysis.spread ? { available: analysis.spread.available, value: n(analysis.spread.spread), threshold: n(analysis.spread.max) } : null,
-
-  news: extra.news ? {
-  level: extra.news.level,
-  nearestEvent: extra.news.nearest ? extra.news.nearest.n : null,
-  minutesAway: Number.isFinite(extra.news.minutes) ? Math.abs(extra.news.minutes) : null,
-  fromLiveCalendar: !!extra.news.live,
-  } : null,
-
-  deskLimits: analysis.riskLimits ? {
-  shut: !!analysis.riskLimits.deskShut,
-  reason: analysis.riskLimits.shutReason || null,
-  tradesToday: analysis.riskLimits.tradesToday,
-  maxTradesPerDay: analysis.riskLimits.maxTradesPerDay,
-  } : null,
-
-  confirmations: analysis.confirmations || [],
-  warnings: analysis.warnings || [],
-  missingConfirmations: analysis.missingConfirmations || [],
-  conflicts: (analysis.conflicts || []).map((c) => c.title),
-  blockingReasons: analysis.hardStops || [],
-
-  traderChecklistLeans: analysis.checklistBias ? analysis.checklistBias.dir : null,
-  };
-}
-
-const XAU_SYSTEM_PROMPT = `You are a pre-trade analyst inside a gold trading journal. You explain an analysis that has already been computed. You do not perform it.
-
-WHAT YOU HAVE
-A JSON object of measurements taken by a deterministic engine from candle data. That is your entire view of the market. You cannot see a chart and you have no live price.
-
-ABSOLUTE RULES
-1. Never state a price, level, stop, target or figure that is not present in the JSON. If asked for one that is not there, say the engine did not produce it and say what would be needed.
-2. Never predict direction. Never say what gold "will" do, is "likely" to do, or is "going to" do. You describe what has been measured and what the rules concluded.
-3. The confluence score is a rules-based measure of setup quality against a fixed rulebook. It is NOT a probability of profit and must never be described as one.
-4. If blockingReasons is non-empty, lead with it. Do not soften it, do not offer a way around it, and do not suggest the trade might still work.
-5. If dataQuality says INDICATIVE / PROXY DATA, say so whenever you quote a level, because those levels may differ from the reader's broker.
-6. Never tell the reader to place a trade. The decision is theirs. You may explain what the plan says and what would invalidate it.
-7. If the answer is "wait" or "there is no trade here", say it plainly. That is the most useful thing this tool produces.
-
-STYLE
-Direct and specific. Short paragraphs. Quote the engine's own numbers when they support a point. No emoji, no hype, no filler. If you are uncertain, say so.`;
-
-const BRIEF_SYSTEM_PROMPT = `${XAU_SYSTEM_PROMPT}
-
-You are writing an unprompted pre-trade brief. Structure it exactly:
-
-THE READ — two sentences on what the engine found, in plain language.
-FOR — the strongest two or three things supporting this direction.
-AGAINST — the honest counterweight. If the verdict is no-trade, this is the main section.
-WHAT WOULD CHANGE IT — the specific, observable thing that would move this to a trade, or invalidate it.
-
-Under 200 words total. No preamble, no sign-off, no restating the numbers already on screen.`;
-
-const COACH_SYSTEM_PROMPT = `You are reviewing a gold trader's own logged results inside their journal app.
-
-WHAT YOU HAVE
-Aggregate statistics computed from their journal: win rates and expectancy grouped by session, direction, setup score band, recorded emotion and setup type, plus a six-stage development path the app evaluates from the same data. You do not have individual trades, notes or screenshots.
-
-ABSOLUTE RULES
-1. Every claim must cite a number you were given. No number, no claim.
-2. A bucket with fewer than about ten trades is not a pattern. Say so rather than reading a story into it.
-3. Never predict future results. Past expectancy is a description, not a forecast.
-4. Say the uncomfortable thing. A coach that only finds encouragement in a losing account is a reason to keep losing.
-5. Never suggest increasing size or risk to recover. That is how accounts end, and it is the one piece of advice that must never appear here.
-6. Correlation in a small sample is not a cause. "You lose in the Asian session" from twelve trades is a hypothesis to test, and you must label it as one.
-
-STRUCTURE
-WHAT THE DATA SAYS — the two or three findings that are actually supported.
-THE STAGE YOU ARE AT — what the app's development path says, and whether the data agrees.
-ONE THING TO CHANGE — a single, specific, checkable behaviour. Not a list.
-
-Under 250 words. Direct. No hype.`;
-
-const VISION_SYSTEM_PROMPT = `You are comparing a trader's own broker screenshot against an analysis computed from a different data source.
-
-WHY THIS MATTERS
-The app's candles come from a gold-backed proxy market, not the reader's broker. Levels can differ by a few dollars. Your job is to say whether the screenshot supports, contradicts, or is silent on what the engine measured.
-
-ABSOLUTE RULES
-1. Describe only what is visible in the image. If a level is not legible, say it is not legible. Never estimate a price you cannot read.
-2. Prefix any number you read from the image with "from your chart:" so the reader knows its source.
-3. Never predict direction. Never say what price will do next.
-4. If the screenshot clearly contradicts the engine's read — different structure, different levels, a different instrument or timeframe entirely — lead with that. A contradiction is the most valuable thing you can find here.
-5. If the image is not a price chart, say so and stop.
-6. Never tell the reader to place a trade.
-
-STRUCTURE
-WHAT I CAN SEE — instrument, timeframe and structure, if legible.
-AGREES WITH THE ENGINE — where the screenshot supports the analysis.
-DISAGREES OR UNCLEAR — where it does not, or where you cannot tell.
-
-Under 180 words.`;
-
-function buildPrompt(facts, question) {
-  const ask = String(question || '').trim() || 'Explain this analysis and what would have to change for it to become a trade.';
-  return [
-  'ENGINE MEASUREMENTS (your only view of the market):',
-  '```json',
-  JSON.stringify(facts, null, 1),
-  '```',
-  '',
-  `TRADER'S QUESTION: ${ask}`,
-  ].join('\n');
-}
-
-function allowedNumbers(facts) {
-  const out = new Set();
-  const visit = (value) => {
-  if (value === null || value === undefined) return;
-  if (typeof value === 'number' && Number.isFinite(value)) {
-  out.add(String(value));
-  out.add(value.toFixed(0));
-  out.add(value.toFixed(1));
-  out.add(value.toFixed(2));
-  out.add(String(Math.round(value)));
-  return;
-  }
-  if (Array.isArray(value)) { value.forEach(visit); return; }
-  if (typeof value === 'object') { Object.values(value).forEach(visit); }
-  };
-  visit(facts);
-  return out;
-}
-
-const PRICE_LIKE_MIN = 500;
-
-function checkGrounding(text, facts) {
-  const allowed = allowedNumbers(facts);
-  const suspect = [];
-  let checked = 0;
-
-  const matches = String(text || '').match(/\d[\d,]*(?:\.\d+)?/g) || [];
-
-  for (const raw of matches) {
-  const cleaned = raw.replace(/,/g, '');
-  const value = Number(cleaned);
-  if (!Number.isFinite(value) || value < PRICE_LIKE_MIN) continue;
-  checked++;
-  if (allowed.has(cleaned) || allowed.has(String(value))
-  || allowed.has(value.toFixed(0)) || allowed.has(value.toFixed(1)) || allowed.has(value.toFixed(2))) continue;
-  if (!suspect.includes(raw)) suspect.push(raw);
-  }
-
-  return { ok: suspect.length === 0, suspect, checked };
-}
-
-const FORECAST_PATTERNS = [
-  /\bwill (?:rise|fall|drop|climb|reach|hit|go|move|continue|reverse|break)\b/i,
-  /\b(?:price|gold|xau(?:\/?usd)?) (?:is going to|should reach|should hit|will likely)\b/i,
-  /\bguaranteed\b/i,
-  /\b(?:certain|sure) to (?:rise|fall|profit|win)\b/i,
-  /\b\d{1,3}% (?:chance|probability|likely) (?:of|to) (?:profit|win)/i,
-  /\bhigh(?:ly)? probability (?:of|to) (?:profit|win)/i,
-];
-
-function checkForecasting(text) {
-  const hits = [];
-  for (const pattern of FORECAST_PATTERNS) {
-  const m = String(text || '').match(pattern);
-  if (m && !hits.includes(m[0])) hits.push(m[0]);
-  }
-  return { ok: hits.length === 0, hits };
-}
-
-function buildCoachPrompt(summary, question) {
-  const ask = String(question || '').trim() || 'Review these results and tell me the one thing to change.';
-  return [
-  'JOURNAL AGGREGATES (computed from the trader\'s own logged trades):',
-  '```json',
-  JSON.stringify(summary, null, 1),
-  '```',
-  '',
-  `QUESTION: ${ask}`,
-  ].join('\n');
-}
-
-function buildVisionPrompt(facts, question) {
-  const ask = String(question || '').trim()
-  || 'Does this screenshot agree with what the engine measured?';
-  const levels = facts ? {
-  symbol: facts.symbol,
-  executionTimeframe: facts.executionTimeframe,
-  dataQuality: facts.dataQuality,
-  price: facts.price,
-  structure: facts.structureRead,
-  tradePlan: facts.tradePlan
-  ? { direction: facts.tradePlan.direction, entryLow: facts.tradePlan.entryLow, entryHigh: facts.tradePlan.entryHigh, stopLoss: facts.tradePlan.stopLoss, targets: facts.tradePlan.targets }
-  : null,
-  liquidity: facts.liquidity ? facts.liquidity.pools : null,
-  zones: facts.zones,
-  } : null;
-
-  return [
-  'WHAT THE ENGINE MEASURED, from a gold-backed proxy feed rather than the reader\'s broker:',
-  '```json',
-  JSON.stringify(levels, null, 1),
-  '```',
-  '',
-  `QUESTION: ${ask}`,
-  ].join('\n');
-}
-
-function reviewReply(text, facts, options = {}) {
-  const mode = options.mode || 'facts';
-  const forecasting = checkForecasting(text);
-  const notices = [];
-
-  let grounding = { ok: true, suspect: [], checked: 0 };
-
-  if (mode === 'facts') {
-  grounding = checkGrounding(text, facts);
-  if (!grounding.ok) {
-  notices.push(`This reply mentions ${grounding.suspect.join(', ')}, which the engine did not compute. Treat those figures as unverified — check them on your chart before acting on anything that depends on them.`);
-  }
-  } else if (mode === 'vision') {
-  grounding = checkGrounding(text, facts);
-  if (!grounding.ok) {
-  notices.push(`${grounding.suspect.join(', ')} came from your screenshot, not from the engine. Nothing has verified them — read them off your own chart before you use them.`);
-  }
-  }
-
-  if (!forecasting.ok) {
-  notices.push(`This reply contains forecasting language ("${forecasting.hits.join('", "')}"). Nothing here can know what price will do.`);
-  }
-
-  return {
-  ok: notices.length === 0,
-  mode,
-  grounding,
-  forecasting,
-  notices,
-  };
-}
-
-Object.assign(__exports, { XAU_SYSTEM_PROMPT, BRIEF_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, VISION_SYSTEM_PROMPT, PRICE_LIKE_MIN, buildFacts, buildPrompt, allowedNumbers, checkGrounding, checkForecasting, buildCoachPrompt, buildVisionPrompt, reviewReply });
-
-});
-
-__def("src/integrations/gemini.js", function (__exports, __req) {
-
-const { XAU_SYSTEM_PROMPT, BRIEF_SYSTEM_PROMPT, COACH_SYSTEM_PROMPT, VISION_SYSTEM_PROMPT, buildPrompt, buildCoachPrompt, buildVisionPrompt } = __req("src/domain/aigrounding.js");
-
-const GEMINI_MODELS = [
-  { id: 'gemini-3.6-flash',      label: 'Gemini 3.6 Flash — fast, current, right for this' },
-  { id: 'gemini-3.5-flash',      label: 'Gemini 3.5 Flash — better at nuance, slower' },
-  { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite — cheapest' },
-  { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite' },
-];
-
-const DEFAULT_MODEL = 'gemini-3.6-flash';
-
-const HOSTED_PROXY_URL = '';
-
-const hasHostedProxy = () => HOSTED_PROXY_URL.trim().length > 0;
-
-function defaultAiConfig() {
-  return hasHostedProxy()
-  ? { enabled: true, transport: 'proxy', proxyUrl: HOSTED_PROXY_URL, apiKey: '', model: DEFAULT_MODEL, autoBrief: false }
-  : { enabled: false, transport: 'direct', proxyUrl: '', apiKey: '', model: DEFAULT_MODEL, autoBrief: false };
-}
-const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
-const DEFAULT_TIMEOUT = 30000;
-
-async function askGemini({ facts, question, history = [], config = {} }) {
-  const {
-  transport = 'direct',
-  apiKey = '',
-  proxyUrl = '',
-  model = DEFAULT_MODEL,
-  timeoutMs = DEFAULT_TIMEOUT,
-  } = config;
-
-  if (!facts) throw new Error('There is no analysis to ask about yet. Run the analysis first.');
-
-  const contents = [
-
-  ...history.map((turn) => ({ role: turn.role === 'model' ? 'model' : 'user', parts: [{ text: turn.text }] })),
-  { role: 'user', parts: [{ text: buildPrompt(facts, question) }] },
-  ];
-
-  const body = {
-  contents,
-  systemInstruction: { parts: [{ text: XAU_SYSTEM_PROMPT }] },
-  generationConfig: {
-
-  temperature: 0.3,
-  maxOutputTokens: 1200,
-  topP: 0.9,
-  },
-  safetySettings: [],
-  };
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-  let response;
-  if (transport === 'proxy') {
-  if (!proxyUrl) throw new Error('No proxy URL is configured. Add one in Settings, or switch to a direct key.');
-  response = await fetch(proxyUrl, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  signal: controller.signal,
-  body: JSON.stringify({ provider: 'gemini', model, ...body }),
-  });
-  } else {
-  if (!apiKey) throw new Error('No Gemini API key is configured. Add one in Settings → AI assistant.');
-  response = await fetch(`${ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
-  method: 'POST',
-
-  headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-  signal: controller.signal,
-  body: JSON.stringify(body),
-  });
-  }
-
-  if (!response.ok) throw new Error(await describeFailure(response, transport));
-
-  const data = await response.json();
-  const text = extractText(data);
-  if (!text) throw new Error(blockedReason(data) || 'The model returned an empty response.');
-
-  return { text, model, transport };
-  } catch (err) {
-  if (err.name === 'AbortError') {
-  throw new Error(`The model did not answer within ${Math.round(timeoutMs / 1000)} seconds. The analysis on screen is unaffected — it was computed locally.`);
-  }
-  throw err;
-  } finally {
-  clearTimeout(timer);
-  }
-}
-
-async function describeFailure(response, transport) {
-  let detail = '';
-  try {
-  const body = await response.json();
-  detail = body && body.error && body.error.message ? body.error.message : '';
-  } catch {   }
-
-  const where = transport === 'proxy' ? 'proxy' : 'Gemini';
-  switch (response.status) {
-  case 400: return `${where} rejected the request as malformed. ${detail}`.trim();
-  case 401:
-  case 403: return transport === 'proxy'
-  ? `The proxy refused the request (${response.status}). Check its own key and any allowed-origin rules. ${detail}`.trim()
-  : `Gemini rejected the API key (${response.status}). Check it is correct, that the Generative Language API is enabled, and that any HTTP-referrer restriction includes this site. ${detail}`.trim();
-  case 404: return `That model is not available to this key. Google retires model names and closes older ones to new keys — press "Refresh available models" to load the ones your key can actually use. ${detail}`.trim();
-  case 429: return 'Rate limit or quota reached. Wait a moment, or use a key with more headroom — the free tier is small.';
-  case 500:
-  case 502:
-  case 503: return `${where} is having trouble (${response.status}). This is their end; try again shortly.`;
-  default: return `${where} returned ${response.status}. ${detail}`.trim();
-  }
-}
-
-function extractText(data) {
-  const parts = data && data.candidates && data.candidates[0]
-  && data.candidates[0].content && data.candidates[0].content.parts;
-  if (!Array.isArray(parts)) return '';
-  return parts.map((p) => p.text || '').join('').trim();
-}
-
-function blockedReason(data) {
-  const candidate = data && data.candidates && data.candidates[0];
-  const finish = candidate && candidate.finishReason;
-  if (finish === 'SAFETY') return 'The model stopped on its own safety filter. Rephrasing the question usually clears it.';
-  if (finish === 'MAX_TOKENS') return 'The answer hit the length limit before it finished. Ask something narrower.';
-  if (finish === 'RECITATION') return 'The model stopped because the answer was reciting source material.';
-  const blocked = data && data.promptFeedback && data.promptFeedback.blockReason;
-  if (blocked) return `The request was blocked before it reached the model (${blocked}).`;
-  return '';
-}
-
-async function briefSetup({ facts, config = {} }) {
-  if (!facts) throw new Error('There is no analysis to brief on yet. Run the analysis first.');
-  return callGemini({
-  system: BRIEF_SYSTEM_PROMPT,
-  parts: [{ text: buildPrompt(facts, 'Write the brief.') }],
-  config,
-  maxOutputTokens: 700,
-  });
-}
-
-async function coachJournal({ summary, question, config = {} }) {
-  if (!summary || !summary.sample || !summary.sample.completed) {
-  throw new Error('There are no completed trades to review yet. Log a few outcomes first — the coach reads results, not intentions.');
-  }
-  return callGemini({
-  system: COACH_SYSTEM_PROMPT,
-  parts: [{ text: buildCoachPrompt(summary, question) }],
-  config,
-  maxOutputTokens: 900,
-  });
-}
-
-async function reviewChartImage({ imageDataUrl, facts, question, config = {} }) {
-  const parsed = parseDataUrl(imageDataUrl);
-  if (!parsed) throw new Error('That does not look like an image this can read. Use a PNG, JPEG or WebP screenshot.');
-
-  return callGemini({
-  system: VISION_SYSTEM_PROMPT,
-
-  parts: [
-  { inlineData: { mimeType: parsed.mimeType, data: parsed.base64 } },
-  { text: buildVisionPrompt(facts, question) },
-  ],
-  config,
-  maxOutputTokens: 800,
-  });
-}
-
-const RETIRED_GENERATIONS = /^gemini-(1\.|2\.)/;
-
-const isRetiredModel = (id) => RETIRED_GENERATIONS.test(String(id || ''));
-
-async function listModels(config = {}) {
-  const { transport = 'direct', apiKey = '', proxyUrl = '', timeoutMs = 15000 } = config;
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-  let response;
-  if (transport === 'proxy') {
-  if (!proxyUrl) throw new Error('No proxy URL is configured.');
-
-  response = await fetch(`${proxyUrl.replace(/\/+$/, '')}/models`, { signal: controller.signal });
-  } else {
-  if (!apiKey) throw new Error('No Gemini API key is configured.');
-  response = await fetch(`${ENDPOINT}?pageSize=200`, {
-  headers: { 'x-goog-api-key': apiKey },
-  signal: controller.signal,
-  });
-  }
-  if (!response.ok) throw new Error(await describeFailure(response, transport));
-
-  const data = await response.json();
-  const rows = Array.isArray(data && data.models) ? data.models : [];
-
-  const usable = rows
-  .filter((m) => Array.isArray(m.supportedGenerationMethods)
-  ? m.supportedGenerationMethods.includes('generateContent')
-  : true)
-  .map((m) => ({
-  id: String(m.name || '').replace(/^models\//, ''),
-  label: m.displayName ? `${m.displayName}` : String(m.name || '').replace(/^models\//, ''),
-  }))
-  .filter((m) => m.id && /^gemini-/.test(m.id) && !/embedding|aqa|tts|image|veo|live/.test(m.id));
-
-  const version = (id) => {
-  const m = /gemini-(\d+)(?:\.(\d+))?/.exec(id);
-  return m ? Number(m[1]) * 100 + Number(m[2] || 0) : 0;
-  };
-  usable.sort((a, b) => version(b.id) - version(a.id) || a.id.localeCompare(b.id));
-
-  if (!usable.length) throw new Error('The key is valid but no text-capable Gemini models came back.');
-  return usable;
-  } finally {
-  clearTimeout(timer);
-  }
-}
-
-function parseDataUrl(dataUrl) {
-  const m = /^data:(image\/(?:png|jpeg|jpg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
-  if (!m) return null;
-  return { mimeType: m[1] === 'image/jpg' ? 'image/jpeg' : m[1], base64: m[2] };
-}
-
-async function callGemini({ system, parts, config, maxOutputTokens = 1200, history = [] }) {
-  const {
-  transport = 'direct', apiKey = '', proxyUrl = '',
-  model = DEFAULT_MODEL, timeoutMs = DEFAULT_TIMEOUT,
-  } = config;
-
-  const body = {
-  contents: [
-  ...history.map((t) => ({ role: t.role === 'model' ? 'model' : 'user', parts: [{ text: t.text }] })),
-  { role: 'user', parts },
-  ],
-  systemInstruction: { parts: [{ text: system }] },
-  generationConfig: { temperature: 0.3, maxOutputTokens, topP: 0.9 },
-  };
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-  let response;
-  if (transport === 'proxy') {
-  if (!proxyUrl) throw new Error('No proxy URL is configured. Add one in Settings, or switch to a direct key.');
-  response = await fetch(proxyUrl, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  signal: controller.signal,
-  body: JSON.stringify({ provider: 'gemini', model, ...body }),
-  });
-  } else {
-  if (!apiKey) throw new Error('No Gemini API key is configured. Add one in Settings → AI assistant.');
-  response = await fetch(`${ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-  signal: controller.signal,
-  body: JSON.stringify(body),
-  });
-  }
-
-  if (!response.ok) throw new Error(await describeFailure(response, transport));
-
-  const data = await response.json();
-  const text = extractText(data);
-  if (!text) throw new Error(blockedReason(data) || 'The model returned an empty response.');
-  return { text, model, transport };
-  } catch (err) {
-  if (err.name === 'AbortError') {
-  throw new Error(`The model did not answer within ${Math.round(timeoutMs / 1000)} seconds. The analysis on screen is unaffected — it was computed locally.`);
-  }
-  throw err;
-  } finally {
-  clearTimeout(timer);
-  }
-}
-
-async function testConnection(config = {}) {
-  try {
-  const { text } = await askGemini({
-  facts: { symbol: 'XAUUSD', note: 'connection test — no analysis attached' },
-  question: 'Reply with exactly: connection ok',
-  config: { ...config, timeoutMs: 15000 },
-  });
-  return { ok: true, message: `Connected on ${config.model || DEFAULT_MODEL}. The model replied: "${text.slice(0, 80)}"` };
-  } catch (err) {
-
-  if (/not available to this key/i.test(err.message)) {
-  try {
-  const models = await listModels(config);
-  return {
-  ok: false,
-  message: err.message,
-  suggestModels: models,
-  suggestModel: models[0] ? models[0].id : null,
-  };
-  } catch {   }
-  }
-  return { ok: false, message: err.message };
-  }
-}
-
-Object.assign(__exports, { GEMINI_MODELS, DEFAULT_MODEL, HOSTED_PROXY_URL, hasHostedProxy, isRetiredModel, defaultAiConfig, askGemini, briefSetup, coachJournal, reviewChartImage, listModels, parseDataUrl, testConnection });
 
 });
 
