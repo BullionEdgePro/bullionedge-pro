@@ -1976,9 +1976,23 @@ kbd {
   position: relative;
   background: var(--panel-3);
 }
-.lp-featshot img {
-  display: block; width: 100%; height: auto;
+
+.lp-featshot {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
 }
+.lp-featshot img {
+  display: block; width: 100%; height: 100%;
+  object-fit: cover; object-position: top center;
+}
+
+.lp-featgroup {
+  margin: var(--sp-7) 0 var(--sp-4);
+  font-size: var(--fs-sm); font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--gold);
+}
+.lp-featgroup:first-of-type { margin-top: var(--sp-5); }
 
 .lp-ico {
   position: absolute; left: var(--sp-4); bottom: var(--sp-3); z-index: 2;
@@ -1998,8 +2012,7 @@ kbd {
 .lp-feat h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-lg); margin: 0 0 var(--sp-2); color: var(--ink); }
 .lp-feat p  { font-size: var(--fs-sm); color: var(--muted); line-height: 1.7; margin: 0; }
 
-.lp-featalt { display: none; }
-.lp-featshot.noart ~ .lp-feattext .lp-featalt { display: block; }
+.lp-featalt { display: block; }
 
 .lp-method { list-style: none; padding: 0; margin: 0; counter-reset: none; }
 
@@ -5768,9 +5781,7 @@ function markup() {
   </ul>
   </figure>
 
-  <div class="lp-grid">
-  ${FEATURES.map(feature).join('')}
-  </div>
+  ${['The engine', 'The money', 'The platform'].map(featureGroup).join('')}
   </section>
 
   <section class="lp-sec">
@@ -6078,37 +6089,50 @@ const EXPECT = {
 
 const FEATURES = [
 
-  { slug: null, icon: '◈', title: 'XAU/USD pre-trade engine',
-  body: 'Reads structure, liquidity, imbalance and location off the chart itself — then answers buy, sell, or no trade. It says no most of the time, and shows the levels it used to decide.' },
-  { slug: null, icon: '✳', title: 'An AI that cannot make up prices',
-  body: 'Ask why a setup failed, or send a screenshot of your own broker chart to check against it. Every figure it quotes is checked against the engine first — anything invented is flagged before you read it.' },
-  { slug: 'live-desk', icon: '◉', title: 'Live price &amp; chart',
-  body: 'Gold spot on an interactive candlestick chart with EMA overlays, zoom and eight timeframes — and a locally drawn fallback chart when the network is not there.' },
-  { slug: 'auto-setups', icon: '◈', title: 'Auto setups every 2 hours',
-  body: 'Four rules-based setups, frozen for two hours — so you cannot refresh until one agrees with you.' },
-  { slug: 'sessions', icon: '◐', title: 'Perfect timing, worldwide',
-  body: 'London and the US overlap, converted to your clock — daylight saving handled, wherever you are.' },
-  { slug: 'risk-sizing', icon: '▣', title: 'Risk-first sizing',
-  body: 'Nominate the risk. The position size falls out of your stop — you never pick it, so you never fudge it.' },
-  { slug: 'score', icon: '✦', title: 'A 100-point score',
-  body: 'Ten weighted factors, four hard vetoes, one of four answers — and the reasons behind it, every time.' },
-  { slug: 'psychology', icon: '◍', title: 'Psychology coach',
-  body: 'Six honest questions. Revenge trading, exhaustion and real stress block the trade outright — whatever the score says.' },
-  { slug: 'risk-manager', icon: '◑', title: 'Risk manager',
-  body: 'Daily, weekly and monthly limits — and a desk that shuts itself at exactly the moment you least want it to.' },
-  { slug: 'journal', icon: '▤', title: 'Journal &amp; analytics',
-  body: 'Outcomes, R multiples, emotions and mistakes — until the record starts telling you the truth about yourself.' },
-  { slug: 'copytrade', icon: '◇', title: 'Copy-trade validator',
-  body: 'Scores whether you actually verified what you are copying — and whether the published record survives arithmetic.' },
-  { slug: 'guide', icon: '◎', title: 'A guided walkthrough',
-  body: 'Eight steps that end where they should — with you placing the trade on your own platform, deliberately.' },
-  { slug: 'modes', icon: '◧', title: 'Beginner &amp; Pro modes',
-  body: 'Plain-English explanations on every number — then a denser, faster desk once you stop needing them.' },
-  { slug: 'offline', icon: '⌾', title: 'Works with no network',
-  body: 'Feed down, network gone — it still scores, still sizes, still tells you the truth about the trade.' },
-  { slug: 'privacy', icon: '▨', title: 'Your data stays yours',
+  { shot: 'engine', group: 'The engine', icon: '◈', title: 'XAU/USD pre-trade engine',
+  body: 'Reads structure, liquidity, imbalance and location off the candles, then answers buy, sell, or no trade — with the case against printed as plainly as the case for. It says no most of the time.' },
 
-  body: 'Your journal, settings and profile live in your browser and are never uploaded. The assistant answers on your device and sends nothing at all; only if you connect Gemini yourself does a question leave, carrying the engine\'s measurements and nothing else.' },
+  { shot: 'chart', group: 'The engine', icon: '◉', title: 'MT5-style chart, live candles',
+  body: 'Order blocks, fair value gaps, liquidity pools, BOS/CHoCH, engulfing bars, Fibonacci and session shading — each a layer you can switch off. The newest candle streams live and never repaints.' },
+
+  { shot: 'checklist', group: 'The engine', icon: '✓', title: 'The ten-factor checklist',
+  body: 'What you can see and the engine cannot. It shows what it detected beside every item, so you can find out exactly where you and it disagree.' },
+
+  { shot: 'plan', group: 'The engine', icon: '△', title: 'Entry, stop, targets, lot size',
+  body: 'The stop sits beyond the level that would prove the idea wrong. Targets come from real structure and are spaced so three cannot hide inside one ATR. The size falls out of the loss you accepted.' },
+
+  { shot: 'news', group: 'The engine', icon: '◴', title: 'A calendar that admits what it knows',
+  body: 'Fed decisions are known dates. Payrolls and claims are derived from published rules and labelled as derived. Anything it cannot establish is left out rather than invented — and a release inside your window blocks the trade.' },
+
+  { shot: 'assistant', group: 'The engine', icon: '✳', title: 'An assistant that cannot invent a price',
+  body: 'Ask why a setup failed or what would have to change. It answers on your device, with no key and no connection. Any figure it quotes that the engine did not compute is flagged before you read it.' },
+
+  { shot: 'risk', group: 'The money', icon: '◑', title: 'Risk manager, and a desk that shuts',
+  body: 'Set risk per trade, a daily loss limit and a maximum number of trades while you are calm. They are enforced later, when you are not — the verdict becomes a no-trade until the next session.' },
+
+  { shot: 'journal', group: 'The money', icon: '▤', title: 'Journal and the six-stage path',
+  body: 'Every trade with its R multiple and the emotion you recorded. Your stage is the first one you have not met — record, defined risk, discipline, selectivity, expectancy, consistency — measured from your own results.' },
+
+  { shot: 'dashboard', group: 'The money', icon: '▦', title: 'Where your edge actually is',
+  body: 'Results broken down by session, by score band and by recorded emotion. Most traders have one hour and one mood that cost them almost everything, and no way to see it without this.' },
+
+  { shot: 'psychology', group: 'The money', icon: '◍', title: 'Psychology, with teeth',
+  body: 'Six honest questions before you commit. Revenge trading, exhaustion and real stress block the trade outright, whatever the score says.' },
+
+  { shot: 'copytrade', group: 'The money', icon: '◇', title: 'Copy-trade validator',
+  body: 'Copying somebody outsources the analysis, never the risk. This scores whether you actually know what you are copying, and whether the published record survives basic arithmetic.' },
+
+  { shot: 'live', group: 'The platform', icon: '◆', title: 'Live desk and auto setups',
+  body: 'Spot gold, an interactive chart, and four rules-based setups frozen for two hours — so you cannot refresh until one of them agrees with you.' },
+
+  { shot: 'analyse', group: 'The platform', icon: '◎', title: 'Bring your own idea',
+  body: 'Type your own levels and run them through the same rulebook. Nothing is pre-approved because a machine suggested it — including the machine’s own suggestions.' },
+
+  { shot: 'guide', group: 'The platform', icon: '○', title: 'A guided walkthrough',
+  body: 'Ten steps from signing in to logging the outcome, with live examples from your own settings. Beginner mode explains every number; Pro mode gets out of the way.' },
+
+  { shot: 'settings', group: 'The platform', icon: '▨', title: 'Offline, private, yours',
+  body: 'Install it and everything but the price feed works with no connection. Your trades and settings live in your browser — there is no account server to upload them to, so export them if the history matters.' },
 ];
 
 const pct = (n, dp = 1) => `${(n * 100).toFixed(dp)}%`;
@@ -6243,25 +6267,26 @@ function methodSteps() {
   </ol>`;
 }
 
-const feature = ({ slug, icon, title, body }) => `
+const feature = ({ shot, icon, title, body }) => `
   <article class="lp-feat">
-  <div class="lp-featshot${slug ? '' : ' noart'}">
-  ${slug ? `<img src="gallery/web/${slug}.webp" alt="${esc(body)}" loading="lazy" decoding="async"
-  width="1376" height="768"
+  <div class="lp-featshot${shot ? '' : ' noart'}">
+  ${shot ? `<img src="gallery/features/${shot}.webp"
+  alt="Screenshot of the ${esc(title.replace(/&[a-z]+;/g, ' '))} screen in BullionEdge Pro"
+  loading="lazy" decoding="async"
   onerror="this.closest('.lp-featshot').classList.add('noart')">` : ''}
   <span class="lp-ico" aria-hidden="true">${icon}</span>
   </div>
   <div class="lp-feattext">
   <h3>${title}</h3>
-  <!-- The benefit line is typeset into the artwork above, so repeating it
-  here would print the same sentence twice. It lives in the image's alt
-  text instead: the words still reach a screen reader, a search engine
-  and anyone with images turned off, and they appear on screen exactly
-  once. The "noart" class restores this paragraph if the artwork cannot
-  load, and a phone shows it too, where the typeset caption is tiny. -->
   <p class="lp-featalt">${body}</p>
   </div>
   </article>`;
+
+const featureGroup = (name) => `
+  <h3 class="lp-featgroup">${esc(name)}</h3>
+  <div class="lp-grid">
+  ${FEATURES.filter((f) => f.group === name).map(feature).join('')}
+  </div>`;
 
 const style = (name, tfs, body) => `
   <article class="lp-style">
