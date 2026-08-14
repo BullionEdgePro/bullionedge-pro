@@ -12092,10 +12092,14 @@ function paintPrice() {
   const stamp = market.ts ? new Date(market.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
 
   const real = provider().quality === 'xauusd';
-  setHtml('xau-datawarn', callout(real ? 'long' : 'gold', real
-  ? `<b>XAUUSD LIVE DATA.</b> Candles are a genuine XAU/USD feed. Still confirm the price on your own broker before acting.`
-  : `<b>INDICATIVE / PROXY DATA.</b> Candles are based on a gold-backed proxy market aligned to the gold spot quote, and may
-  differ from your broker's XAU/USD price. <b>Verify all entry, SL and TP levels on your broker.</b>`));
+  const cal0 = state.xau.calibration || null;
+  const matched = cal0 && !calibrationStale(cal0, Date.now());
+
+  setHtml('xau-datawarn', real || matched ? '' : `
+  <p class="t-faint" style="font-size:var(--fs-2xs);margin:0 0 var(--sp-2)">
+  Prices are indicative until you match them to your broker
+  ${tip('Candles come from a gold-backed proxy market aligned to the gold spot quote. Open "Match my broker’s price" below, type the price from your terminal, and every level shifts to match it — this line then disappears.')}
+  </p>`);
 
   const notes = [];
   if (status.state !== 'live') notes.push(callout('', `<b>Feed ${status.state}.</b> ${esc(feedStatusText(status))} Last update: ${stamp}.`));
@@ -13628,9 +13632,6 @@ function createProChart(canvas, options = {}) {
   ctx.fillStyle = 'rgba(234,240,238,.10)';
   ctx.textAlign = 'left';
   ctx.fillText(`${state.symbol}  ${state.tfLabel}`, 8, 18);
-  ctx.font = FONT;
-  ctx.fillStyle = state.quality === 'xauusd' ? 'rgba(70,185,140,.5)' : 'rgba(224,166,60,.5)';
-  ctx.fillText(state.quality === 'xauusd' ? 'XAUUSD LIVE DATA' : 'INDICATIVE / PROXY DATA', 8, 31);
   }
 
   function line(ctx, y, color, x0 = 0, x1 = plotWidth()) {
