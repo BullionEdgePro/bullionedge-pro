@@ -6427,17 +6427,19 @@ __def("src/domain/licensing.js", function (__exports, __req) {
 
 const DAY_MS = 86400000;
 
+const LS_CHECKOUT = 'https://bullionedgepro1.lemonsqueezy.com/checkout/buy/9651f021-389a-4a22-84b6-d82b5230e0f4';
+
 const CHECKOUT = {
 
-  storeId: '',
+  storeId: '448900',
 
   portal: 'https://app.lemonsqueezy.com/my-orders',
 
   plans: [
-  { id: 'week',    name: 'Week Pass', days: 7,   variantId: '', url: '' },
-  { id: 'starter', name: 'Starter',   days: 30,  variantId: '', url: '' },
-  { id: 'pro',     name: 'Pro',       days: 90,  variantId: '', url: '' },
-  { id: 'elite',   name: 'Elite',     days: 180, variantId: '', url: '' },
+  { id: 'week',    name: 'Week Pass', days: 7,   variantId: '2018014', url: LS_CHECKOUT },
+  { id: 'starter', name: 'Starter',   days: 30,  variantId: '2017997', url: LS_CHECKOUT },
+  { id: 'pro',     name: 'Pro',       days: 90,  variantId: '2018018', url: LS_CHECKOUT },
+  { id: 'elite',   name: 'Elite',     days: 180, variantId: '2018033', url: LS_CHECKOUT },
   ],
 
   get enabled() { return Boolean(this.storeId); },
