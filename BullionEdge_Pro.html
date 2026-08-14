@@ -11125,6 +11125,7 @@ const { loadSeries, provider, TIMEFRAMES, EXECUTION_TFS, ANALYSIS_TFS, feedStatu
 const { analyzeMarket, SETUP_TYPES, WEIGHTS, WEIGHT_LABELS } = __req("src/domain/confluence.js");
 const { checklistByStep, SECTIONS, STEPS, exclusiveSets, checklistProgress, REQUIRED_IDS } = __req("src/domain/xauchecklist.js");
 const { whyList, whyNotList, headline, planText } = __req("src/domain/xauexplain.js");
+const { engulfingMarks } = __req("src/domain/patterns.js");
 const { BROKER_SPEC_DEFAULTS } = __req("src/domain/tradeplan.js");
 const { newsProximity, hasLiveFeed, agenda } = __req("src/domain/news.js");
 const { RECURRING_ONLY } = __req("src/domain/calendar.js");
@@ -12197,6 +12198,11 @@ function paintChart() {
   fvgs: drawnOnExecTf && a ? a.fvgs || [] : [],
   blocks: drawnOnExecTf && a ? a.blocks || [] : [],
   events: drawnOnExecTf && a && a.structures && a.structures[a.timeframe] ? a.structures[a.timeframe].events : [],
+
+  engulfing: state.xau.layers.engulf === false ? [] : engulfingMarks(
+  chartCandles(seriesCache[state.xau.tf]),
+  (seriesCache[state.xau.tf] && seriesCache[state.xau.tf].atr) || [],
+  ),
   pools: a && a.liquidity ? a.liquidity.pools : [],
   plan: a && a.plan && a.plan.valid ? a.plan : null,
   ote: a && a.plan && a.plan.valid ? a.plan.ote : null,
@@ -12775,6 +12781,7 @@ function modelOptions(selected, models = GEMINI_MODELS) {
 function layerToggles(layers) {
   const groups = [
   ['Structure', [['fvg', 'FVG'], ['ob', 'Order blocks'], ['structure', 'BOS / CHoCH'], ['liquidity', 'Liquidity'],
+  ['engulf', 'Engulfing'],
   ['sr', 'Prev day / week'], ['custom', 'Your levels'], ['trendlines', 'Trendlines'],
   ['fib', 'Fibonacci / OTE'], ['pd', 'Premium / discount']]],
   ['Trade plan', [['entry', 'Entry zone'], ['stop', 'Stop loss'], ['targets', 'Take profit'], ['plan', 'Plan card']]],
@@ -12867,6 +12874,7 @@ const DEFAULT_LAYERS = {
   ob: true,
   liquidity: true,
   structure: true,
+  engulf: false,
   sr: true,
   custom: true,
   trendlines: false,
@@ -13119,6 +13127,7 @@ function createProChart(canvas, options = {}) {
   drawCandles(ctx, range, start, end, bw);
   drawIndicators(ctx, range, start, end);
   drawStructureLabels(ctx, range, start, end);
+  drawEngulfing(ctx, range, start, end, bw);
   drawLowerPanes(ctx, start, end, bw);
   drawAxes(ctx, range, start, end, bw);
   drawCrosshair(ctx, range);
@@ -13419,6 +13428,31 @@ function createProChart(canvas, options = {}) {
   ctx.lineTo(x, Math.round(y) + 0.5);
   ctx.stroke();
   label(ctx, x + 3, y - 3, `${e.type} ${e.dir === 'bull' ? '↑' : '↓'}`, e.dir === 'bull' ? COLOR.up : COLOR.down);
+  }
+  }
+
+  function drawEngulfing(ctx, range, start, end, bw) {
+  if (!state.layers.engulf) return;
+
+  const w = Math.max(3, bw * 0.5);
+
+  for (const m of state.overlays.engulfing || []) {
+  if (m.i < start || m.i >= end) continue;
+  const c = state.candles[m.i];
+  if (!c) continue;
+  const x = xOf(m.i);
+  const bull = m.dir === 'bull';
+
+  const y = bull ? yOf(c.low, range) + 9 : yOf(c.high, range) - 9;
+  const h = bull ? -6 : 6;
+
+  ctx.fillStyle = bull ? 'rgba(70,185,140,.85)' : 'rgba(224,112,74,.85)';
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  ctx.lineTo(x - w / 2, y);
+  ctx.lineTo(x + w / 2, y);
+  ctx.closePath();
+  ctx.fill();
   }
   }
 
@@ -15856,6 +15890,24 @@ function patternsAt(candles, i, atr, options = {}) {
   return found.map((p) => ({ ...p, i, time: c.time }));
 }
 
+function engulfingMarks(candles, atrArr = [], options = {}, closedOnly = true) {
+  const out = [];
+  if (!Array.isArray(candles) || candles.length < 2) return out;
+  const end = closedOnly ? candles.length - 1 : candles.length;
+
+  for (let i = 1; i < end; i += 1) {
+
+  if (candles[i] && candles[i].forming) continue;
+  const found = patternsAt(candles, i, atrArr[i], options);
+  for (const p of found) {
+  if (p.id === 'bullEngulf' || p.id === 'bearEngulf') {
+  out.push({ i, dir: p.dir, id: p.id, label: p.label, strength: p.strength });
+  }
+  }
+  }
+  return out;
+}
+
 function isRetest(candle, level, atr, dir) {
   if (!candle || !Number.isFinite(level) || !Number.isFinite(atr) || atr <= 0) return false;
   const tol = atr * 0.25;
@@ -15885,7 +15937,7 @@ function triggerPattern(candles, atrArr, dir, options = {}) {
 
 const clamp = (n) => Math.max(0, Math.min(1, n));
 
-Object.assign(__exports, { PATTERN_DEFAULTS, patternsAt, isRetest, readPatterns, triggerPattern });
+Object.assign(__exports, { PATTERN_DEFAULTS, patternsAt, engulfingMarks, isRetest, readPatterns, triggerPattern });
 
 });
 
