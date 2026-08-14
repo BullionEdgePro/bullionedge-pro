@@ -3052,6 +3052,8 @@ const state = {
   pointSize: 0.1, minLot: 0.01, lotStep: 0.01,
   confirmed: false,
   },
+
+  calibration: null,
   layers: {},
   weights: {},
   levels: [],
@@ -11126,6 +11128,8 @@ const { whyList, whyNotList, headline, planText } = __req("src/domain/xauexplain
 const { BROKER_SPEC_DEFAULTS } = __req("src/domain/tradeplan.js");
 const { newsProximity, hasLiveFeed, agenda } = __req("src/domain/news.js");
 const { RECURRING_ONLY } = __req("src/domain/calendar.js");
+const { applyTick, seedForming, applyCalibration, makeCalibration, calibrationStale } = __req("src/domain/stream.js");
+const { TickStream } = __req("src/integrations/ticks.js");
 const { answerLocally, starterQuestions } = __req("src/domain/helpdesk.js");
 const { readRiskState } = __req("src/domain/risk.js");
 const { uid } = __req("src/core/crypto.js");
@@ -11139,6 +11143,10 @@ const EVERY = { spot: 5000, exec: 30_000, full: 300_000 };
 
 let chart = null;
 let timers = [];
+
+let ticks = null;
+let forming = null;
+let streamState = 'off';
 let mounted = false;
 let seriesCache = {};
 let analysis = null;
@@ -11259,6 +11267,27 @@ __exports.default = {
   <input id="xau-minrr" type="number" min="0.5" max="10" step="0.1" inputmode="decimal" value="${esc(x.minRR)}">
   </div>
   </div>
+
+  <details class="xspec" id="xau-cal-wrap">
+  <summary>Match my broker's price <span class="chip" id="xau-cal-chip"></span></summary>
+  <p class="t-muted" style="font-size:var(--fs-xs);margin:var(--sp-2) 0">
+  No public feed equals your broker's XAU/USD — every broker quotes its own book, and a few dollars of
+  difference is normal rather than a fault. So instead of pretending to be your terminal, this measures the
+  gap: read the current price off MT4/MT5, type it here, and every level drawn afterwards is shifted to
+  match. It expires after twelve hours, because a spread from last week describes last week.
+  </p>
+  <div class="row">
+  <div class="field">
+  <label for="xau-cal-price">Price on your terminal right now</label>
+  <input id="xau-cal-price" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 4352.40">
+  </div>
+  <div class="field" style="flex:0 0 auto;align-self:end">
+  <button class="btn sm" id="xau-cal-set" type="button">Match it</button>
+  <button class="btn ghost sm" id="xau-cal-clear" type="button">Clear</button>
+  </div>
+  </div>
+  <div id="xau-cal-note" class="field-note"></div>
+  </details>
 
   <details class="xspec">
   <summary>Broker contract specification ${x.spec && x.spec.confirmed ? '<span class="chip long">confirmed</span>' : '<span class="chip gold">assumed</span>'}</summary>
@@ -11781,6 +11810,26 @@ __exports.default = {
 
   }
 
+  on(root, 'click', '#xau-cal-set', () => {
+  const input = byId('xau-cal-price');
+  const feed = market.spot;
+  const cal = makeCalibration(input && input.value, feed, Date.now());
+  if (!cal.ok) { setText('xau-cal-note', cal.reason); toast(cal.reason, 'bad'); return; }
+  patch({ xau: { ...state.xau, calibration: cal } });
+  if (input) input.value = '';
+  paintCalibration();
+  paintChart();
+  paintPrice();
+  toast(`Matched. Levels shifted by ${cal.offset >= 0 ? '+' : ''}${cal.offset.toFixed(2)}.`, 'good');
+  });
+
+  on(root, 'click', '#xau-cal-clear', () => {
+  patch({ xau: { ...state.xau, calibration: null } });
+  paintCalibration();
+  paintChart();
+  paintPrice();
+  });
+
   on(root, 'click', '#xau-ai-send', () => {
   const input = byId('xau-ai-input');
   if (!input) return;
@@ -11830,6 +11879,7 @@ __exports.default = {
 
   unmount() {
   mounted = false;
+  stopTicks();
   timers.forEach(clearInterval);
   timers = [];
   if (chart) { chart.destroy(); chart = null; }
@@ -11853,6 +11903,8 @@ function startPolling() {
   await refreshAll();
   })();
 
+  paintCalibration();
+  startTicks();
   timers.push(setInterval(() => tick(refreshSpot).then(paintPrice), EVERY.spot));
   timers.push(setInterval(() => tick(() => refreshExec(false)), EVERY.exec));
   timers.push(setInterval(() => tick(refreshAll), EVERY.full));
@@ -11867,6 +11919,7 @@ async function refreshAll() {
   const { series } = await loadSeries(tfs, { limit: 300 });
   if (!mounted) return;
   seriesCache = series;
+  reseedForming();
   const exec = series[state.xau.executionTf];
   lastClosedBar = exec && exec.closed.length ? exec.closed[exec.closed.length - 1].time : 0;
   runAnalysis();
@@ -11886,6 +11939,7 @@ async function refreshExec(force) {
   const { series } = await loadSeries([state.xau.tf], { limit: 300 });
   if (!mounted) return;
   seriesCache = { ...seriesCache, ...series };
+  reseedForming();
   paintChart();
 
   const execTf = state.xau.executionTf;
@@ -12049,11 +12103,87 @@ function paintPrice() {
   setText('xau-stampclock', stamp);
 }
 
+function reseedForming() {
+  const tf = TIMEFRAMES.find((t) => t.id === state.xau.executionTf);
+  const s = seriesCache[state.xau.executionTf];
+  if (!tf || !s || !s.candles.length) { forming = null; return; }
+  forming = seedForming(s.candles[s.candles.length - 1], Date.now(), tf.ms);
+}
+
+function paintCalibration() {
+  const cal = state.xau.calibration;
+  const chip = byId('xau-cal-chip');
+  const note = byId('xau-cal-note');
+  if (!chip || !note) return;
+
+  if (!cal) {
+  chip.textContent = 'not set';
+  chip.className = 'chip';
+  note.textContent = 'Levels are shown on this feed’s prices.';
+  return;
+  }
+  const stale = calibrationStale(cal, Date.now());
+  chip.textContent = stale ? 'expired' : `${cal.offset >= 0 ? '+' : ''}${cal.offset.toFixed(2)}`;
+  chip.className = 'chip ' + (stale ? 'gold' : 'long');
+  note.textContent = stale
+  ? 'This match is over twelve hours old and is no longer applied. Read your terminal again to refresh it.'
+  : `Every level is shifted by ${cal.offset >= 0 ? '+' : ''}${cal.offset.toFixed(2)} to match your terminal.`;
+}
+
+function chartCandles(s) {
+  const closed = s ? s.candles : [];
+  if (!forming || !closed.length) return closed;
+  if (state.xau.tf !== state.xau.executionTf) return closed;
+
+  const last = closed[closed.length - 1];
+  const cal0 = state.xau.calibration || null;
+
+  const cal = cal0 && !calibrationStale(cal0, Date.now()) ? cal0 : null;
+  const bar = applyCalibration(forming, cal);
+
+  if (last && last.time === bar.time) return [...closed.slice(0, -1), bar];
+  if (last && bar.time < last.time) return closed;
+  return [...closed, bar];
+}
+
+function startTicks() {
+  if (ticks) return;
+  ticks = new TickStream(onTick, (st) => {
+  streamState = st;
+  paintPrice();
+  });
+  ticks.start();
+}
+
+function stopTicks() {
+  if (!ticks) return;
+  ticks.stop();
+  ticks = null;
+  forming = null;
+  streamState = 'off';
+}
+
+function onTick(tick) {
+  if (!mounted) return;
+  const tfId = state.xau.executionTf;
+  const tf = TIMEFRAMES.find((t) => t.id === tfId);
+  const s = seriesCache[tfId];
+  if (!tf || !s || !s.candles.length) return;
+
+  const aligned = { ...tick, price: tick.price + (s.offset || 0) };
+  const step = applyTick(forming, aligned, tf.ms);
+  forming = step.candle;
+
+  market.spot = aligned.price;
+  paintPrice();
+  paintChart();
+}
+
 function paintChart() {
   if (!mounted || !chart) return;
   const s = seriesCache[state.xau.tf];
   chart.setMeta({ tfLabel: state.xau.tf, quality: provider().quality });
-  chart.setData(s ? s.candles : []);
+  chart.setData(chartCandles(s));
 
   const drawnOnExecTf = state.xau.tf === state.xau.executionTf;
   const a = analysis;
@@ -16514,6 +16644,242 @@ function planText(a) {
 }
 
 Object.assign(__exports, { whyList, whyNotList, headline, assistantMessage, planText });
+
+});
+
+__def("src/domain/stream.js", function (__exports, __req) {
+
+const bucketStart = (ms, tfMs) => Math.floor(ms / tfMs) * tfMs;
+
+const bucketStartSec = (ms, tfMs) => Math.floor(bucketStart(ms, tfMs) / 1000);
+
+function applyTick(candle, tick, tfMs) {
+  const price = Number(tick && tick.price);
+  const at = Number(tick && tick.time);
+  if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(at)) {
+  return { candle, closed: null };
+  }
+
+  const startSec = bucketStartSec(at, tfMs);
+
+  if (!candle) {
+  return {
+  candle: { time: startSec, open: price, high: price, low: price, close: price, volume: NaN, forming: true },
+  closed: null,
+  };
+  }
+
+  if (startSec < candle.time) return { candle, closed: null };
+
+  if (startSec === candle.time) {
+  return {
+  candle: {
+  ...candle,
+  high: Math.max(candle.high, price),
+  low: Math.min(candle.low, price),
+  close: price,
+  forming: true,
+  },
+  closed: null,
+  };
+  }
+
+  const closed = { ...candle, forming: false };
+  return {
+  candle: { time: startSec, open: price, high: price, low: price, close: price, volume: NaN, forming: true },
+  closed,
+  };
+}
+
+function seedForming(lastClosed, nowMs, tfMs) {
+  if (!lastClosed) return null;
+  const startSec = bucketStartSec(nowMs, tfMs);
+  if (startSec === lastClosed.time) return { ...lastClosed, forming: true };
+
+  return {
+  time: startSec,
+  open: lastClosed.close, high: lastClosed.close, low: lastClosed.close, close: lastClosed.close,
+  volume: NaN, forming: true,
+  };
+}
+
+const CALIBRATION_TTL_MS = 12 * 60 * 60 * 1000;
+
+const MAX_CALIBRATION = 60;
+
+function makeCalibration(brokerPrice, feedPrice, nowMs) {
+  const b = Number(brokerPrice);
+  const f = Number(feedPrice);
+  if (!Number.isFinite(b) || !Number.isFinite(f) || b <= 0 || f <= 0) {
+  return { ok: false, reason: 'Both prices have to be real numbers.' };
+  }
+  const offset = b - f;
+  if (Math.abs(offset) > MAX_CALIBRATION) {
+  return {
+  ok: false,
+  reason: `That is ${offset.toFixed(2)} away from this feed. A broker difference that large is almost always a mistyped price — check it against your terminal.`,
+  };
+  }
+  return { ok: true, offset, at: nowMs, feedAt: f };
+}
+
+function calibrationAge(cal, nowMs) {
+  if (!cal || !Number.isFinite(cal.at)) return Infinity;
+  return nowMs - cal.at;
+}
+
+const calibrationStale = (cal, nowMs) => calibrationAge(cal, nowMs) > CALIBRATION_TTL_MS;
+
+function applyCalibration(candle, cal) {
+  if (!candle || !cal || !Number.isFinite(cal.offset) || cal.offset === 0) return candle;
+  const o = cal.offset;
+  return {
+  ...candle,
+  open: candle.open + o,
+  high: candle.high + o,
+  low: candle.low + o,
+  close: candle.close + o,
+  };
+}
+
+const WS_URL = 'wss://stream.binance.com:9443/ws/paxgusdt@trade';
+
+const BACKOFF_MS = [1000, 2000, 5000, 10_000, 20_000, 30_000];
+const backoffFor = (attempt) => BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)];
+
+const SILENCE_MS = 25_000;
+
+const isStale = (lastTickAt, nowMs) =>
+  !Number.isFinite(lastTickAt) || (nowMs - lastTickAt) > SILENCE_MS;
+
+function parseTrade(raw) {
+  let msg;
+  try { msg = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return null; }
+  if (!msg || typeof msg !== 'object') return null;
+  const price = Number(msg.p);
+  const time = Number(msg.T);
+  if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(time)) return null;
+  return { price, time, qty: Number(msg.q) || 0 };
+}
+
+Object.assign(__exports, { bucketStart, bucketStartSec, CALIBRATION_TTL_MS, MAX_CALIBRATION, calibrationStale, WS_URL, BACKOFF_MS, backoffFor, SILENCE_MS, isStale, applyTick, seedForming, makeCalibration, calibrationAge, applyCalibration, parseTrade });
+
+});
+
+__def("src/integrations/ticks.js", function (__exports, __req) {
+
+const { WS_URL, parseTrade, backoffFor, isStale, SILENCE_MS } = __req("src/domain/stream.js");
+
+class TickStream {
+
+  constructor(onTick, onState) {
+  this.onTick = onTick;
+  this.onState = onState || (() => {});
+  this.ws = null;
+  this.attempt = 0;
+  this.lastTickAt = NaN;
+  this.stopped = true;
+  this.timer = null;
+  this.watchdog = null;
+  this.state = 'off';
+  }
+
+  setState(next, detail) {
+  if (this.state === next) return;
+  this.state = next;
+  this.onState(next, detail);
+  }
+
+  start() {
+  if (!this.stopped) return;
+  this.stopped = false;
+  this.attempt = 0;
+  this.connect();
+
+  this.watchdog = setInterval(() => {
+  if (this.stopped) return;
+  if (this.state === 'live' && isStale(this.lastTickAt, Date.now())) {
+  this.setState('polling', 'the stream went quiet');
+  this.cycle();
+  }
+  }, Math.floor(SILENCE_MS / 2));
+  }
+
+  stop() {
+  this.stopped = true;
+  clearTimeout(this.timer);
+  clearInterval(this.watchdog);
+  this.timer = null;
+  this.watchdog = null;
+  this.close();
+  this.setState('off');
+  }
+
+  close() {
+  if (!this.ws) return;
+
+  try {
+  this.ws.onopen = this.ws.onmessage = this.ws.onerror = this.ws.onclose = null;
+  this.ws.close();
+  } catch {   }
+  this.ws = null;
+  }
+
+  cycle() {
+  this.close();
+  if (this.stopped) return;
+  const wait = backoffFor(this.attempt);
+  this.attempt += 1;
+  clearTimeout(this.timer);
+  this.timer = setTimeout(() => this.connect(), wait);
+  }
+
+  connect() {
+  if (this.stopped) return;
+  if (typeof WebSocket === 'undefined') {
+
+  this.setState('polling', 'this browser has no WebSocket');
+  return;
+  }
+
+  let ws;
+  try {
+  ws = new WebSocket(WS_URL);
+  } catch {
+  this.setState('polling', 'the stream could not be opened');
+  this.cycle();
+  return;
+  }
+  this.ws = ws;
+
+  ws.onopen = () => {
+  this.attempt = 0;
+  this.lastTickAt = Date.now();
+  this.setState('live');
+  };
+
+  ws.onmessage = (ev) => {
+  const tick = parseTrade(ev.data);
+  if (!tick) return;
+  this.lastTickAt = Date.now();
+  if (this.state !== 'live') this.setState('live');
+  try { this.onTick(tick); } catch {   }
+  };
+
+  ws.onerror = () => {
+
+  this.setState('polling', 'the stream errored');
+  };
+
+  ws.onclose = () => {
+  if (this.stopped) return;
+  this.setState('polling', 'the stream closed');
+  this.cycle();
+  };
+  }
+}
+
+Object.assign(__exports, { TickStream });
 
 });
 
