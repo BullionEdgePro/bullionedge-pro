@@ -2526,6 +2526,71 @@ kbd {
 }
 .lp-exnote b { color: var(--gold-bright); }
 
+.lp-trialbar {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-5);
+  background: linear-gradient(90deg, rgba(224,166,60,.14), rgba(224,166,60,.05) 60%, transparent);
+  border-bottom: 1px solid rgba(224,166,60,.28);
+}
+.lp-trialbar p { margin: 0; flex: 1 1 auto; font-size: var(--fs-sm); color: var(--muted); }
+.lp-trialbar p b { color: var(--ink); }
+.lp-tb-dot {
+  flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold); box-shadow: 0 0 0 0 rgba(224,166,60,.6);
+  animation: tbpulse 2.6s ease-out infinite;
+}
+@keyframes tbpulse {
+  0%   { box-shadow: 0 0 0 0 rgba(224,166,60,.55); }
+  70%  { box-shadow: 0 0 0 10px rgba(224,166,60,0); }
+  100% { box-shadow: 0 0 0 0 rgba(224,166,60,0); }
+}
+.lp-tb-x {
+  flex: 0 0 auto; background: none; border: 0; cursor: pointer;
+  color: var(--faint); font-size: 20px; line-height: 1; padding: 4px 6px;
+}
+.lp-tb-x:hover { color: var(--ink); }
+
+.lp-trialflag {
+  position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%);
+  padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+  background: var(--gold); color: #14100A;
+  font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .04em;
+}
+
+.lp-trialpop {
+  position: fixed; z-index: 60; right: var(--sp-5); bottom: var(--sp-5);
+  width: min(370px, calc(100vw - var(--sp-5) * 2));
+  padding: var(--sp-5);
+  background: var(--panel-2); border: 1px solid rgba(224,166,60,.35);
+  border-radius: var(--r-lg); box-shadow: 0 24px 60px rgba(0,0,0,.6);
+  opacity: 0; transform: translateY(14px);
+  transition: opacity .35s ease, transform .35s cubic-bezier(.2,.7,.2,1);
+}
+.lp-trialpop.on { opacity: 1; transform: none; }
+.lp-tp-x {
+  position: absolute; top: 8px; right: 10px;
+  background: none; border: 0; cursor: pointer; color: var(--faint);
+  font-size: 22px; line-height: 1;
+}
+.lp-tp-x:hover { color: var(--ink); }
+.lp-tp-eyebrow {
+  margin: 0 0 4px; color: var(--gold);
+  font-size: var(--fs-2xs); letter-spacing: .16em; text-transform: uppercase;
+}
+.lp-trialpop h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-xl); line-height: 1.15; color: var(--ink); }
+.lp-tp-body { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); color: var(--muted); }
+.lp-tp-list { margin: 0 0 var(--sp-4); padding-left: 1.1em; font-size: var(--fs-xs); color: var(--muted); }
+.lp-tp-list li { margin-bottom: 4px; }
+.lp-tp-list b { color: var(--ink); }
+.lp-tp-fine { margin: var(--sp-3) 0 0; font-size: var(--fs-2xs); color: var(--faint); }
+
+@media (max-width: 700px) {
+
+  .lp-trialbar { flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); }
+  .lp-trialbar p { flex-basis: 100%; font-size: var(--fs-xs); order: 2; }
+  .lp-trialpop { right: var(--sp-3); left: var(--sp-3); bottom: var(--sp-3); width: auto; }
+}
+
 </style>
 </head>
 <body>
@@ -5694,7 +5759,7 @@ Object.assign(__exports, { ACCESS, currentAccount, initAuth, paintIdentity, refr
 __def("src/ui/landing.js", function (__exports, __req) {
 
 const { byId, esc, on } = __req("src/core/dom.js");
-const { PLANS, REVIEWS, CLAIMS, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl } = __req("src/domain/licensing.js");
+const { PLANS, REVIEWS, CLAIMS, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, TRIAL } = __req("src/domain/licensing.js");
 
 const { buildPlan, breakevenWinRate, expectancyR } = __req("src/domain/sizing.js");
 
@@ -5717,6 +5782,74 @@ function hideLanding() {
   closeSubscribe();
 }
 
+const TRIAL_SEEN = 'be.trial.seen';
+
+function dismissTrial(why) {
+  try { localStorage.setItem(TRIAL_SEEN, why + ':' + Date.now()); } catch {   }
+  byId('lp-trialbar')?.remove();
+  byId('lp-trialpop')?.remove();
+}
+
+const trialSeen = () => {
+  try { return !!localStorage.getItem(TRIAL_SEEN); } catch { return false; }
+};
+
+function offerTrial() {
+  if (trialSeen()) return;
+
+  let fired = false;
+  const show = () => {
+  if (fired || trialSeen()) return;
+  fired = true;
+  window.removeEventListener('scroll', onScroll);
+  paintTrialPopup();
+  };
+
+  const onScroll = () => {
+  const feat = byId('lp-features');
+  if (feat && feat.getBoundingClientRect().bottom < window.innerHeight * 1.2) show();
+  };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  setTimeout(show, 35000);
+}
+
+function paintTrialPopup() {
+  if (byId('lp-trialpop')) return;
+
+  const card = planById(TRIAL.planId);
+  const price = card && Number.isFinite(card.price) ? card.price : null;
+  const node = document.createElement('div');
+  node.className = 'lp-trialpop';
+  node.id = 'lp-trialpop';
+  node.setAttribute('role', 'dialog');
+  node.setAttribute('aria-label', `${TRIAL.days}-day free trial`);
+  node.innerHTML = `
+  <button class="lp-tp-x" data-trial-dismiss aria-label="Close">×</button>
+  <p class="lp-tp-eyebrow">Try it first</p>
+  <h3>${TRIAL.days} days free.${price ? `<br>Then $${price} a month.` : ''}</h3>
+  <p class="lp-tp-body">
+  The whole desk — the engine, the journal, the risk limits, the assistant. Nothing is held back
+  during the trial and nothing is charged until day ${TRIAL.days + 1}.
+  </p>
+  <ul class="lp-tp-list">
+  <li>Card details taken at signup, <b>$0 charged today</b></li>
+  <li>Cancel in one click before day ${TRIAL.days + 1} and pay nothing</li>
+  <li>Your journal and settings stay on your device either way</li>
+  </ul>
+  <button class="btn block magnetic" data-trial>Start ${TRIAL.days} days free</button>
+  <p class="lp-tp-fine">Not financial advice. Trading gold is high-risk and you can lose money.</p>`;
+
+  node.querySelector('[data-trial-dismiss]').addEventListener('click', () => dismissTrial('dismissed'));
+  node.querySelector('[data-trial]').addEventListener('click', () => {
+  dismissTrial('taken');
+  startSubscribe(TRIAL.planId);
+  });
+
+  document.body.appendChild(node);
+  requestAnimationFrame(() => node.classList.add('on'));
+}
+
 function markup() {
   return `
   <div class="lp-nav">
@@ -5736,6 +5869,18 @@ function markup() {
   <button class="btn sm magnetic" data-enter>Member login</button>
   </nav>
   </div>
+
+  ${TRIAL.enabled ? `
+  <div class="lp-trialbar" id="lp-trialbar" role="region" aria-label="Free trial offer">
+  <span class="lp-tb-dot" aria-hidden="true"></span>
+  <p>
+  <b>${TRIAL.days} days free</b> on the ${esc(TRIAL.plan ? TRIAL.plan.name : 'Starter')} plan —
+  full desk, nothing held back. Card details are taken to start it and
+  <b>you are not charged until day ${TRIAL.days + 1}</b>. Cancel any time before then and it costs nothing.
+  </p>
+  <button class="btn sm magnetic" data-trial>Start ${TRIAL.days} days free</button>
+  <button class="lp-tb-x" data-trial-dismiss aria-label="Dismiss this offer">×</button>
+  </div>` : ''}
 
   <header class="lp-hero">
   <!-- The film plays WHOLE: its own 16:9, width 100%, height auto, no cover
@@ -6351,6 +6496,15 @@ function wire(host) {
 
   on(host, 'click', '[data-enter]', () => onEnter?.());
 
+  on(host, 'click', '[data-trial]', () => {
+  dismissTrial('taken');
+  startSubscribe(TRIAL.planId);
+  });
+
+  on(host, 'click', '[data-trial-dismiss]', () => dismissTrial('dismissed'));
+
+  if (TRIAL.enabled) offerTrial();
+
   on(host, 'click', '[data-to]', (_e, btn) => {
   byId(btn.dataset.to)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -6398,6 +6552,7 @@ function renderPlans() {
   byId('plan-cards').innerHTML = PLANS.map((p) => `
   <article class="lp-plan ${p.pop ? 'pop' : ''}">
   ${p.pop ? '<span class="lp-badge">Most popular</span>' : ''}
+  ${TRIAL.enabled && TRIAL.planId === p.id ? `<span class="lp-trialflag">${TRIAL.days} days free first</span>` : ''}
   ${p.save ? `<span class="lp-save">${esc(p.save)}</span>` : ''}
   <h3>${esc(p.name)}</h3>
   <p class="amt">$${p.price}<small> / ${p.days} days</small></p>
@@ -6512,6 +6667,16 @@ const CHECKOUT = {
   ],
 
   get enabled() { return Boolean(this.storeId); },
+};
+
+const TRIAL = {
+
+  enabled: true,
+  days: 7,
+
+  planId: 'starter',
+
+  get plan() { return CHECKOUT.plans.find((p) => p.id === this.planId) || null; },
 };
 
 const checkoutUrl = (planId) =>
@@ -6635,7 +6800,7 @@ const CLAIMS = [
   },
 ];
 
-Object.assign(__exports, { DAY_MS, CHECKOUT, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, CLAIMS });
+Object.assign(__exports, { DAY_MS, CHECKOUT, TRIAL, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, CLAIMS });
 
 });
 
