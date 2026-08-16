@@ -2591,6 +2591,36 @@ kbd {
   .lp-trialpop { right: var(--sp-3); left: var(--sp-3); bottom: var(--sp-3); width: auto; }
 }
 
+.lp-tp-code {
+  margin: var(--sp-3) 0 0; padding: var(--sp-3);
+  border: 1px dashed rgba(224,166,60,.45); border-radius: var(--r-md);
+  background: rgba(224,166,60,.06); text-align: center;
+}
+.lp-tp-codelabel {
+  display: block; font-size: var(--fs-2xs); color: var(--gold);
+  letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px;
+}
+.lp-tp-copy {
+  display: inline-flex; align-items: baseline; gap: 8px; cursor: pointer;
+  padding: 6px 14px; border-radius: var(--r-sm);
+  background: rgba(224,166,60,.14); border: 1px solid rgba(224,166,60,.4);
+  color: var(--ink); font: inherit;
+}
+.lp-tp-copy b { font-size: var(--fs-md); letter-spacing: .1em; }
+.lp-tp-copyhint { font-size: var(--fs-2xs); color: var(--faint); }
+.lp-tp-copy:hover { background: rgba(224,166,60,.22); }
+.lp-tp-copy.copied { border-color: var(--long); }
+.lp-tp-copy.copied .lp-tp-copyhint { color: var(--long); }
+.lp-tp-codenote {
+  display: block; margin-top: 6px; font-size: var(--fs-2xs); color: var(--faint);
+}
+
+.lp-trialbar code {
+  padding: 1px 6px; border-radius: 3px; font-size: .92em;
+  background: rgba(224,166,60,.16); border: 1px solid rgba(224,166,60,.35);
+  color: var(--gold); letter-spacing: .06em;
+}
+
 </style>
 </head>
 <body>
@@ -5759,7 +5789,7 @@ Object.assign(__exports, { ACCESS, currentAccount, initAuth, paintIdentity, refr
 __def("src/ui/landing.js", function (__exports, __req) {
 
 const { byId, esc, on } = __req("src/core/dom.js");
-const { PLANS, REVIEWS, CLAIMS, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, TRIAL } = __req("src/domain/licensing.js");
+const { PLANS, REVIEWS, CLAIMS, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, TRIAL, DISCOUNT } = __req("src/domain/licensing.js");
 
 const { buildPlan, breakevenWinRate, expectancyR } = __req("src/domain/sizing.js");
 
@@ -5827,21 +5857,47 @@ function paintTrialPopup() {
   node.innerHTML = `
   <button class="lp-tp-x" data-trial-dismiss aria-label="Close">×</button>
   <p class="lp-tp-eyebrow">Try it first</p>
-  <h3>${TRIAL.days} days free.<br>On any plan.</h3>
+  <h3>${TRIAL.days} days free.${price ? `<br>Or ${DISCOUNT.percent}% off.` : ''}</h3>
   <p class="lp-tp-body">
-  The whole desk — the engine, the journal, the risk limits, the assistant. Pick any plan, from
-  $${price || '9.99'} up: the first ${TRIAL.days} days are free on all of them and nothing is charged
-  until day ${TRIAL.days + 1}.
+  Two ways in. Start the ${TRIAL.plan ? esc(TRIAL.plan.name) : 'Starter'} plan free for ${TRIAL.days} days — the
+  whole desk, nothing charged until day ${TRIAL.days + 1}. Or skip the trial and take ${DISCOUNT.percent}% off any
+  plan, from $${price || '9.99'} up.
   </p>
   <ul class="lp-tp-list">
   <li>Card details taken at signup, <b>$0 charged today</b></li>
   <li>Cancel in one click before day ${TRIAL.days + 1} and pay nothing</li>
   <li>Your journal and settings stay on your device either way</li>
   </ul>
+  ${DISCOUNT.enabled ? `
+  <div class="lp-tp-code">
+  <span class="lp-tp-codelabel">${DISCOUNT.percent}% off any plan</span>
+  <button type="button" class="lp-tp-copy" data-copy-code="${esc(DISCOUNT.code)}">
+  <b>${esc(DISCOUNT.code)}</b><span class="lp-tp-copyhint">copy</span>
+  </button>
+  <span class="lp-tp-codenote">${esc(DISCOUNT.note)}</span>
+  </div>` : ''}
   <button class="btn block magnetic" data-trial>Start ${TRIAL.days} days free</button>
   <p class="lp-tp-fine">Not financial advice. Trading gold is high-risk and you can lose money.</p>`;
 
   node.querySelector('[data-trial-dismiss]').addEventListener('click', () => dismissTrial('dismissed'));
+
+  node.querySelector('[data-copy-code]')?.addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  try {
+  await navigator.clipboard.writeText(btn.dataset.copyCode);
+  btn.classList.add('copied');
+  btn.querySelector('.lp-tp-copyhint').textContent = 'copied';
+  } catch {
+
+  const r = document.createRange();
+  r.selectNodeContents(btn.querySelector('b'));
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(r);
+  btn.querySelector('.lp-tp-copyhint').textContent = 'select & copy';
+  }
+  });
+
   node.querySelector('[data-trial]').addEventListener('click', () => {
   dismissTrial('taken');
   startSubscribe(TRIAL.planId);
@@ -5875,9 +5931,9 @@ function markup() {
   <div class="lp-trialbar" id="lp-trialbar" role="region" aria-label="Free trial offer">
   <span class="lp-tb-dot" aria-hidden="true"></span>
   <p>
-  <b>${TRIAL.days} days free on every plan</b> — full desk, nothing held back. Card details are taken to
-  start it and <b>you are not charged until day ${TRIAL.days + 1}</b>. Cancel any time before then and it
-  costs nothing.
+  <b>${TRIAL.days} days free</b> on the ${esc(TRIAL.plan ? TRIAL.plan.name : 'Starter')} plan — the whole desk,
+  nothing held back. Not charged until day ${TRIAL.days + 1}, cancel before then and it costs nothing.${
+  DISCOUNT.enabled ? ` Or take <b>${DISCOUNT.percent}% off any plan</b> with <code>${esc(DISCOUNT.code)}</code>.` : ''}
   </p>
   <button class="btn sm magnetic" data-trial>Start ${TRIAL.days} days free</button>
   <button class="lp-tb-x" data-trial-dismiss aria-label="Dismiss this offer">×</button>
@@ -6675,7 +6731,7 @@ const TRIAL = {
   enabled: true,
   days: 7,
 
-  allPlans: true,
+  allPlans: false,
 
   planId: 'starter',
 
@@ -6684,6 +6740,14 @@ const TRIAL = {
   appliesTo(planId) {
   return this.enabled && (this.allPlans || planId === this.planId);
   },
+};
+
+const DISCOUNT = {
+  enabled: true,
+  code: 'GOLD10',
+  percent: 10,
+
+  note: 'Works on any plan, including after a trial ends.',
 };
 
 const checkoutUrl = (planId) =>
@@ -6807,7 +6871,7 @@ const CLAIMS = [
   },
 ];
 
-Object.assign(__exports, { DAY_MS, CHECKOUT, TRIAL, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, CLAIMS });
+Object.assign(__exports, { DAY_MS, CHECKOUT, TRIAL, DISCOUNT, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, CLAIMS });
 
 });
 
