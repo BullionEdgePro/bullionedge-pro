@@ -5817,8 +5817,8 @@ function offerTrial() {
 function paintTrialPopup() {
   if (byId('lp-trialpop')) return;
 
-  const card = planById(TRIAL.planId);
-  const price = card && Number.isFinite(card.price) ? card.price : null;
+  const cheapest = PLANS.reduce((a, b) => (a.price <= b.price ? a : b));
+  const price = Number.isFinite(cheapest.price) ? cheapest.price : null;
   const node = document.createElement('div');
   node.className = 'lp-trialpop';
   node.id = 'lp-trialpop';
@@ -5827,10 +5827,11 @@ function paintTrialPopup() {
   node.innerHTML = `
   <button class="lp-tp-x" data-trial-dismiss aria-label="Close">×</button>
   <p class="lp-tp-eyebrow">Try it first</p>
-  <h3>${TRIAL.days} days free.${price ? `<br>Then $${price} a month.` : ''}</h3>
+  <h3>${TRIAL.days} days free.<br>On any plan.</h3>
   <p class="lp-tp-body">
-  The whole desk — the engine, the journal, the risk limits, the assistant. Nothing is held back
-  during the trial and nothing is charged until day ${TRIAL.days + 1}.
+  The whole desk — the engine, the journal, the risk limits, the assistant. Pick any plan, from
+  $${price || '9.99'} up: the first ${TRIAL.days} days are free on all of them and nothing is charged
+  until day ${TRIAL.days + 1}.
   </p>
   <ul class="lp-tp-list">
   <li>Card details taken at signup, <b>$0 charged today</b></li>
@@ -5874,9 +5875,9 @@ function markup() {
   <div class="lp-trialbar" id="lp-trialbar" role="region" aria-label="Free trial offer">
   <span class="lp-tb-dot" aria-hidden="true"></span>
   <p>
-  <b>${TRIAL.days} days free</b> on the ${esc(TRIAL.plan ? TRIAL.plan.name : 'Starter')} plan —
-  full desk, nothing held back. Card details are taken to start it and
-  <b>you are not charged until day ${TRIAL.days + 1}</b>. Cancel any time before then and it costs nothing.
+  <b>${TRIAL.days} days free on every plan</b> — full desk, nothing held back. Card details are taken to
+  start it and <b>you are not charged until day ${TRIAL.days + 1}</b>. Cancel any time before then and it
+  costs nothing.
   </p>
   <button class="btn sm magnetic" data-trial>Start ${TRIAL.days} days free</button>
   <button class="lp-tb-x" data-trial-dismiss aria-label="Dismiss this offer">×</button>
@@ -6552,7 +6553,7 @@ function renderPlans() {
   byId('plan-cards').innerHTML = PLANS.map((p) => `
   <article class="lp-plan ${p.pop ? 'pop' : ''}">
   ${p.pop ? '<span class="lp-badge">Most popular</span>' : ''}
-  ${TRIAL.enabled && TRIAL.planId === p.id ? `<span class="lp-trialflag">${TRIAL.days} days free first</span>` : ''}
+  ${TRIAL.appliesTo(p.id) ? `<span class="lp-trialflag">${TRIAL.days} days free first</span>` : ''}
   ${p.save ? `<span class="lp-save">${esc(p.save)}</span>` : ''}
   <h3>${esc(p.name)}</h3>
   <p class="amt">$${p.price}<small> / ${p.days} days</small></p>
@@ -6674,9 +6675,15 @@ const TRIAL = {
   enabled: true,
   days: 7,
 
+  allPlans: true,
+
   planId: 'starter',
 
   get plan() { return CHECKOUT.plans.find((p) => p.id === this.planId) || null; },
+
+  appliesTo(planId) {
+  return this.enabled && (this.allPlans || planId === this.planId);
+  },
 };
 
 const checkoutUrl = (planId) =>
