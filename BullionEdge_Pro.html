@@ -179,14 +179,14 @@
   --font-body:      'Inter', 'Segoe UI', system-ui, sans-serif;
   --font-mono:      'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
 
-  --fs-2xs:  10px;
-  --fs-xs:   11px;
-  --fs-sm:   12.5px;
-  --fs-md:   13.5px;
-  --fs-lg:   16px;
-  --fs-xl:   20px;
-  --fs-2xl:  26px;
-  --fs-3xl:  clamp(24px, 3.6vw, 36px);
+  --fs-2xs:  11.5px;
+  --fs-xs:   12.5px;
+  --fs-sm:   14px;
+  --fs-md:   15.5px;
+  --fs-lg:   17.5px;
+  --fs-xl:   21px;
+  --fs-2xl:  28px;
+  --fs-3xl:  clamp(27px, 3.8vw, 40px);
 
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
   --sp-5: 20px; --sp-6: 26px; --sp-7: 34px; --sp-8: 46px;
@@ -208,8 +208,9 @@
 }
 
 html.a11y-large-font {
-  --fs-2xs: 12px; --fs-xs: 13px;  --fs-sm: 14.5px; --fs-md: 15.5px;
-  --fs-lg:  18px; --fs-xl: 23px;  --fs-2xl: 30px;
+  --fs-2xs: 13px;   --fs-xs: 14.5px; --fs-sm: 16px;  --fs-md: 17.5px;
+  --fs-lg:  20px;   --fs-xl: 25px;   --fs-2xl: 33px;
+  --fs-3xl: clamp(30px, 4.2vw, 46px);
 }
 
 html.a11y-contrast {
@@ -926,22 +927,97 @@ tr:last-child td { border-bottom: none; }
 .modeswitch { margin-top: var(--sp-4); }
 .modeswitch .lbl { font-size: var(--fs-2xs); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; }
 
+.rail .navbtn.more { display: none; }
+
 @media (max-width: 1079px) {
   .rail {
     position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 45;
-    flex-direction: row; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch;
-    background: rgba(8,16,17,.94);
+    flex-direction: row; gap: 0;
+
+    overflow: visible;
+    background: rgba(8,16,17,.96);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--line-2);
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    padding: 4px 2px calc(4px + env(safe-area-inset-bottom));
   }
-  .rail .navbtn { flex-direction: column; gap: 3px; padding: 8px 10px; font-size: 10px; min-width: 68px; border-radius: var(--r-sm); }
+
+  .rail .navbtn[data-tier="secondary"] { display: none; }
+  .rail .navbtn.more { display: flex; }
+
+  .rail .navbtn {
+    flex: 1 1 0; min-width: 0;
+    flex-direction: column; gap: 2px;
+    padding: 7px 2px; font-size: var(--fs-2xs);
+    border-radius: var(--r-sm); text-align: center;
+  }
+  .rail .navbtn .lbl {
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    line-height: 1.25;
+  }
   .rail .navbtn.on { box-shadow: none; background: var(--glow-gold); }
-  .rail .navbtn .ico { font-size: 17px; }
+  .rail .navbtn .ico { font-size: 19px; width: auto; }
   .rail .navbtn .badge { margin: 0; position: absolute; transform: translate(16px, -6px); }
   .rail .railfoot, .rail .modeswitch { display: none; }
-  .shell { padding-bottom: 96px; }
+
+  .shell { padding-bottom: calc(86px + env(safe-area-inset-bottom)); }
 }
+
+.navsheet { position: fixed; inset: 0; z-index: 60; }
+.navsheet[hidden] { display: none; }
+
+.navsheet-scrim {
+  position: absolute; inset: 0; background: rgba(0,0,0,.62);
+}
+.navsheet.closing .navsheet-scrim { animation: sheet-scrim-out var(--dur-2) var(--ease-out) forwards; }
+
+.navsheet-panel {
+  position: absolute; left: 0; right: 0;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  background: rgba(10,20,21,.99);
+  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+  border-top: 1px solid var(--line-2);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: 10px var(--sp-3) var(--sp-4);
+  box-shadow: 0 -20px 60px -18px rgba(0,0,0,.85);
+  animation: sheet-panel-in var(--dur-3) var(--ease-out);
+}
+.navsheet.closing .navsheet-panel { animation: sheet-panel-out var(--dur-2) var(--ease-out) forwards; }
+
+@keyframes sheet-scrim-out { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes sheet-panel-in  { from { transform: translateY(16px); } to { transform: none; } }
+@keyframes sheet-panel-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(16px); } }
+
+.navsheet-grip {
+  width: 38px; height: 4px; border-radius: var(--r-pill);
+  background: var(--line-2); margin: 0 auto var(--sp-3);
+}
+
+.navsheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+
+.navsheet .sheetbtn {
+  display: flex; align-items: center; gap: 11px;
+  min-height: 54px; padding: 11px 13px;
+  border: 1px solid var(--line-2); border-radius: var(--r-md);
+  background: rgba(255,255,255,.03); color: var(--ink-soft);
+  font-size: var(--fs-sm); font-weight: 500; text-align: left;
+  transition: background var(--dur-1), border-color var(--dur-1), color var(--dur-1);
+}
+.navsheet .sheetbtn .ico { font-size: 19px; flex: none; color: var(--gold); }
+.navsheet .sheetbtn .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.navsheet .sheetbtn:hover { background: rgba(255,255,255,.07); color: var(--ink); }
+.navsheet .sheetbtn.on {
+  border-color: var(--gold); background: var(--glow-gold); color: var(--ink);
+}
+
+body.sheet-lock { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .navsheet-scrim, .navsheet-panel,
+  .navsheet.closing .navsheet-scrim, .navsheet.closing .navsheet-panel { animation: none; }
+}
+
+@media (min-width: 1080px) { .navsheet { display: none; } }
 
 #view { min-width: 0; }
 #view.swapping { opacity: 0; transform: translateY(8px); }
@@ -1098,9 +1174,10 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius
 .amsg ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); }
 .amsg li { margin: 3px 0; }
 #assistant-panel .afoot { padding: 11px 15px; border-top: 1px solid var(--line-2); flex: none; display: flex; gap: 7px; flex-wrap: wrap; }
+
 @media (max-width: 1079px) {
-  #assistant-fab { bottom: calc(var(--sp-5) + 62px); }
-  #assistant-panel { bottom: calc(var(--sp-5) + 130px); }
+  #assistant-fab { bottom: calc(var(--sp-4) + 86px + env(safe-area-inset-bottom)); }
+  #assistant-panel { bottom: calc(var(--sp-4) + 152px + env(safe-area-inset-bottom)); }
 }
 
 .safety {
@@ -1914,12 +1991,12 @@ kbd {
 }
 
 .lp-sub {
-  font-size: clamp(14px, 1.7vw, 17px); line-height: 1.75;
+  font-size: clamp(16.5px, 1.7vw, 19px); line-height: 1.7;
   color: var(--ink-soft); max-width: 720px; margin: 0 auto var(--sp-6);
 }
 
 .lp-cta { display: flex; gap: var(--sp-3); flex-wrap: wrap; justify-content: center; }
-.lp-cta .btn { padding: 13px 26px; font-size: var(--fs-md); }
+.lp-cta .btn { padding: 14px 28px; font-size: var(--fs-md); }
 
 .lp-micro { font-size: var(--fs-xs); color: var(--faint); margin: var(--sp-5) 0 0; }
 
@@ -2865,7 +2942,7 @@ const { readSession } = __req("src/domain/sessions.js");
 const { zoneAbbr, fmtOffset, tzOffsetHours, nowParts, detectTz } = __req("src/domain/timezones.js");
 
 const { initAuth } = __req("src/ui/auth.js");
-const { initRouter, registerView, renderNav, navigate, listViews, updatingView } = __req("src/ui/router.js");
+const { initRouter, registerView, renderNav, navigate, listViews, updatingView, initNavSheet, toggleNavSheet } = __req("src/ui/router.js");
 const { initTooltips, toast } = __req("src/ui/overlays.js");
 const { initMagnetics, revealAll } = __req("src/ui/motion.js");
 const { initBackground } = __req("src/ui/background.js");
@@ -2905,7 +2982,12 @@ async function boot() {
   .forEach(registerView);
 
   byId('rail').innerHTML = renderNav();
-  on('#rail', 'click', '.navbtn', (e, btn) => navigate(btn.dataset.view));
+  on('#rail', 'click', '.navbtn', (e, btn) => {
+  if (btn.id === 'nav-more') { toggleNavSheet(); return; }
+  navigate(btn.dataset.view);
+  });
+
+  initNavSheet();
 
   initRouter(byId('view'));
 
@@ -2999,14 +3081,13 @@ function startClock() {
 function paintTopBar(analysis) {
   paintSessionPill(analysis.session);
 
-  const badge = document.querySelector('[data-badge="analyse"]');
-  if (badge) {
   const decision = analysis.decision;
+  document.querySelectorAll('[data-badge="analyse"]').forEach((badge) => {
   badge.textContent = decision.key === 'go' ? '✓' : String(analysis.score.total);
   badge.style.background = decision.key === 'go' ? 'var(--long)'
   : decision.key === 'avoid' ? 'var(--short)' : 'var(--gold)';
   badge.style.color = decision.key === 'go' ? '#04231A' : decision.key === 'avoid' ? '#2A1109' : 'var(--gold-ink)';
-  }
+  });
 }
 
 function paintSessionPill(session) {
@@ -5959,7 +6040,7 @@ function markup() {
 
   <div class="lp-heroinner">
   <p class="lp-eyebrow">XAU/USD trading desk · built for discipline</p>
-  <h1 class="lp-h1">Trade gold like a <span>desk</span>,<br>not a gambler.</h1>
+  <h1 class="lp-h1">Trade gold like a <span>PRO</span>,<br>not a gambler.</h1>
   <p class="lp-sub">
   BullionEdge Pro turns XAU/USD into a repeatable process. Plan your own trades, or start from a fresh
   rules-based setup every two hours — for scalping, day, swing or position trading. Live price and interactive
@@ -6969,6 +7050,12 @@ function freshContainer() {
   return next;
 }
 
+const MOBILE_PRIMARY = ['dashboard', 'xau', 'live', 'journal'];
+
+const isPrimary = (id) => MOBILE_PRIMARY.includes(id);
+
+const secondaryViews = () => listViews().filter((v) => !isPrimary(v.id));
+
 function syncNav(id) {
   const rail = byId('rail');
   if (!rail) return;
@@ -6977,18 +7064,107 @@ function syncNav(id) {
   btn.classList.toggle('on', on);
   btn.setAttribute('aria-current', on ? 'page' : 'false');
   });
+
+  const more = byId('nav-more');
+  if (more) more.classList.toggle('on', !!id && !isPrimary(id));
+
+  const sheet = byId('navsheet');
+  if (sheet) {
+  sheet.querySelectorAll('.sheetbtn').forEach((btn) => {
+  btn.classList.toggle('on', btn.dataset.view === id);
+  });
+  }
 }
+
+const navBtn = (v, cls = 'navbtn') => `
+  <button class="${cls}" data-view="${v.id}" data-tier="${isPrimary(v.id) ? 'primary' : 'secondary'}" aria-current="false">
+  <span class="ico" aria-hidden="true">${v.icon}</span>
+  <span class="lbl">${v.label}</span>
+  ${v.badge ? `<span class="badge" data-badge="${v.id}"></span>` : ''}
+  </button>`;
 
 function renderNav() {
-  return listViews().map((v) => `
-  <button class="navbtn" data-view="${v.id}" aria-current="false">
-  <span class="ico" aria-hidden="true">${v.icon}</span>
-  <span>${v.label}</span>
-  ${v.badge ? `<span class="badge" data-badge="${v.id}"></span>` : ''}
-  </button>`).join('');
+  return listViews().map((v) => navBtn(v)).join('') + `
+  <button class="navbtn more" id="nav-more" type="button"
+  aria-haspopup="dialog" aria-expanded="false" aria-controls="navsheet">
+  <span class="ico" aria-hidden="true">⋯</span>
+  <span class="lbl">More</span>
+  </button>`;
 }
 
-Object.assign(__exports, { updatingView, listViews, currentView, registerView, initRouter, navigate, resetRouter, renderNav });
+function renderNavSheet() {
+  return `
+  <div class="navsheet-scrim" data-sheet-close></div>
+  <div class="navsheet-panel" role="dialog" aria-modal="true" aria-label="More sections">
+  <div class="navsheet-grip" aria-hidden="true"></div>
+  <div class="navsheet-grid">
+  ${secondaryViews().map((v) => navBtn(v, 'sheetbtn')).join('')}
+  </div>
+  </div>`;
+}
+
+let sheetOpen = false;
+
+const navSheetOpen = () => sheetOpen;
+
+function closeNavSheet() {
+  const node = byId('navsheet');
+  if (!node || !sheetOpen) return;
+  sheetOpen = false;
+
+  node.classList.add('closing');
+  setTimeout(() => {
+  if (sheetOpen) return;
+  node.hidden = true;
+  node.classList.remove('closing');
+  }, 220);
+  document.body.classList.remove('sheet-lock');
+  const more = byId('nav-more');
+  if (more) { more.setAttribute('aria-expanded', 'false'); more.focus(); }
+}
+
+function openNavSheet() {
+  const node = byId('navsheet');
+  if (!node || sheetOpen) return;
+  sheetOpen = true;
+  node.classList.remove('closing');
+  node.hidden = false;
+  document.body.classList.add('sheet-lock');
+  byId('nav-more')?.setAttribute('aria-expanded', 'true');
+  node.querySelector('.sheetbtn.on, .sheetbtn')?.focus();
+}
+
+const toggleNavSheet = () => (sheetOpen ? closeNavSheet() : openNavSheet());
+
+function initNavSheet() {
+  if (byId('navsheet')) return;
+
+  const node = document.createElement('div');
+  node.id = 'navsheet';
+  node.className = 'navsheet';
+  node.hidden = true;
+  node.innerHTML = renderNavSheet();
+  document.body.appendChild(node);
+
+  node.addEventListener('click', (e) => {
+  if (e.target.closest('[data-sheet-close]')) { closeNavSheet(); return; }
+  const btn = e.target.closest('.sheetbtn');
+  if (!btn) return;
+  closeNavSheet();
+  navigate(btn.dataset.view);
+  });
+
+  document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && sheetOpen) closeNavSheet();
+  });
+
+  const wide = window.matchMedia('(min-width: 1080px)');
+  const onWide = (e) => { if (e.matches) closeNavSheet(); };
+  if (wide.addEventListener) wide.addEventListener('change', onWide);
+  else wide.addListener(onWide);
+}
+
+Object.assign(__exports, { updatingView, listViews, currentView, MOBILE_PRIMARY, secondaryViews, navSheetOpen, toggleNavSheet, registerView, initRouter, navigate, resetRouter, renderNav, renderNavSheet, closeNavSheet, openNavSheet, initNavSheet });
 
 });
 
