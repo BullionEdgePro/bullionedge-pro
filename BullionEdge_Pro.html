@@ -2453,6 +2453,64 @@ kbd {
   line-height: 1.7; max-width: 68ch;
 }
 
+.lp-first {
+  display: flex; align-items: center; gap: var(--sp-5); flex-wrap: wrap;
+  margin: var(--sp-6) 0 0; padding: var(--sp-5);
+  border: 1px dashed rgba(224,166,60,.42); border-radius: var(--r-lg);
+  background: linear-gradient(100deg, rgba(224,166,60,.09), transparent 70%);
+}
+.lp-first > div { flex: 1 1 320px; min-width: 0; }
+.lp-firsttag {
+  margin: 0 0 6px; font-size: var(--fs-2xs); letter-spacing: .16em;
+  text-transform: uppercase; color: var(--gold);
+}
+.lp-first h3 {
+  font-family: var(--font-display); font-weight: 700; font-size: var(--fs-lg);
+  margin: 0 0 var(--sp-2); color: var(--ink);
+}
+.lp-first p { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.7; }
+.lp-first .btn { flex: 0 0 auto; }
+
+.lp-sociallead {
+  margin: 0 0 var(--sp-4); font-size: var(--fs-sm); color: var(--muted);
+  line-height: 1.7; max-width: 66ch;
+}
+.lp-social {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: var(--sp-3);
+}
+.lp-soc {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 60px; padding: 12px var(--sp-4);
+  border: 1px solid var(--line-2); border-radius: var(--r-md);
+  background: rgba(255,255,255,.02); color: var(--ink-soft);
+  text-decoration: none;
+  transition: border-color var(--dur-1), background var(--dur-1), transform var(--dur-1);
+}
+.lp-soc:hover {
+  text-decoration: none; border-color: rgba(224,166,60,.5);
+  background: rgba(224,166,60,.08); transform: translateY(-2px);
+}
+.lp-socico {
+  display: grid; place-items: center; flex: none;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(224,166,60,.16); color: var(--gold);
+  font-family: var(--font-display); font-weight: 700; font-size: var(--fs-md);
+}
+.lp-socmeta { display: grid; min-width: 0; }
+.lp-socmeta b { font-size: var(--fs-sm); color: var(--ink); font-weight: 600; }
+.lp-socmeta span {
+  font-size: var(--fs-xs); color: var(--faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lp-socgo { margin-left: auto; color: var(--gold-dim); flex: none; }
+.lp-soc:hover .lp-socgo { color: var(--gold); }
+
+@media (max-width: 620px) {
+
+  .lp-first { gap: var(--sp-4); }
+  .lp-first .btn { width: 100%; }
+}
+
 .lp-faq { max-width: 780px; }
 .lp-q { border-bottom: 1px solid var(--line-2); padding: var(--sp-4) 0; }
 .lp-q summary {
@@ -5975,7 +6033,7 @@ Object.assign(__exports, { ACCESS, currentAccount, initAuth, paintIdentity, refr
 __def("src/ui/landing.js", function (__exports, __req) {
 
 const { byId, esc, on } = __req("src/core/dom.js");
-const { PLANS, REVIEWS, CLAIMS, TRUST, publishableReviews, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, TRIAL, DISCOUNT } = __req("src/domain/licensing.js");
+const { PLANS, REVIEWS, CLAIMS, TRUST, SOCIAL, publishableReviews, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, TRIAL, DISCOUNT } = __req("src/domain/licensing.js");
 
 const { buildPlan, breakevenWinRate, expectancyR } = __req("src/domain/sizing.js");
 
@@ -6486,21 +6544,47 @@ function markup() {
   </section>
 
   <section class="lp-sec" id="lp-reviews">
-  <h2>What this is honest about.</h2>
+  <p class="lp-eyebrow">The part everyone else fakes</p>
+  <h2>Nobody here is going to tell you they made $4,000.</h2>
   <p class="lp-lead">
-  No testimonials here yet — we would rather show you nothing than invent someone. Every competitor in this
-  category has five-star quotes. Any of them could have been typed in an afternoon. These are claims you can
-  check by using the thing, and facts you can confirm without believing us.
+  Every gold platform you have looked at today has five glowing quotes and five stock-photo faces. They cost
+  about an hour to produce. We are not going to insult you with ours — so here is the harder version instead:
+  three things this software does that you can go and prove for yourself in ten minutes, and six facts you can
+  confirm without taking our word for any of it.
   </p>
+
   <div class="lp-rev" id="review-cards"></div>
 
-  <h3 class="lp-trusthead">Things you can verify before you pay</h3>
+  <h3 class="lp-trusthead">Six things you can check before you pay a penny</h3>
   <div class="lp-trustgrid" id="trust-cards"></div>
 
-  <p class="lp-trustfoot">
-  When members do write reviews, they will appear here with their name, the platform they wrote them on and
-  the date — linked to the original wherever possible, so you can go and read it in its own context.
+  <!-- The counter-offer. A page with no reviews can either apologise for it
+  or make the absence the invitation; this does the second. -->
+  <aside class="lp-first">
+  <div>
+  <p class="lp-firsttag">Open slot</p>
+  <h3>The first review here has not been written yet.</h3>
+  <p>
+  Start the ${TRIAL.days}-day trial, use it for a fortnight, and tell us the truth — including if it
+  annoyed you. Real name, real platform, linked to the original. Four stars is a better advert for this
+  product than five, and we would rather print the honest one.
   </p>
+  </div>
+  <button class="btn magnetic" data-trial>Start ${TRIAL.days} days free</button>
+  </aside>
+
+  <p class="lp-trustfoot">
+  When members do write them, reviews appear here with their name, the platform they wrote them on and the
+  date — linked to the original wherever possible, so you can go and read it in its own context. The build
+  refuses to publish one that is missing any of those.
+  </p>
+
+  <h3 class="lp-trusthead">Watch the desk work, before you trust it</h3>
+  <p class="lp-sociallead">
+  Setups, refusals and post-mortems, several times a week. Nothing behind a licence key — judge the thinking
+  first and decide afterwards.
+  </p>
+  <div class="lp-social" id="social-links"></div>
   </section>
 
   <section class="lp-sec">
@@ -6544,6 +6628,8 @@ function markup() {
   <a href="lot-size-calculator/">XAU/USD lot size calculator</a> ·
   <a href="pre-trade-checklist/">The pre-trade checklist</a> ·
   <a href="best-time-to-trade-gold/">Best time to trade gold</a></p>
+
+  <p class="lp-guides"><b>Follow the desk.</b> <span id="foot-social"></span></p>
 
   <p><b>Risk warning &amp; full disclaimer.</b>
   BullionEdge Pro is analytical and risk-management software for the XAU/USD (gold) market. It is not financial,
@@ -6846,6 +6932,7 @@ function wire(host) {
   renderPlans();
   renderReviews();
   renderTrust();
+  renderSocial();
 
   on(host, 'click', '[data-enter]', () => onEnter?.());
 
@@ -6985,6 +7072,26 @@ function renderTrust() {
   <b>${esc(t.k)}</b>
   <span>${esc(t.v)}</span>
   </div>`).join('');
+}
+
+function renderSocial() {
+  const cards = SOCIAL.map((s) => `
+  <a class="lp-soc" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer"
+  aria-label="${esc(s.name)} — ${esc(s.handle)}">
+  <span class="lp-socico" aria-hidden="true">${esc(s.icon)}</span>
+  <span class="lp-socmeta"><b>${esc(s.name)}</b><span>${esc(s.handle)}</span></span>
+  <span class="lp-socgo" aria-hidden="true">→</span>
+  </a>`).join('');
+
+  const host = byId('social-links');
+  if (host) host.innerHTML = cards;
+
+  const foot = byId('foot-social');
+  if (foot) {
+  foot.innerHTML = SOCIAL.map((s) => `
+  <a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.name)}</a>`)
+  .join('<span aria-hidden="true"> · </span>');
+  }
 }
 
 function startSubscribe(id) {
@@ -7249,6 +7356,17 @@ const CLAIMS = [
   },
 ];
 
+const SOCIAL = [
+  { id: 'facebook',  name: 'Facebook',  handle: 'BullionEdge Pro', icon: 'f',
+  url: 'https://www.facebook.com/share/1EEbtzuu3m/' },
+  { id: 'instagram', name: 'Instagram', handle: '@bullionedgepro', icon: '◎',
+  url: 'https://www.instagram.com/bullionedgepro' },
+  { id: 'tiktok',    name: 'TikTok',    handle: '@dixie_recos', icon: '♪',
+  url: 'https://www.tiktok.com/@dixie_recos' },
+  { id: 'youtube',   name: 'YouTube',   handle: '@bullionedgepro', icon: '▶',
+  url: 'https://youtube.com/@bullionedgepro' },
+];
+
 const TRUST = [
   {
   k: 'Nothing charged for 7 days',
@@ -7276,7 +7394,7 @@ const TRUST = [
   },
 ];
 
-Object.assign(__exports, { DAY_MS, CHECKOUT, TRIAL, DISCOUNT, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, REVIEW_PLATFORMS, publishableReviews, CLAIMS, TRUST, reviewProblems });
+Object.assign(__exports, { DAY_MS, CHECKOUT, TRIAL, DISCOUNT, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, REVIEW_PLATFORMS, publishableReviews, CLAIMS, SOCIAL, TRUST, reviewProblems });
 
 });
 
