@@ -1925,7 +1925,7 @@ kbd {
   mask-image: radial-gradient(circle closest-side, #000 80%, transparent 96%);
 }
 
-.lp-navbtns { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.lp-navbtns { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-left: auto; }
 
 .lp-link {
   background: none; border: none; cursor: pointer;
@@ -2538,8 +2538,50 @@ kbd {
 .installsheet-note { font-size: var(--fs-xs) !important; margin-bottom: var(--sp-4); }
 
 @media (max-width: 720px) {
-  .lp-nav { padding: var(--sp-3); }
-  .lp-navbtns .lp-link { display: none; }
+
+  .lp-nav {
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-3) 0;
+    position: sticky; top: 0;
+  }
+
+  .lp-brand     { order: 1; flex: 0 1 auto; min-width: 0; gap: 8px; }
+  .lp-nav .lp-logo    { width: 32px; height: 32px; }
+  .lp-nav .wordmark   { font-size: var(--fs-xl); }
+  .lp-navlogin  { order: 2; flex: 0 0 auto; margin-left: auto; }
+
+  .lp-navbtns {
+    order: 3; flex-basis: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    gap: 0;
+
+    margin: 0 calc(var(--sp-3) * -1);
+    padding: 2px var(--sp-3) 7px;
+    scrollbar-width: none;
+  }
+  .lp-navbtns::-webkit-scrollbar { display: none; }
+
+  .lp-navbtns .lp-link {
+    display: flex; align-items: center; flex: 0 0 auto;
+    min-height: 44px; padding: 0 12px;
+    white-space: nowrap; scroll-snap-align: start;
+    font-size: var(--fs-sm);
+  }
+
+  .lp-navbtns .lp-link.on { color: var(--gold); background: rgba(224,166,60,.12); }
+
+  .lp-nav::after {
+    content: ''; position: absolute; right: 0; bottom: 0;
+    width: 34px; height: 53px; pointer-events: none;
+    background: linear-gradient(90deg, rgba(10,18,20,0), rgba(10,18,20,.92));
+  }
+
+  #lp-expect, #lp-how, #lp-features, #lp-method,
+  #lp-pricing, #lp-community, #lp-reviews { scroll-margin-top: 124px; }
 
   .lp-featalt { display: block; }
 
@@ -5923,6 +5965,52 @@ function hideLanding() {
 
 const TRIAL_SEEN = 'be.trial.seen';
 
+const NAV_SECTIONS = [
+  'lp-expect', 'lp-how', 'lp-features', 'lp-method',
+  'lp-pricing', 'lp-community', 'lp-reviews',
+];
+
+function initSectionSpy() {
+  const strip = byId('lp-navbtns');
+  if (!strip || !('IntersectionObserver' in window)) return;
+
+  const links = new Map(
+  [...strip.querySelectorAll('.lp-link')].map((b) => [b.dataset.to, b]),
+  );
+
+  const inPageOrder = NAV_SECTIONS
+  .map((id) => byId(id))
+  .filter(Boolean)
+  .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
+  .map((el) => el.id);
+
+  const onScreen = new Map();
+  let active = null;
+
+  const setActive = (id) => {
+  if (id === active) return;
+  active = id;
+  links.forEach((btn, key) => btn.classList.toggle('on', key === id));
+
+  const btn = links.get(id);
+  if (!btn || strip.scrollWidth <= strip.clientWidth) return;
+  const b = btn.getBoundingClientRect();
+  const s = strip.getBoundingClientRect();
+  if (b.left < s.left + 8 || b.right > s.right - 8) {
+  strip.scrollTo({ left: Math.max(0, btn.offsetLeft - 16), behavior: 'smooth' });
+  }
+  };
+
+  const io = new IntersectionObserver((entries) => {
+  for (const e of entries) onScreen.set(e.target.id, e.isIntersecting);
+
+  const current = inPageOrder.find((id) => onScreen.get(id));
+  if (current) setActive(current);
+  }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+
+  for (const id of inPageOrder) io.observe(byId(id));
+}
+
 const TRIAL_SNOOZE_DAYS = 7;
 
 function dismissTrial(why) {
@@ -6067,7 +6155,11 @@ function markup() {
   width="40" height="40" onerror="this.remove()">
   <div class="wordmark"><span class="b">Bullion</span>Edge<span class="prochip">PRO</span></div>
   </div>
-  <nav class="lp-navbtns" aria-label="Page sections">
+  <!-- The section links and the login button are SIBLINGS, not nested. On a
+  phone the nav wraps to two rows — brand and login on the first, the
+  links on their own scrolling row beneath — and that reflow is only
+  possible if the login button is not inside the strip that scrolls. -->
+  <nav class="lp-navbtns" id="lp-navbtns" aria-label="Page sections">
   <button class="lp-link" data-to="lp-expect">What to expect</button>
   <button class="lp-link" data-to="lp-how">How it works</button>
   <button class="lp-link" data-to="lp-features">Features</button>
@@ -6075,8 +6167,8 @@ function markup() {
   <button class="lp-link" data-to="lp-pricing">Pricing</button>
   <button class="lp-link" data-to="lp-community">Community</button>
   <button class="lp-link" data-to="lp-reviews">Reviews</button>
-  <button class="btn sm magnetic" data-enter>Member login</button>
   </nav>
+  <button class="btn sm magnetic lp-navlogin" data-enter>Member login</button>
   </div>
 
   ${TRIAL.enabled ? `
@@ -6727,6 +6819,8 @@ function wire(host) {
   else offerTrial();
   }
 
+  initSectionSpy();
+
   on(host, 'click', '[data-to]', (_e, btn) => {
   byId(btn.dataset.to)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -6865,7 +6959,7 @@ function closeSubscribe() {
   byId('sub-modal')?.classList.remove('on');
 }
 
-Object.assign(__exports, { initLanding, hideLanding, openTrialOffer });
+Object.assign(__exports, { NAV_SECTIONS, initLanding, hideLanding, openTrialOffer });
 
 });
 
