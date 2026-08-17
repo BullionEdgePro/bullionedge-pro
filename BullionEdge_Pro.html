@@ -2623,9 +2623,34 @@ kbd {
 }
 .lp-tb-x {
   flex: 0 0 auto; background: none; border: 0; cursor: pointer;
-  color: var(--faint); font-size: 20px; line-height: 1; padding: 4px 6px;
+  color: var(--faint); font-size: 20px; line-height: 1; padding: 6px 8px;
 }
 .lp-tb-x:hover { color: var(--ink); }
+
+.lp-tb-reopen { display: none; }
+
+.lp-trialbar.dismissed {
+  padding: 0;
+  background: rgba(224,166,60,.06);
+}
+.lp-trialbar.dismissed > p,
+.lp-trialbar.dismissed > .lp-tb-dot,
+.lp-trialbar.dismissed > .btn,
+.lp-trialbar.dismissed > .lp-tb-x { display: none; }
+
+.lp-trialbar.dismissed .lp-tb-reopen {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; min-height: 44px;
+  padding: 11px var(--sp-4);
+  background: none; border: 0; cursor: pointer;
+  font-size: var(--fs-xs); color: var(--muted); text-align: center;
+}
+.lp-trialbar.dismissed .lp-tb-reopen b { color: var(--gold); font-weight: 600; }
+.lp-trialbar.dismissed .lp-tb-reopen:hover { background: rgba(224,166,60,.10); color: var(--ink); }
+.lp-tb-see {
+  border-bottom: 1px solid rgba(224,166,60,.5); color: var(--gold);
+  padding-bottom: 1px; white-space: nowrap;
+}
 
 .lp-trialflag {
   position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%);
@@ -2640,10 +2665,13 @@ kbd {
   padding: var(--sp-5);
   background: var(--panel-2); border: 1px solid rgba(224,166,60,.35);
   border-radius: var(--r-lg); box-shadow: 0 24px 60px rgba(0,0,0,.6);
-  opacity: 0; transform: translateY(14px);
-  transition: opacity .35s ease, transform .35s cubic-bezier(.2,.7,.2,1);
+
+  max-height: calc(100vh - var(--sp-5) * 2); overflow-y: auto;
+
+  transform: translateY(8px);
+  transition: transform .35s cubic-bezier(.2,.7,.2,1);
 }
-.lp-trialpop.on { opacity: 1; transform: none; }
+.lp-trialpop.on { transform: none; }
 .lp-tp-x {
   position: absolute; top: 8px; right: 10px;
   background: none; border: 0; cursor: pointer; color: var(--faint);
@@ -5895,35 +5923,76 @@ function hideLanding() {
 
 const TRIAL_SEEN = 'be.trial.seen';
 
+const TRIAL_SNOOZE_DAYS = 7;
+
 function dismissTrial(why) {
   try { localStorage.setItem(TRIAL_SEEN, why + ':' + Date.now()); } catch {   }
-  byId('lp-trialbar')?.remove();
   byId('lp-trialpop')?.remove();
+  byId('lp-trialbar')?.classList.add('dismissed');
 }
 
 const trialSeen = () => {
-  try { return !!localStorage.getItem(TRIAL_SEEN); } catch { return false; }
+  try {
+  const raw = localStorage.getItem(TRIAL_SEEN);
+  if (!raw) return false;
+  const at = Number(String(raw).split(':').pop());
+  if (!Number.isFinite(at)) return true;
+  return Date.now() - at < TRIAL_SNOOZE_DAYS * 864e5;
+  } catch { return false; }
 };
 
 function offerTrial() {
   if (trialSeen()) return;
 
   let fired = false;
+  let io = null;
+  let timer = null;
+
   const show = () => {
   if (fired || trialSeen()) return;
   fired = true;
   window.removeEventListener('scroll', onScroll);
+  io?.disconnect();
+  clearTimeout(timer);
   paintTrialPopup();
   };
 
-  const onScroll = () => {
+  const deepEnough = () => {
   const feat = byId('lp-features');
-  if (feat && feat.getBoundingClientRect().bottom < window.innerHeight * 1.2) show();
+  if (feat) return feat.getBoundingClientRect().bottom < window.innerHeight * 1.2;
+
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  return max > 0 && window.scrollY / max > 0.35;
   };
 
+  const onScroll = () => { if (deepEnough()) show(); };
+
+  const feat = byId('lp-features');
+  if (feat && 'IntersectionObserver' in window) {
+
+  io = new IntersectionObserver((entries) => {
+  for (const e of entries) if (!e.isIntersecting && e.boundingClientRect.bottom < 0) show();
+  }, { threshold: 0 });
+  io.observe(feat);
+  }
+
   window.addEventListener('scroll', onScroll, { passive: true });
-  setTimeout(show, 35000);
+  timer = setTimeout(show, 15000);
+
+  if (deepEnough()) setTimeout(() => { if (deepEnough()) show(); }, 2500);
 }
+
+function openTrialOffer() {
+  byId('lp-trialpop')?.remove();
+  paintTrialPopup();
+}
+
+const offerRequested = () => {
+  try {
+  return new URLSearchParams(location.search).get('offer') === '1'
+  || location.hash === '#offer';
+  } catch { return false; }
+};
 
 function paintTrialPopup() {
   if (byId('lp-trialpop')) return;
@@ -5985,7 +6054,9 @@ function paintTrialPopup() {
   });
 
   document.body.appendChild(node);
+
   requestAnimationFrame(() => node.classList.add('on'));
+  setTimeout(() => node.classList.add('on'), 80);
 }
 
 function markup() {
@@ -6018,6 +6089,13 @@ function markup() {
   </p>
   <button class="btn sm magnetic" data-trial>Start ${TRIAL.days} days free</button>
   <button class="lp-tb-x" data-trial-dismiss aria-label="Dismiss this offer">×</button>
+  <!-- Shown only once the bar has been dismissed, in place of everything
+  above: the offer stays on the page as one compact, tappable line
+  instead of disappearing from the site entirely. -->
+  <button class="lp-tb-reopen" data-trial-open>
+  <b>${TRIAL.days} days free</b>${DISCOUNT.enabled ? ` · ${DISCOUNT.percent}% off with <code>${esc(DISCOUNT.code)}</code>` : ''}
+  <span class="lp-tb-see">See offer</span>
+  </button>
   </div>` : ''}
 
   <header class="lp-hero">
@@ -6641,7 +6719,13 @@ function wire(host) {
 
   on(host, 'click', '[data-trial-dismiss]', () => dismissTrial('dismissed'));
 
-  if (TRIAL.enabled) offerTrial();
+  on(host, 'click', '[data-trial-open]', () => openTrialOffer());
+
+  if (TRIAL.enabled) {
+
+  if (offerRequested()) openTrialOffer();
+  else offerTrial();
+  }
 
   on(host, 'click', '[data-to]', (_e, btn) => {
   byId(btn.dataset.to)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -6781,7 +6865,7 @@ function closeSubscribe() {
   byId('sub-modal')?.classList.remove('on');
 }
 
-Object.assign(__exports, { initLanding, hideLanding });
+Object.assign(__exports, { initLanding, hideLanding, openTrialOffer });
 
 });
 
