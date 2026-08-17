@@ -2418,6 +2418,41 @@ kbd {
 }
 .lp-claim p { font-size: var(--fs-sm); color: var(--muted); line-height: 1.75; margin: 0; }
 
+.lp-check {
+  margin: var(--sp-3) 0 0 !important; padding-top: var(--sp-3);
+  border-top: 1px dashed var(--line-2);
+  font-size: var(--fs-xs) !important; color: var(--ink-soft) !important; line-height: 1.6 !important;
+}
+.lp-check span { color: var(--gold); font-weight: 700; margin-right: 4px; }
+
+.lp-revtitle {
+  font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md);
+  margin: 0 0 var(--sp-2); color: var(--ink);
+}
+.lp-revsrc { font-size: var(--fs-xs); color: var(--faint); }
+.lp-revsrc a { color: var(--gold-dim); text-decoration: underline; text-underline-offset: 2px; }
+.lp-revsrc a:hover { color: var(--gold); }
+
+.lp-trusthead {
+  font-family: var(--font-display); font-weight: 600; font-size: var(--fs-lg);
+  margin: var(--sp-8) 0 var(--sp-4); color: var(--ink);
+}
+.lp-trustgrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(248px, 1fr)); gap: var(--sp-3);
+}
+.lp-trust {
+  display: grid; gap: 5px; padding: var(--sp-4);
+  border: 1px solid var(--line-2); border-radius: var(--r-md);
+  background: rgba(255,255,255,.02);
+}
+.lp-trust b { font-size: var(--fs-sm); color: var(--gold); font-weight: 600; }
+.lp-trust span { font-size: var(--fs-xs); color: var(--muted); line-height: 1.65; }
+
+.lp-trustfoot {
+  margin: var(--sp-5) 0 0; font-size: var(--fs-xs); color: var(--faint);
+  line-height: 1.7; max-width: 68ch;
+}
+
 .lp-faq { max-width: 780px; }
 .lp-q { border-bottom: 1px solid var(--line-2); padding: var(--sp-4) 0; }
 .lp-q summary {
@@ -5940,7 +5975,7 @@ Object.assign(__exports, { ACCESS, currentAccount, initAuth, paintIdentity, refr
 __def("src/ui/landing.js", function (__exports, __req) {
 
 const { byId, esc, on } = __req("src/core/dom.js");
-const { PLANS, REVIEWS, CLAIMS, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, TRIAL, DISCOUNT } = __req("src/domain/licensing.js");
+const { PLANS, REVIEWS, CLAIMS, TRUST, publishableReviews, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, TRIAL, DISCOUNT } = __req("src/domain/licensing.js");
 
 const { buildPlan, breakevenWinRate, expectancyR } = __req("src/domain/sizing.js");
 
@@ -6453,10 +6488,19 @@ function markup() {
   <section class="lp-sec" id="lp-reviews">
   <h2>What this is honest about.</h2>
   <p class="lp-lead">
-  No testimonials here yet — we would rather show you nothing than invent someone. These are claims you can
-  check by using the thing.
+  No testimonials here yet — we would rather show you nothing than invent someone. Every competitor in this
+  category has five-star quotes. Any of them could have been typed in an afternoon. These are claims you can
+  check by using the thing, and facts you can confirm without believing us.
   </p>
   <div class="lp-rev" id="review-cards"></div>
+
+  <h3 class="lp-trusthead">Things you can verify before you pay</h3>
+  <div class="lp-trustgrid" id="trust-cards"></div>
+
+  <p class="lp-trustfoot">
+  When members do write reviews, they will appear here with their name, the platform they wrote them on and
+  the date — linked to the original wherever possible, so you can go and read it in its own context.
+  </p>
   </section>
 
   <section class="lp-sec">
@@ -6801,6 +6845,7 @@ const payRow = (label, id) => `
 function wire(host) {
   renderPlans();
   renderReviews();
+  renderTrust();
 
   on(host, 'click', '[data-enter]', () => onEnter?.());
 
@@ -6891,19 +6936,36 @@ function renderPlans() {
   not at purchase. Digital-access fees are generally non-refundable once credentials are issued.`;
 }
 
+const initials = (name) => String(name || '').trim().split(/\s+/).slice(0, 2)
+  .map((w) => w.charAt(0)).join('').toUpperCase() || '★';
+
+const stars = (n) => '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n);
+
 function renderReviews() {
   const host = byId('review-cards');
 
-  if (REVIEWS.length) {
-  host.innerHTML = REVIEWS.map((r) => `
+  const real = publishableReviews();
+
+  if (real.length) {
+  host.innerHTML = real.map((r) => {
+  const when = new Date(r.date).toLocaleDateString(undefined, {
+  year: 'numeric', month: 'short', day: 'numeric',
+  });
+
+  const src = r.url
+  ? `<a href="${esc(r.url)}" target="_blank" rel="noopener nofollow">${esc(r.platform)}</a>`
+  : esc(r.platform);
+  return `
   <article class="lp-card">
-  <p class="lp-stars" aria-label="5 out of 5">★★★★★</p>
+  <p class="lp-stars" aria-label="${r.rating} out of 5">${stars(r.rating)}</p>
+  ${r.t ? `<h3 class="lp-revtitle">${esc(r.t)}</h3>` : ''}
   <blockquote>“${esc(r.q)}”</blockquote>
   <footer class="lp-who">
-  <span class="lp-av" aria-hidden="true">${esc(r.i)}</span>
-  <span><b>${esc(r.n)}</b><span>${esc(r.s)}</span></span>
+  <span class="lp-av" aria-hidden="true">${esc(r.i || initials(r.n))}</span>
+  <span><b>${esc(r.n)}</b><span class="lp-revsrc">${src} · <time datetime="${esc(r.date)}">${esc(when)}</time></span></span>
   </footer>
-  </article>`).join('');
+  </article>`;
+  }).join('');
   return;
   }
 
@@ -6911,7 +6973,18 @@ function renderReviews() {
   <article class="lp-card lp-claim">
   <h3>${esc(c.t)}</h3>
   <p>${esc(c.b)}</p>
+  ${c.check ? `<p class="lp-check"><span aria-hidden="true">→</span> ${esc(c.check)}</p>` : ''}
   </article>`).join('');
+}
+
+function renderTrust() {
+  const host = byId('trust-cards');
+  if (!host) return;
+  host.innerHTML = TRUST.map((t) => `
+  <div class="lp-trust">
+  <b>${esc(t.k)}</b>
+  <span>${esc(t.v)}</span>
+  </div>`).join('');
 }
 
 function startSubscribe(id) {
@@ -7108,6 +7181,49 @@ const planById = (id) => PLANS.find((p) => p.id === id) || null;
 
 const REVIEWS = [];
 
+const REVIEW_PLATFORMS = [
+  'Trustpilot', 'Google', 'Product Hunt', 'X', 'Facebook', 'Instagram',
+  'TikTok', 'YouTube', 'Reddit', 'Discord', 'Telegram', 'Email', 'In-app',
+];
+
+function reviewProblems(r) {
+  const bad = [];
+  if (!r || typeof r !== 'object') return ['not an object'];
+
+  const text = typeof r.q === 'string' ? r.q.trim() : '';
+  if (!text) bad.push('no quote (q)');
+  else if (text.length < 20) bad.push('quote is too short to be a real review');
+
+  if (!String(r.n || '').trim()) bad.push('no name or handle (n) — an anonymous quote is not a testimonial');
+
+  if (!r.platform) bad.push('no platform — say where it was written');
+  else if (!REVIEW_PLATFORMS.includes(r.platform)) {
+  bad.push(`platform "${r.platform}" is not one of: ${REVIEW_PLATFORMS.join(', ')}`);
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(r.date || ''))) {
+  bad.push('no date, or not YYYY-MM-DD');
+  } else {
+
+  const d = new Date(`${r.date}T00:00:00Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== r.date) {
+  bad.push(`date "${r.date}" is not a real date`);
+  } else if (d.getTime() > Date.now() + 864e5) {
+  bad.push(`date "${r.date}" is in the future`);
+  }
+  }
+
+  if (typeof r.rating !== 'number' || !Number.isInteger(r.rating) || r.rating < 1 || r.rating > 5) {
+  bad.push('rating must be a whole number from 1 to 5');
+  }
+
+  if (r.url != null && !/^https:\/\//.test(String(r.url))) bad.push('url must be https, or omitted');
+
+  return bad;
+}
+
+const publishableReviews = () => REVIEWS.filter((r) => reviewProblems(r).length === 0);
+
 const CLAIMS = [
   {
   t: 'Your idea, or one it built — same standard either way',
@@ -7116,21 +7232,51 @@ const CLAIMS = [
   + 'the same published rulebook and the same veto list, so a setup the desk produced gets no easier ride than one '
   + 'you brought. A counter-trend one is still put in front of you rather than quietly filtered out — you decide '
   + 'whether to take it.',
+  check: 'Open the XAU/USD desk and score a setup you have already decided against. It gets the same treatment.',
   },
   {
   t: 'The probability figure is your own record',
   b: 'Once you have twenty closed trades it is anchored on your results, not on a marketing number. Below twenty '
   + 'it uses a conservative base rate and says so on screen, instead of flattering you with a figure it has not '
   + 'earned.',
+  check: 'Look under any probability figure on a fresh account. It tells you it is a base rate, and why.',
   },
   {
   t: 'It is built to tell you no',
   b: 'Weekend, news blackout, daily limit reached, position too small to place, or an honest answer on the '
   + 'psychology check — any one of those overrides the score outright. A 90/100 setup still gets refused.',
+  check: 'Run the checklist on a Sunday, or inside a news window. Watch it refuse a setup it otherwise likes.',
   },
 ];
 
-Object.assign(__exports, { DAY_MS, CHECKOUT, TRIAL, DISCOUNT, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, CLAIMS });
+const TRUST = [
+  {
+  k: 'Nothing charged for 7 days',
+  v: 'Card details taken at signup, first charge on day 8, cancel in one click before then and it costs nothing.',
+  },
+  {
+  k: 'Billed by Lemon Squeezy',
+  v: 'They are the merchant of record and handle payment, invoices and refunds. Your card details never reach us.',
+  },
+  {
+  k: 'It cannot place a trade',
+  v: 'No broker connection exists in the product. It holds no account credentials and never touches your money.',
+  },
+  {
+  k: 'Your journal stays on your device',
+  v: 'Trades, notes and settings are stored locally. There is no account database holding your trading record.',
+  },
+  {
+  k: 'The rulebook is published',
+  v: 'Every verdict shows the checks behind it, including the ones that failed. Nothing scores in a black box.',
+  },
+  {
+  k: 'Works with no connection',
+  v: 'The full checklist, risk calculation and plan run offline. Put the phone in aeroplane mode and try it.',
+  },
+];
+
+Object.assign(__exports, { DAY_MS, CHECKOUT, TRIAL, DISCOUNT, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, REVIEW_PLATFORMS, publishableReviews, CLAIMS, TRUST, reviewProblems });
 
 });
 
