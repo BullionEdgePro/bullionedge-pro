@@ -1258,6 +1258,13 @@ kbd {
 .appfoot { margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--line); color: var(--faint); font-size: var(--fs-xs); line-height: 1.7; }
 .appfoot b { color: var(--muted); }
 
+.brokersteps {
+  margin: 0 0 var(--sp-3); padding-left: 1.3em;
+  display: grid; gap: 7px;
+  font-size: var(--fs-sm); color: var(--ink-soft); line-height: 1.65;
+}
+.brokersteps b { color: var(--gold); font-weight: 600; }
+
 /* assets/css/market.css */
 .pricehead {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -1858,6 +1865,80 @@ kbd {
 @media (max-width: 560px) {
   .tikk { flex-basis: 88px; }
   .tikc { display: none; }
+}
+
+.xindbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 8px 0 2px;
+  border-top: 1px solid var(--line-2); margin-top: 8px;
+}
+
+.xind-empty { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; }
+
+.xind-link {
+  background: none; border: 0; padding: 0 2px; cursor: pointer;
+  color: var(--gold); font: inherit; font-size: var(--fs-xs);
+  border-bottom: 1px solid rgba(224,166,60,.45);
+}
+.xind-link:hover { color: var(--gold-bright); }
+
+.xindchip {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 32px; padding: 5px 9px;
+  border: 1px solid rgba(224,166,60,.38); border-radius: var(--r-pill);
+  background: rgba(224,166,60,.10); color: var(--ink);
+  font-size: var(--fs-2xs); cursor: pointer; white-space: nowrap;
+  transition: background var(--dur-1), border-color var(--dur-1);
+}
+.xindchip:hover { background: rgba(224,112,74,.14); border-color: var(--short); }
+.xindchip .xindx { color: var(--faint); font-size: 13px; line-height: 1; }
+.xindchip:hover .xindx { color: var(--short); }
+
+.xindswatch {
+  width: 10px; height: 10px; border-radius: 3px; flex: none;
+  background: var(--line-2); box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+}
+.xindswatch[data-ind="fvg"]        { background: #46B98C; }
+.xindswatch[data-ind="ob"]         { background: #5C86C2; }
+.xindswatch[data-ind="liquidity"]  { background: #E0A63C; }
+.xindswatch[data-ind="structure"]  { background: #EAF0EE; }
+.xindswatch[data-ind="engulf"]     { background: #E0704A; }
+.xindswatch[data-ind="sr"]         { background: #8A9B98; }
+.xindswatch[data-ind="custom"]     { background: #9A7CF5; }
+.xindswatch[data-ind="trendlines"] { background: rgba(224,166,60,.8); }
+.xindswatch[data-ind="fib"]        { background: #D0709A; }
+.xindswatch[data-ind="pd"]         { background: linear-gradient(180deg,#E0704A,#46B98C); }
+.xindswatch[data-ind="ema20"]      { background: #E0A63C; }
+.xindswatch[data-ind="ema50"]      { background: #5C86C2; }
+.xindswatch[data-ind="ema100"]     { background: #9A7FD0; }
+.xindswatch[data-ind="ema200"]     { background: #8A9B98; }
+.xindswatch[data-ind="vwap"]       { background: #D0709A; }
+.xindswatch[data-ind="rsi"]        { background: #5C86C2; }
+.xindswatch[data-ind="macd"]       { background: #5C86C2; }
+.xindswatch[data-ind="volume"]     { background: #46B98C; }
+.xindswatch[data-ind="sessions"]   { background: rgba(92,134,194,.7); }
+.xindswatch[data-ind="grid"]       { background: rgba(255,255,255,.25); }
+.xindswatch[data-ind="entry"]      { background: #E0A63C; }
+.xindswatch[data-ind="stop"]       { background: #E0704A; }
+.xindswatch[data-ind="targets"]    { background: #46B98C; }
+.xindswatch[data-ind="plan"]       { background: #E0A63C; }
+
+.xind-add { display: inline-flex; align-items: center; gap: 6px; }
+.xind-plus { color: var(--gold); font-weight: 700; }
+.xind-count {
+  display: inline-grid; place-items: center; min-width: 17px; height: 17px;
+  padding: 0 4px; border-radius: var(--r-pill);
+  background: var(--gold); color: var(--gold-ink);
+  font-size: 10px; font-weight: 700;
+}
+
+.xind-count[hidden] { display: none; }
+
+.xlayers .cbtn { display: inline-flex; align-items: center; gap: 7px; }
+
+@media (max-width: 560px) {
+  .xindbar { gap: 5px; }
+  .xindchip { min-height: 34px; }
 }
 
 /* assets/css/guide.css */
@@ -12102,7 +12183,7 @@ const { EM } = __req("src/core/format.js");
 const { state, patch } = __req("src/core/state.js");
 const { toast, modal } = __req("src/ui/overlays.js");
 const { callout, tip } = __req("src/ui/components.js");
-const { createProChart, DEFAULT_LAYERS } = __req("src/ui/prochart.js");
+const { createProChart, DEFAULT_LAYERS, activeIndicators } = __req("src/ui/prochart.js");
 
 const { market, refreshSpot } = __req("src/domain/market.js");
 const { loadSeries, provider, TIMEFRAMES, EXECUTION_TFS, ANALYSIS_TFS, feedStatusText } = __req("src/domain/feed.js");
@@ -12204,8 +12285,17 @@ __exports.default = {
   <button class="cbtn on" id="xc-auto" aria-pressed="true">auto-scale</button>
   <button class="cbtn" id="xc-full">full screen</button>
   <span class="spacerx"></span>
-  <button class="cbtn" id="xc-layers">chart elements ▾</button>
+  <button class="cbtn xind-add" id="xc-layers" aria-expanded="false" aria-controls="xau-layers">
+  <span class="xind-plus" aria-hidden="true">+</span> Indicators
+  <span class="xind-count" id="xind-count" hidden></span>
+  </button>
   </div>
+
+  <!-- Always visible, whether anything is on or not. A picker hidden
+  behind a drawer is a picker nobody opens, and the previous version
+  gave no sign on the chart itself of what was drawn or what could
+  be. This row is the answer to both questions at a glance. -->
+  <div class="xindbar" id="xau-indbar"></div>
 
   <div class="xlayers" id="xau-layers" hidden>
   <p class="eyebrow">Chart elements</p>
@@ -12560,12 +12650,22 @@ __exports.default = {
   else if (wrap.requestFullscreen) wrap.requestFullscreen().then(() => setTimeout(() => chart && chart.resize(), 60));
   else toast('Full screen is not available in this browser.', 'info');
   };
-  byId('xc-layers').onclick = () => {
+  const openLayers = (force) => {
   const drawer = byId('xau-layers');
-  drawer.hidden = !drawer.hidden;
+  const btn = byId('xc-layers');
+  drawer.hidden = force === undefined ? !drawer.hidden : !force;
+  btn.setAttribute('aria-expanded', String(!drawer.hidden));
+  btn.classList.toggle('on', !drawer.hidden);
+  if (!drawer.hidden) drawer.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   };
 
+  byId('xc-layers').onclick = () => openLayers();
+
+  on(root, 'click', '[data-open-layers]', () => openLayers(true));
+
   on(root, 'click', '[data-layer]', (_e, btn) => toggleLayer(btn.dataset.layer, btn));
+
+  paintIndicatorBar({ ...DEFAULT_LAYERS, ...state.xau.layers });
 
   on(root, 'click', '[data-xtf]', (_e, btn) => {
   const tf = btn.dataset.xtf;
@@ -13742,6 +13842,7 @@ function toggleLayer(key, btn) {
   patch({ xau: { layers } });
   if (chart) chart.setLayers(layers);
   syncChartHeight(layers);
+  paintIndicatorBar(layers);
   if (btn) {
   btn.classList.toggle('on', layers[key]);
   btn.setAttribute('aria-pressed', String(layers[key]));
@@ -13774,22 +13875,62 @@ function modelOptions(selected, models = GEMINI_MODELS) {
   return list.map((m) => `<option value="${esc(m.id)}" ${selected === m.id ? 'selected' : ''}>${esc(m.label)}</option>`).join('');
 }
 
+const LAYER_LABELS = {
+  fvg: 'FVG', ob: 'Order blocks', structure: 'BOS / CHoCH', liquidity: 'Liquidity',
+  engulf: 'Engulfing', sr: 'Prev day / week', custom: 'Your levels',
+  trendlines: 'Trendlines', fib: 'Fibonacci / OTE', pd: 'Premium / discount',
+  entry: 'Entry zone', stop: 'Stop loss', targets: 'Take profit', plan: 'Plan card',
+  ema20: 'EMA 20', ema50: 'EMA 50', ema100: 'EMA 100', ema200: 'EMA 200',
+  rsi: 'RSI 14', macd: 'MACD', vwap: 'VWAP', volume: 'Volume',
+  grid: 'Grid', sessions: 'Session shading',
+};
+
+const layerLabel = (key) => LAYER_LABELS[key] || key;
+
+function paintIndicatorBar(layers) {
+  const host = byId('xau-indbar');
+  if (!host) return;
+
+  const active = activeIndicators(layers);
+  const count = byId('xind-count');
+  if (count) {
+  count.textContent = String(active.length);
+  count.hidden = active.length === 0;
+  }
+
+  if (!active.length) {
+  host.innerHTML = `
+  <span class="xind-empty">
+  Clean chart. <button type="button" class="xind-link" data-open-layers>Add indicators</button>
+  to draw structure, zones or moving averages.
+  </span>`;
+  return;
+  }
+
+  host.innerHTML = active.map((key) => `
+  <button type="button" class="xindchip" data-layer="${key}" aria-pressed="true"
+  title="Remove ${esc(layerLabel(key))}">
+  <span class="xindswatch" data-ind="${key}" aria-hidden="true"></span>
+  ${esc(layerLabel(key))}
+  <span class="xindx" aria-hidden="true">×</span>
+  </button>`).join('')
+  + `<button type="button" class="xind-link" data-open-layers>+ add</button>`;
+}
+
 function layerToggles(layers) {
   const groups = [
-  ['Structure', [['fvg', 'FVG'], ['ob', 'Order blocks'], ['structure', 'BOS / CHoCH'], ['liquidity', 'Liquidity'],
-  ['engulf', 'Engulfing'],
-  ['sr', 'Prev day / week'], ['custom', 'Your levels'], ['trendlines', 'Trendlines'],
-  ['fib', 'Fibonacci / OTE'], ['pd', 'Premium / discount']]],
-  ['Trade plan', [['entry', 'Entry zone'], ['stop', 'Stop loss'], ['targets', 'Take profit'], ['plan', 'Plan card']]],
-  ['Indicators', [['ema20', 'EMA 20'], ['ema50', 'EMA 50'], ['ema100', 'EMA 100'], ['ema200', 'EMA 200'],
-  ['rsi', 'RSI 14'], ['macd', 'MACD'], ['vwap', 'VWAP'], ['volume', 'Volume']]],
-  ['Chart', [['grid', 'Grid'], ['sessions', 'Session shading']]],
+  ['Structure & zones', ['fvg', 'ob', 'structure', 'liquidity', 'engulf', 'sr', 'custom', 'trendlines', 'fib', 'pd']],
+  ['Indicators', ['ema20', 'ema50', 'ema100', 'ema200', 'rsi', 'macd', 'vwap', 'volume']],
+  ['Chart', ['grid', 'sessions']],
+  ['The desk’s own output', ['entry', 'stop', 'targets', 'plan']],
   ];
-  return groups.map(([title, items]) => `
+  return groups.map(([title, keys]) => `
   <div class="xlayergroup">
   <p class="xlgt">${esc(title)}</p>
-  ${items.map(([key, label]) => `
-  <button type="button" class="cbtn ${layers[key] ? 'on' : ''}" data-layer="${key}" aria-pressed="${!!layers[key]}">${esc(label)}</button>`).join('')}
+  ${keys.map((key) => `
+  <button type="button" class="cbtn ${layers[key] ? 'on' : ''}" data-layer="${key}" aria-pressed="${!!layers[key]}">
+  <span class="xindswatch" data-ind="${key}" aria-hidden="true"></span>${esc(layerLabel(key))}
+  </button>`).join('')}
   </div>`).join('');
 }
 
@@ -13831,6 +13972,8 @@ function syncSaveButton() {
 function setText(id, text) { const n = byId(id); if (n) n.textContent = text; }
 function setHtml(id, html) { const n = byId(id); if (n) n.innerHTML = html; }
 
+Object.assign(__exports, { layerLabel });
+
 });
 
 __def("src/ui/prochart.js", function (__exports, __req) {
@@ -13845,16 +13988,17 @@ const COLOR = {
   grid: 'rgba(255,255,255,0.045)', axis: 'rgba(255,255,255,0.10)',
   cross: 'rgba(234,240,238,0.45)',
   gold: '#E0A63C', blue: '#5C86C2',
-  fvgBull: 'rgba(70,185,140,.14)', fvgBear: 'rgba(224,112,74,.14)',
-  obBull: 'rgba(92,134,194,.16)', obBear: 'rgba(224,166,60,.14)',
-  liq: 'rgba(224,166,60,.55)', liqSwept: 'rgba(138,155,152,.35)',
+
+  fvgBull: 'rgba(70,185,140,.26)', fvgBear: 'rgba(224,112,74,.26)',
+  obBull: 'rgba(92,134,194,.30)', obBear: 'rgba(224,166,60,.26)',
+  liq: 'rgba(224,166,60,.80)', liqSwept: 'rgba(138,155,152,.50)',
   entry: '#E0A63C', stop: '#E0704A', target: '#46B98C',
-  session: 'rgba(92,134,194,.06)',
+  session: 'rgba(92,134,194,.11)',
   ema20: '#E0A63C', ema50: '#5C86C2', ema100: '#9A7FD0', ema200: '#8A9B98',
   vwap: '#D0709A',
   custom: '#9A7CF5',
-  trendline: 'rgba(224,166,60,.5)',
-  premium: 'rgba(224,112,74,.055)', discount: 'rgba(70,185,140,.055)',
+  trendline: 'rgba(224,166,60,.75)',
+  premium: 'rgba(224,112,74,.10)', discount: 'rgba(70,185,140,.10)',
   macd: '#5C86C2', macdSignal: '#E0A63C',
 };
 
@@ -13864,23 +14008,27 @@ const PAD_T = 10;
 const FONT = '10px "IBM Plex Mono", ui-monospace, monospace';
 
 const DEFAULT_LAYERS = {
+
   grid: true,
+  sessions: false,
   volume: false,
-  fvg: true,
-  ob: true,
-  liquidity: true,
-  structure: true,
+
+  fvg: false,
+  ob: false,
+  liquidity: false,
+  structure: false,
   engulf: false,
-  sr: true,
-  custom: true,
+  sr: false,
+  custom: false,
   trendlines: false,
   pd: false,
   fib: false,
-  sessions: false,
+
   entry: true,
   stop: true,
   targets: true,
   plan: true,
+
   ema20: false,
   ema50: false,
   ema100: false,
@@ -13888,6 +14036,17 @@ const DEFAULT_LAYERS = {
   rsi: false,
   macd: false,
   vwap: false,
+};
+
+const INDICATOR_KEYS = [
+  'fvg', 'ob', 'liquidity', 'structure', 'engulf', 'sr', 'custom',
+  'trendlines', 'fib', 'pd', 'sessions', 'volume',
+  'ema20', 'ema50', 'ema100', 'ema200', 'rsi', 'macd', 'vwap',
+];
+
+const activeIndicators = (layers = {}) => {
+  const merged = { ...DEFAULT_LAYERS, ...layers };
+  return INDICATOR_KEYS.filter((k) => merged[k]);
 };
 
 function createProChart(canvas, options = {}) {
@@ -14264,7 +14423,7 @@ function createProChart(canvas, options = {}) {
   ctx.save();
   ctx.setLineDash(p.custom ? [] : p.swept ? [2, 4] : [6, 4]);
   ctx.strokeStyle = p.custom ? COLOR.custom : p.swept ? COLOR.liqSwept : COLOR.liq;
-  ctx.lineWidth = p.custom ? 1.4 : 1;
+  ctx.lineWidth = p.custom ? 2.2 : 1.5;
   ctx.beginPath();
   ctx.moveTo(0, Math.round(y) + 0.5);
   ctx.lineTo(plotWidth(), Math.round(y) + 0.5);
@@ -14318,7 +14477,7 @@ function createProChart(canvas, options = {}) {
   if (x1 < 0 || x0 > w) continue;
 
   ctx.strokeStyle = COLOR.trendline;
-  ctx.lineWidth = 1.2;
+  ctx.lineWidth = 1.8;
   ctx.beginPath();
   ctx.moveTo(x0, y0);
   ctx.lineTo(x1, y1);
@@ -14471,7 +14630,7 @@ function createProChart(canvas, options = {}) {
 
   function polyline(ctx, points, range, color, start, end) {
   ctx.strokeStyle = color;
-  ctx.lineWidth = 1.2;
+  ctx.lineWidth = 1.8;
   ctx.beginPath();
   let began = false;
   for (const [i, v] of points) {
@@ -14536,7 +14695,7 @@ function createProChart(canvas, options = {}) {
   ctx.restore();
   }
   ctx.strokeStyle = '#9A7FD0';
-  ctx.lineWidth = 1.2;
+  ctx.lineWidth = 1.8;
   ctx.beginPath();
   let began = false;
   for (let i = start; i < end; i++) {
@@ -14583,7 +14742,7 @@ function createProChart(canvas, options = {}) {
 
   for (const [series, colour] of [[macd, COLOR.macd], [signal, COLOR.macdSignal]]) {
   ctx.strokeStyle = colour;
-  ctx.lineWidth = 1.2;
+  ctx.lineWidth = 1.8;
   ctx.beginPath();
   let began = false;
   for (let i = start; i < end; i++) {
@@ -14666,7 +14825,7 @@ function createProChart(canvas, options = {}) {
 
   function line(ctx, y, color, x0 = 0, x1 = plotWidth()) {
   ctx.strokeStyle = color;
-  ctx.lineWidth = 1.4;
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x0, Math.round(y) + 0.5);
   ctx.lineTo(x1, Math.round(y) + 0.5);
@@ -14735,7 +14894,7 @@ function createProChart(canvas, options = {}) {
   };
 }
 
-Object.assign(__exports, { DEFAULT_LAYERS, createProChart });
+Object.assign(__exports, { DEFAULT_LAYERS, INDICATOR_KEYS, activeIndicators, createProChart });
 
 });
 
@@ -20449,7 +20608,7 @@ const { getBackend } = __req("src/core/db.js");
 const { exportBackup, importBackup, exportCsv } = __req("src/app-actions.js");
 const { listConnectors } = __req("src/integrations/index.js");
 const { listProviders, getActiveProviderId, setProvider } = __req("src/integrations/ai.js");
-const { testConnection } = __req("src/integrations/broker.js");
+const { testConnection, registerAccount, setupScript } = __req("src/integrations/broker.js");
 const { hasChartJs } = __req("src/ui/charts.js");
 const { setEnabled: setParticles } = __req("src/ui/background.js");
 const { applyAccessibility, SHORTCUTS } = __req("src/ui/shortcuts.js");
@@ -20678,9 +20837,15 @@ __exports.default = {
   value="${esc((s.settings.broker && s.settings.broker.accountId) || '')}">
   </div>
   <div class="row tight">
+  <button class="btn magnetic" id="set-broker-connect">Connect this account</button>
   <button class="btn ghost" id="set-broker-test">Test connection</button>
   </div>
   <div id="broker-result" style="margin-top:var(--sp-3)"></div>
+
+  <!-- Filled in after a successful connect. The setup file carries
+  the member's own key, so it is generated in the browser and
+  downloaded rather than served from anywhere. -->
+  <div id="broker-setup" hidden style="margin-top:var(--sp-3)"></div>
   </div>
 
   ${callout('gold', `<b>Use the investor password, never the master one.</b>
@@ -20862,6 +21027,65 @@ __exports.default = {
 
   on(root, 'input', '#set-broker-url', (e) => setBroker({ url: e.target.value.trim() }));
   on(root, 'input', '#set-broker-acct', (e) => setBroker({ accountId: e.target.value.trim() }));
+
+  on(root, 'click', '#set-broker-connect', async () => {
+  const host = byId('broker-result');
+  const setup = byId('broker-setup');
+  const accountId = (byId('set-broker-acct').value || '').trim();
+  const proxyUrl = (byId('set-broker-url').value || '').trim();
+  const account = currentAccount();
+
+  if (host) host.innerHTML = '<p class="t-sm t-muted">Checking your licence…</p>';
+  if (setup) setup.hidden = true;
+
+  const res = await registerAccount({
+  proxyUrl,
+  licenceKey: account && account.licenseKey,
+  accountId,
+  });
+
+  if (!res.ok) {
+  if (host) host.innerHTML = callout('bad', `<b>Not connected.</b> ${esc(res.error)}`);
+  return;
+  }
+
+  setBroker({ enabled: true, url: res.url, accountId: res.accountId });
+
+  if (host) {
+  host.innerHTML = callout('long',
+  `<b>Account ${esc(res.accountId)} connected.</b> Now run the setup file below on the
+  computer where MetaTrader is installed.`);
+  }
+
+  if (!setup) return;
+  setup.hidden = false;
+  setup.innerHTML = `
+  <ol class="brokersteps">
+  <li>Open <b>MetaTrader 5</b> and log in to account ${esc(res.accountId)}.</li>
+  <li>Download both files below into the same folder.</li>
+  <li>Double-click <b>connect-bullionedge.cmd</b> and leave the window open while you trade.</li>
+  </ol>
+  <div class="row tight">
+  <button class="btn sm magnetic" id="dl-setup">Download setup file</button>
+  <a class="btn ghost sm" href="tools/broker-worker/mt5_push.py" download>Download mt5_push.py</a>
+  </div>
+  ${callout('gold', '<b>The setup file contains your key.</b> Treat it like a password — anyone '
+  + 'holding it can write figures into your account sync. It cannot place a trade and it does '
+  + 'not contain your MetaTrader password.')}`;
+
+  byId('dl-setup').onclick = () => {
+
+  const blob = new Blob([setupScript(res)], { type: 'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'connect-bullionedge.cmd';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Setup file downloaded.', 'ok');
+  };
+  });
 
   on(root, 'click', '#set-broker-test', async () => {
   const host = byId('broker-result');
@@ -21251,6 +21475,66 @@ async function fetchHistory(settings, { days = 30 } = {}) {
   return list.map(normaliseDeal).filter(Boolean);
 }
 
+async function registerAccount({ proxyUrl, licenceKey, accountId }) {
+  const url = String(proxyUrl || '').trim().replace(/\/+$/, '');
+  if (!/^https:\/\//.test(url)) return { ok: false, error: 'The proxy URL must be https.' };
+  if (!licenceKey) return { ok: false, error: 'No licence key on this account. Activate your licence first.' };
+  if (!/^[0-9]{4,15}$/.test(String(accountId || '').trim())) {
+  return { ok: false, error: 'An MT5 account number is 4 to 15 digits.' };
+  }
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+  const res = await fetch(`${url}/register`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', accept: 'application/json' },
+  body: JSON.stringify({ licenceKey, accountId: String(accountId).trim() }),
+  signal: ctrl.signal,
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok || !body || !body.ok) {
+  return { ok: false, error: (body && body.error) || `The proxy answered ${res.status}.` };
+  }
+  return { ok: true, pushKey: body.pushKey, accountId: body.accountId, url };
+  } catch (err) {
+  if (err.name === 'AbortError') return { ok: false, error: 'The proxy did not answer in time.' };
+  return { ok: false, error: err.message || 'The proxy could not be reached.' };
+  } finally {
+  clearTimeout(timer);
+  }
+}
+
+function setupScript({ url, accountId, pushKey }) {
+  return [
+  '@echo off',
+  'REM  BullionEdge Pro - MetaTrader push. Generated for your account.',
+  'REM  Open MetaTrader 5 and log in FIRST, then run this.',
+  'REM',
+  'REM  This file contains your push key. Treat it like a password:',
+  'REM  anyone holding it can write figures into your account sync.',
+  '',
+  'setlocal',
+  `set "BE_PUSH_URL=${url}"`,
+  `set "BE_ACCOUNT=${accountId}"`,
+  `set "BE_PUSH_KEY=${pushKey}"`,
+  'set "BE_PUSH_INTERVAL=120"',
+  '',
+  'where python >nul 2>&1 || (echo Python is not installed. Get it from python.org and tick "Add to PATH". & pause & exit /b 1)',
+  '',
+  'python -m pip install --quiet --disable-pip-version-check MetaTrader5 requests',
+  '',
+  'echo.',
+  `echo   Pushing account ${accountId} every 120 seconds.`,
+  'echo   Leave this window open while you trade. Ctrl-C to stop.',
+  'echo.',
+  '',
+  'python -u "%~dp0mt5_push.py"',
+  'pause',
+
+  ].join('\r\n');
+}
+
 async function testConnection(settings) {
   const problems = configProblems(settings);
   if (problems.length) return { ok: false, error: problems[0] };
@@ -21264,7 +21548,7 @@ async function testConnection(settings) {
   }
 }
 
-Object.assign(__exports, { brokerConfig, configProblems, fetchAccount, fetchHistory, testConnection });
+Object.assign(__exports, { brokerConfig, configProblems, fetchAccount, fetchHistory, registerAccount, setupScript, testConnection });
 
 });
 
