@@ -21269,8 +21269,9 @@ function normaliseDeal(raw) {
   const profit = num(raw.profit ?? raw.pnl ?? raw.netProfit);
   if (!Number.isFinite(profit)) return null;
 
-  const side = /SELL|SHORT/.test(type) || /SELL|SHORT/i.test(String(raw.side || ''))
-  ? 'short' : 'long';
+  const side = raw.side !== undefined && raw.side !== null && raw.side !== ''
+  ? (/SELL|SHORT/i.test(String(raw.side)) ? 'short' : 'long')
+  : (/SELL|SHORT/.test(type) ? 'short' : 'long');
 
   return {
   brokerId: id,
