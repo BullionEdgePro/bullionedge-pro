@@ -9399,6 +9399,14 @@ function initAssistant() {
   });
 }
 
+function prose(text) {
+  return esc(String(text || ''))
+  .split(/\n{2,}/)
+  .map((para) => para.replace(/\n/g, ' ').trim())
+  .filter(Boolean)
+  .join('<br><br>');
+}
+
 function toggle() { setOpen(!isOpen); }
 
 function setOpen(open) {
@@ -9516,13 +9524,13 @@ function renderHelp() {
   if (t.source === 'local') {
   return `<div class="amsg ${t.unsure ? 'warn' : 'reply'}">
   <div class="atitle">${esc(t.title || 'Answer')}</div>
-  <div>${esc(t.text).replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>')}</div>
+  <div>${prose(t.text)}</div>
   ${t.fallbackFrom ? `<div class="anotice">Answered here — Gemini could not be reached. ${esc(t.fallbackFrom)}</div>` : ''}
   </div>`;
   }
   return `<div class="amsg ${t.error ? 'bad' : 'reply'}">
   <div class="atitle">${t.error ? 'Could not answer' : 'Assistant'}</div>
-  <div>${esc(t.text).replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>')}</div>
+  <div>${prose(t.text)}</div>
   ${notices}
   </div>`;
   }).join('') + (helpBusy ? '<div class="amsg"><div class="t-faint">Thinking…</div></div>' : '');
@@ -9544,7 +9552,7 @@ function renderMessage(m) {
   </div>`;
 }
 
-Object.assign(__exports, { initAssistant, setOpen });
+Object.assign(__exports, { initAssistant, prose, setOpen });
 
 });
 
