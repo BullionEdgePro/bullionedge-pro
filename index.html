@@ -12111,35 +12111,9 @@ const { checklistByStep, SECTIONS, STEPS, exclusiveSets, checklistProgress, REQU
 const { whyList, whyNotList, headline, planText } = __req("src/domain/xauexplain.js");
 const { engulfingMarks } = __req("src/domain/patterns.js");
 const { BROKER_SPEC_DEFAULTS } = __req("src/domain/tradeplan.js");
-const { buildTicket, ticketText, ticketLine } = __req("src/domain/handoff.js");
+const { buildTicket } = __req("src/domain/handoff.js");
+const { showTicket, brokerSymbol } = __req("src/ui/ticket.js");
 
-let ticketCopyBound = false;
-
-function installTicketCopy() {
-  if (ticketCopyBound) return;
-  ticketCopyBound = true;
-
-  document.body.addEventListener('click', async (e) => {
-  const btn = e.target.closest('[data-tik]');
-  if (!btn) return;
-
-  const value = btn.dataset.tik;
-  try {
-  await navigator.clipboard.writeText(value);
-  btn.classList.add('copied');
-  toast(`${value} copied.`, 'ok');
-  } catch {
-
-  const range = document.createRange();
-  range.selectNodeContents(btn.querySelector('.tikv'));
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-  toast('Select and copy.', '');
-  }
-  });
-}
-const { newsProximity, hasLiveFeed, agenda } = __req("src/domain/news.js");
 const { RECURRING_ONLY } = __req("src/domain/calendar.js");
 const { applyTick, seedForming, applyCalibration, makeCalibration, calibrationStale } = __req("src/domain/stream.js");
 const { TickStream } = __req("src/integrations/ticks.js");
@@ -12692,69 +12666,13 @@ __exports.default = {
   };
 
   byId('xau-ticket').onclick = () => {
-  if (!analysis) return;
-
-  const symbol = (state.settings.brokerSymbol || 'XAUUSD').trim() || 'XAUUSD';
-  const ticket = buildTicket(analysis.plan, {
-  symbol,
-  dp: 2,
-  price: analysis.price,
-  });
-
-  if (!ticket.ok) {
-  modal({
-  title: 'No order ticket',
-  body: `<p class="t-sm">A ticket needs a valid plan with an entry, a stop and a size.</p>
-  <ul class="t-sm t-muted">${ticket.problems.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`,
-  actions: [{ label: 'Close', value: null }],
-  });
+  const symbol = brokerSymbol(state.settings);
+  if (!analysis) {
+  showTicket({ ok: false, problems: ['The desk has not produced a read yet. Give it a moment, or run the checklist.'] }, symbol);
   return;
   }
-
-  const rows = ticket.fields.map((f) => `
-  <button type="button" class="tikrow" data-tik="${esc(f.v)}">
-  <span class="tikk">${esc(f.k)}</span>
-  <span class="tikv">${esc(f.v)}</span>
-  <span class="tikc" aria-hidden="true">copy</span>
-  </button>`).join('');
-
-  modal({
-  title: `${symbol} · ${ticket.type}`,
-  body: `
-  <p class="t-sm t-muted" style="margin-bottom:var(--sp-3)">
-  ${ticket.pending
-  ? 'A pending order. Price is where it rests, not where the market is now.'
-  : 'The entry is at the market, so this is an immediate order.'}
-  Tap any value to copy it.
-  </p>
-  <div class="tikgrid">${rows}</div>
-  <p class="t-xs t-faint" style="margin-top:var(--sp-3)">
-  Check your broker's symbol name and the spread before you send it.
-  BullionEdge Pro did not place this order and cannot.
-  </p>`,
-  actions: [
-  { label: 'Copy all', value: 'all' },
-  { label: 'Copy one line', value: 'line' },
-  { label: 'Close', value: null },
-  ],
-  }).then(async (choice) => {
-  if (!choice) return;
-  const text = choice === 'line' ? ticketLine(ticket) : ticketText(ticket);
-  try {
-  await navigator.clipboard.writeText(text);
-  toast('Order ticket copied.', 'ok');
-  } catch {
-
-  modal({
-  title: 'Order ticket',
-  body: `<pre class="xpre">${esc(text)}</pre>`,
-  actions: [{ label: 'Close', value: null }],
-  });
-  }
-  });
+  showTicket(buildTicket(analysis.plan, { symbol, dp: 2, price: analysis.price }), symbol);
   };
-
-  installTicketCopy();
 
   byId('xau-save').onclick = async () => {
   if (!analysis || analysis.decision === 'WAIT') return;
@@ -17884,6 +17802,36 @@ function buildTicket(plan, {
   };
 }
 
+function buildTicketFromSizing(plan, opts = {}) {
+  if (!plan || !plan.valid) return { ok: false, problems: ['The plan is not valid, so there is nothing to send.'] };
+
+  const targets = [plan.tp1, plan.tp2]
+  .map(Number)
+  .filter((n) => Number.isFinite(n))
+  .map((price) => ({ price }));
+
+  const price = Number.isFinite(opts.price) ? opts.price : Number(plan.entry);
+
+  return buildTicket({
+  valid: true,
+  dir: plan.dir,
+  price,
+  entryRef: Number(plan.entry),
+  stopLoss: Number(plan.stopPrice),
+  stopDistance: Number(plan.stopDistance),
+  atr: opts.atr,
+  takeProfit1: targets[0] ? targets[0].price : NaN,
+  bestRR: Number(plan.rr),
+  targets,
+  size: { lotsRounded: Number(plan.lotsRounded), actualRisk: Number(plan.riskAmount) },
+  }, {
+  symbol: opts.symbol,
+  dp: opts.dp,
+  lots: opts.lots,
+  price,
+  });
+}
+
 function ticketText(ticket) {
   if (!ticket || !ticket.ok) return '';
   const dp = ticket.dp;
@@ -17922,7 +17870,103 @@ function ticketLine(ticket) {
   + `SL ${round(ticket.stopLoss, dp)} TP ${tp}`;
 }
 
-Object.assign(__exports, { ORDER, isPending, orderType, ticketProblems, buildTicket, ticketText, ticketLine });
+Object.assign(__exports, { ORDER, isPending, orderType, ticketProblems, buildTicket, buildTicketFromSizing, ticketText, ticketLine });
+
+});
+
+__def("src/ui/ticket.js", function (__exports, __req) {
+
+const { esc, byId } = __req("src/core/dom.js");
+const { toast, modal } = __req("src/ui/overlays.js");
+const { ticketText, ticketLine } = __req("src/domain/handoff.js");
+
+let bound = false;
+
+function installTicketCopy() {
+  if (bound) return;
+  bound = true;
+
+  document.body.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-tik]');
+  if (!btn) return;
+
+  const value = btn.dataset.tik;
+  try {
+  await navigator.clipboard.writeText(value);
+  btn.classList.add('copied');
+  toast(`${value} copied.`, 'ok');
+  } catch {
+
+  const range = document.createRange();
+  range.selectNodeContents(btn.querySelector('.tikv'));
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  toast('Select and copy.', '');
+  }
+  });
+}
+
+function showTicket(ticket, symbol = 'XAUUSD') {
+  installTicketCopy();
+
+  if (!ticket || !ticket.ok) {
+  const problems = (ticket && ticket.problems) || ['No plan is available.'];
+  modal({
+  title: 'No order ticket',
+  body: `<p class="t-sm">A ticket needs a valid plan with an entry, a stop and a size.</p>
+  <ul class="t-sm t-muted">${problems.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`,
+  actions: [{ label: 'Close', value: null }],
+  });
+  return;
+  }
+
+  const rows = ticket.fields.map((f) => `
+  <button type="button" class="tikrow" data-tik="${esc(f.v)}">
+  <span class="tikk">${esc(f.k)}</span>
+  <span class="tikv">${esc(f.v)}</span>
+  <span class="tikc" aria-hidden="true">copy</span>
+  </button>`).join('');
+
+  modal({
+  title: `${symbol} · ${ticket.type}`,
+  body: `
+  <p class="t-sm t-muted" style="margin-bottom:var(--sp-3)">
+  ${ticket.pending
+  ? 'A pending order. Price is where it rests, not where the market is now.'
+  : 'The entry is at the market, so this is an immediate order.'}
+  Tap any value to copy it.
+  </p>
+  <div class="tikgrid">${rows}</div>
+  <p class="t-xs t-faint" style="margin-top:var(--sp-3)">
+  Check your broker's symbol name and the spread before you send it.
+  BullionEdge Pro did not place this order and cannot.
+  </p>`,
+  actions: [
+  { label: 'Copy all', value: 'all' },
+  { label: 'Copy one line', value: 'line' },
+  { label: 'Close', value: null },
+  ],
+  }).then(async (choice) => {
+  if (!choice) return;
+  const text = choice === 'line' ? ticketLine(ticket) : ticketText(ticket);
+  try {
+  await navigator.clipboard.writeText(text);
+  toast('Order ticket copied.', 'ok');
+  } catch {
+  modal({
+  title: 'Order ticket',
+  body: `<pre class="xpre">${esc(text)}</pre>`,
+  actions: [{ label: 'Close', value: null }],
+  });
+  }
+  });
+}
+
+const brokerSymbol = (settings) =>
+  (String((settings && settings.brokerSymbol) || '').trim() || 'XAUUSD');
+
+Object.assign(__exports, { brokerSymbol, installTicketCopy, showTicket });
 
 });
 
@@ -18443,6 +18487,8 @@ const { getInstrument, pipOptions, DEFAULT_INSTRUMENT } = __req("src/domain/inst
 const { suggestStop } = __req("src/domain/sizing.js");
 const { tip, callout, statCell, verdictBlock, verdictDetail, flowBar, warningList, scoreBreakdown, targetRow, confidenceGauge, icons } = __req("src/ui/components.js");
 const { toast, confirm } = __req("src/ui/overlays.js");
+const { buildTicketFromSizing } = __req("src/domain/handoff.js");
+const { showTicket, brokerSymbol } = __req("src/ui/ticket.js");
 const { countTo, flash, scan } = __req("src/ui/motion.js");
 const { logPlannedTrade } = __req("src/app-actions.js");
 
@@ -18706,7 +18752,10 @@ __exports.default = {
   <div style="margin-top:var(--sp-3)" id="targets-host"></div>
   <div id="size-flag" style="margin-top:var(--sp-3)"></div>
 
-  <button class="btn block magnetic" id="btn-log" style="margin-top:var(--sp-4)">Log this planned trade →</button>
+  <div class="row tight" style="margin-top:var(--sp-4)">
+  <button class="btn magnetic" id="btn-log">Log this planned trade →</button>
+  <button class="btn ghost" id="an-ticket">Order ticket</button>
+  </div>
   <div class="field-note" id="log-msg" style="text-align:center;margin-top:var(--sp-2)"></div>
   </div>
 
@@ -18829,6 +18878,22 @@ __exports.default = {
   recompute(root);
   toast('Direction and levels applied to the builder.', 'ok');
   byId('in-entry')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  on(root, 'click', '#an-ticket', () => {
+  const analysis = state.analysis;
+  const symbol = brokerSymbol(state.settings);
+
+  if (!analysis) {
+  showTicket({ ok: false, problems: ['Fill in the market, levels and risk above first — the ticket is built from that plan.'] }, symbol);
+  return;
+  }
+  showTicket(buildTicketFromSizing(analysis.plan, {
+  symbol,
+  dp: 2,
+
+  price: Number(state.setup.current),
+  }), symbol);
   });
 
   on(root, 'click', '#btn-log', async () => {
