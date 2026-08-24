@@ -1835,18 +1835,44 @@ kbd {
 .jcoach { margin-top: var(--sp-2); }
 
 .xagenda { border: 1px solid var(--line-2); border-radius: var(--r-md); overflow: hidden; }
+
 .xagrow {
-  display: grid; grid-template-columns: 52px 1fr auto; gap: var(--sp-3);
-  align-items: baseline; padding: 7px var(--sp-3);
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  grid-template-areas:
+    "when name impact"
+    "gold gold gold"
+    "src  src  src";
+  gap: 2px var(--sp-3);
+  align-items: baseline; padding: 9px var(--sp-3);
   border-bottom: 1px solid var(--line-2); font-size: var(--fs-sm);
 }
 .xagrow:last-child { border-bottom: 0; }
-.xagwhen { color: var(--gold); text-align: right; }
-.xagname { color: var(--ink-soft); }
+.xagwhen { grid-area: when; color: var(--gold); text-align: right; }
+.xagname { grid-area: name; color: var(--ink-soft); }
 .xagrow.big .xagname { color: var(--ink); }
 .xagrow.big .xagwhen { color: var(--gold-bright); }
 
-.xagsrc { font-size: 9px; letter-spacing: .06em; color: var(--faint); white-space: nowrap; }
+.xagday { color: var(--faint); font-size: 10px; margin-left: 6px; white-space: nowrap; }
+
+.xaggold {
+  grid-area: gold; color: var(--ink-soft); font-size: var(--fs-xs);
+  line-height: 1.55; opacity: .85;
+}
+.xaggold b { color: var(--gold); font-weight: 600; }
+
+.xagimp {
+  grid-area: impact; justify-self: end;
+  font-size: 9px; letter-spacing: .07em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 999px; white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.imp-extreme { color: var(--short-bright); border-color: color-mix(in srgb, var(--short) 55%, transparent); background: color-mix(in srgb, var(--short) 14%, transparent); }
+.imp-high    { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 40%, transparent); background: rgba(224,166,60,.10); }
+.imp-medium  { color: var(--faint); border-color: var(--line-2); }
+
+.xagsrc { grid-area: src; font-size: 9px; letter-spacing: .06em; color: var(--faint); white-space: nowrap; }
 
 .tikgrid { display: grid; gap: 6px; }
 
@@ -4958,7 +4984,7 @@ Object.assign(__exports, { ZONES, ALL_ZONES, labelFor, isKnownZone, wrap24, city
 __def("src/domain/news.js", function (__exports, __req) {
 
 const { etToLocalHours, fmtH, wrap24 } = __req("src/domain/timezones.js");
-const { datedProximity, datedEvents, scheduleExpired } = __req("src/domain/calendar.js");
+const { datedProximity, datedEvents, scheduleExpired, RELEASES } = __req("src/domain/calendar.js");
 
 const RECURRING = [
   { id: 'fomc',   n: 'FOMC Rate Decision',   f: '8× / year',        h: 14, m: 0,  imp: 'extreme',
@@ -5030,7 +5056,7 @@ function newsProximity(tz, nowDec, now = Date.now()) {
   }
   }
 
-  return recurringProximity(tz, nowDec);
+  return recurringProximity(tz, nowDec, now);
 }
 
 function formatGap(minutes) {
@@ -5041,8 +5067,12 @@ function formatGap(minutes) {
   return `${Math.round(hours / 24)} days`;
 }
 
-function recurringProximity(tz, nowDec) {
-  const relevant = (liveEvents ? listEvents(tz) : RECURRING.filter((e) => e.h !== null && e.imp !== 'medium'));
+function recurringProximity(tz, nowDec, now = Date.now()) {
+
+  const dated = scheduleExpired(now) ? new Set() : new Set(Object.keys(RELEASES));
+  const relevant = (liveEvents
+  ? listEvents(tz)
+  : RECURRING.filter((e) => e.h !== null && e.imp !== 'medium' && !dated.has(e.id)));
 
   let nearestMinutes = Infinity;
   let nearest = null;
@@ -5128,9 +5158,125 @@ function nthWeekday(year, month, weekday, n = 1) {
   return 1 + shift + (n - 1) * 7;
 }
 
-function nfpFor(year, month) {
-  return easternToUtc(year, month, nthWeekday(year, month, 5, 1), 8, 30);
-}
+const VERIFIED_ON = '2026-08-24';
+
+const RELEASES = {
+  fomc: {
+  name: 'FOMC rate decision',
+  impact: 'extreme',
+  hour: 14,
+  minute: 0,
+  source: 'Federal Reserve',
+  gold: {
+  channel: 'Policy rates set real yields, which are gold\'s main competition.',
+  hawkish: 'Hawkish — a hold, a cut priced out, or a higher dot plot — lifts real yields and the dollar, and gold falls.',
+  dovish: 'Dovish — a cut, or a signal of one — is the single strongest bullish input gold gets.',
+  },
+  note: 'The biggest scheduled gold driver there is. The 14:30 press conference regularly moves more than the 14:00 statement, so the risk window runs to at least 15:15 Eastern. Tentative until confirmed at the preceding meeting.',
+  dates: [
+
+  [2026, 1, 28], [2026, 3, 18], [2026, 4, 29], [2026, 6, 17],
+  [2026, 7, 29], [2026, 9, 16], [2026, 10, 28], [2026, 12, 9],
+
+  [2027, 1, 27], [2027, 3, 17], [2027, 4, 28], [2027, 6, 9],
+  [2027, 7, 28], [2027, 9, 15], [2027, 10, 27], [2027, 12, 8],
+  ],
+  },
+
+  nfp: {
+  name: 'Non-farm payrolls',
+  impact: 'extreme',
+  hour: 8,
+  minute: 30,
+  source: 'Bureau of Labor Statistics',
+  gold: {
+  channel: 'Jobs drive the Fed\'s cutting path, and the dollar reprices within seconds.',
+  hawkish: 'A strong print pushes cuts further out: dollar up, gold down.',
+  dovish: 'A weak print brings cuts forward: gold up.',
+  },
+  note: 'Expect the first move to overshoot and frequently reverse inside the hour — the initial spike is algorithmic and the revisions to prior months often matter more than the headline. Spreads widen sharply at 08:30.',
+  dates: [
+
+  [2026, 9, 4], [2026, 10, 2], [2026, 11, 6], [2026, 12, 4],
+  ],
+  },
+
+  cpi: {
+  name: 'CPI — Consumer inflation',
+  impact: 'extreme',
+  hour: 8,
+  minute: 30,
+  source: 'Bureau of Labor Statistics',
+  gold: {
+  channel: 'Inflation surprises move rate expectations first and the inflation hedge second.',
+  hawkish: 'A hot print usually knocks gold down on the day, because higher-for-longer lifts real yields faster than the hedge bid arrives.',
+  dovish: 'A cool print supports gold — cuts get priced in and the dollar softens.',
+  },
+  note: 'The most reliably violent 08:30 release for gold after payrolls. Core month-on-month is what the desk trades, not the headline year-on-year.',
+  dates: [
+  [2026, 9, 11], [2026, 10, 14], [2026, 11, 10], [2026, 12, 10],
+  ],
+  },
+
+  ppi: {
+  name: 'PPI — Producer prices',
+  impact: 'high',
+  hour: 8,
+  minute: 30,
+  source: 'Bureau of Labor Statistics',
+  gold: {
+  channel: 'Pipeline inflation, and a partial preview of the PCE components the Fed watches.',
+  hawkish: 'Hot PPI pressures gold through the same rate channel as CPI, but with a smaller move.',
+  dovish: 'Soft PPI is mildly supportive.',
+  },
+  note: 'Smaller than CPI on average, but capable of a real move when it disagrees with CPI in the same month.',
+  dates: [
+  [2026, 9, 10], [2026, 10, 15], [2026, 11, 13], [2026, 12, 15],
+  ],
+  },
+
+  pce: {
+  name: 'Core PCE — the Fed\'s inflation gauge',
+  impact: 'high',
+  hour: 8,
+  minute: 30,
+  source: 'Bureau of Economic Analysis',
+  gold: {
+  channel: 'The measure the Fed actually targets, so it maps most directly onto the dot plot.',
+  hawkish: 'An upside surprise is bearish gold, and more so when it diverges from a benign CPI.',
+  dovish: 'A downside surprise is bullish, for the same reason.',
+  },
+  note: 'Released inside the Personal Income and Outlays report. Often a muted reaction, because by release day most of it has been inferred from CPI and PPI — the exception is when that inference was wrong.',
+  dates: [
+  [2026, 9, 30], [2026, 10, 29], [2026, 11, 25], [2026, 12, 23],
+  ],
+  },
+
+  gdp: {
+  name: 'GDP',
+  impact: 'high',
+  hour: 8,
+  minute: 30,
+  source: 'Bureau of Economic Analysis',
+  gold: {
+  channel: 'Growth sets both the rate path and the appetite for a safe haven, and those two can pull opposite ways.',
+  hawkish: 'Strong growth is usually mildly bearish through the dollar.',
+  dovish: 'A genuine downside miss can be bullish twice over — rate cuts priced in, and haven demand.',
+  },
+  note: 'The advance estimate is the one that moves markets; second and third estimates rarely do. 29 October 2026 is the advance reading for Q3.',
+  dates: [
+  [2026, 9, 30], [2026, 10, 29], [2026, 11, 25], [2026, 12, 23],
+  ],
+  },
+};
+
+const SCHEDULE_HORIZON = (() => {
+  const ends = Object.values(RELEASES).map((r) => {
+  const [y, m, d] = r.dates[r.dates.length - 1];
+  return easternToUtc(y, m, d, 23, 59);
+  });
+  return Math.min(...ends);
+})();
 
 function claimsBetween(fromMs, toMs) {
   const out = [];
@@ -5146,57 +5292,56 @@ function claimsBetween(fromMs, toMs) {
   return out;
 }
 
-const FOMC_DECISIONS = [
-
-  [2026, 1, 28], [2026, 3, 18], [2026, 4, 29], [2026, 6, 17],
-  [2026, 7, 29], [2026, 9, 16], [2026, 10, 28], [2026, 12, 9],
-
-  [2027, 1, 27], [2027, 3, 17], [2027, 4, 28], [2027, 6, 9],
-  [2027, 7, 28], [2027, 9, 15], [2027, 10, 27], [2027, 12, 8],
-];
-
-const SCHEDULE_HORIZON = easternToUtc(2027, 12, 31, 23, 59);
+function nfpGuess(year, month) {
+  return easternToUtc(year, month, nthWeekday(year, month, 5, 1), 8, 30);
+}
 
 const RECURRING_ONLY = [
-  { id: 'cpi', name: 'CPI — Inflation', hour: 8, minute: 30, impact: 'extreme', cadence: 'Monthly, usually 10th–15th' },
-  { id: 'pce', name: 'Core PCE', hour: 8, minute: 30, impact: 'high', cadence: 'Monthly, usually last week' },
-  { id: 'ppi', name: 'PPI — Producer Prices', hour: 8, minute: 30, impact: 'high', cadence: 'Monthly, near CPI' },
-  { id: 'retail', name: 'Retail Sales', hour: 8, minute: 30, impact: 'high', cadence: 'Monthly, mid-month' },
-  { id: 'ism', name: 'ISM PMIs', hour: 10, minute: 0, impact: 'high', cadence: 'Monthly, first business days' },
+  { id: 'retail', name: 'Retail Sales', hour: 8, minute: 30, impact: 'high', cadence: 'Monthly, mid-month', gold: 'Consumer strength feeds the growth-and-dollar channel; a big miss is gold-supportive.' },
+  { id: 'ism', name: 'ISM PMIs', hour: 10, minute: 0, impact: 'high', cadence: 'Manufacturing first business day, services third', gold: 'A sub-50 print signals contraction and tends to support gold through rate-cut pricing.' },
+  { id: 'sentiment', name: 'Michigan Sentiment', hour: 10, minute: 0, impact: 'medium', cadence: 'Preliminary mid-month, final month-end', gold: 'The inflation-expectations component moves gold more than the headline does.' },
 ];
+
+function eventFrom(id, spec, y, m, d) {
+  return {
+  id,
+  name: spec.name,
+  at: easternToUtc(y, m, d, spec.hour, spec.minute),
+  impact: spec.impact,
+  precision: 'scheduled',
+  source: spec.source,
+  gold: spec.gold,
+  note: spec.note,
+  };
+}
 
 function datedEvents(now = Date.now(), days = 30) {
   const until = now + days * 86_400_000;
   const out = [];
 
-  for (const [y, m, d] of FOMC_DECISIONS) {
-  const at = easternToUtc(y, m, d, 14, 0);
-  if (at >= now - 6 * 3_600_000 && at <= until) {
-  out.push({
-  id: 'fomc', name: 'FOMC rate decision', at, impact: 'extreme', precision: 'scheduled',
-  note: 'The single biggest scheduled gold driver. The 14:30 press conference often moves more than the decision. Tentative until confirmed at the preceding meeting.',
-  });
+  const from = now - 6 * 3_600_000;
+
+  for (const [id, spec] of Object.entries(RELEASES)) {
+  for (const [y, m, d] of spec.dates) {
+  const e = eventFrom(id, spec, y, m, d);
+  if (e.at >= from && e.at <= until) out.push(e);
   }
   }
 
-  const start = new Date(now);
-  for (let k = 0; k < 3; k++) {
-  const y = start.getUTCFullYear();
-  const m = start.getUTCMonth() + 1 + k;
-  const at = nfpFor(m > 12 ? y + Math.floor((m - 1) / 12) : y, ((m - 1) % 12) + 1);
-  if (at >= now - 6 * 3_600_000 && at <= until) {
+  for (const at of claimsBetween(from, until)) {
   out.push({
-  id: 'nfp', name: 'Non-farm payrolls', at, impact: 'extreme', precision: 'exact',
-
-  note: 'First Friday of the month. Strong jobs pressure gold, weak jobs support it, and the first move often reverses within the hour. Shifted when the first Friday is a public holiday — worth confirming in that one case.',
-  });
-  }
-  }
-
-  for (const at of claimsBetween(now - 6 * 3_600_000, until)) {
-  out.push({
-  id: 'claims', name: 'Initial jobless claims', at, impact: 'medium', precision: 'exact',
-  note: 'Every Thursday. Reliable weekly volatility rather than a major driver.',
+  id: 'claims',
+  name: 'Initial jobless claims',
+  at,
+  impact: 'medium',
+  precision: 'scheduled',
+  source: 'Department of Labor',
+  gold: {
+  channel: 'A weekly read on the labour market between payrolls.',
+  hawkish: 'Low claims firm the dollar.',
+  dovish: 'A jump above trend is gold-supportive.',
+  },
+  note: 'Every Thursday. Reliable weekly volatility rather than a major driver, and it matters most when the four-week trend is turning. Moves to Wednesday in weeks with a Thursday federal holiday.',
   });
   }
 
@@ -5227,7 +5372,7 @@ function datedProximity(now = Date.now()) {
 
 const scheduleExpired = (now = Date.now()) => now > SCHEDULE_HORIZON;
 
-Object.assign(__exports, { FOMC_DECISIONS, SCHEDULE_HORIZON, RECURRING_ONLY, scheduleExpired, easternToUtc, nfpFor, claimsBetween, datedEvents, nextDated, datedProximity });
+Object.assign(__exports, { VERIFIED_ON, RELEASES, SCHEDULE_HORIZON, RECURRING_ONLY, scheduleExpired, easternToUtc, claimsBetween, nfpGuess, datedEvents, nextDated, datedProximity });
 
 });
 
@@ -9984,11 +10129,10 @@ function buildFacts(analysis, extra = {}) {
   scoreIsNotAProbability: true,
 
   bias: analysis.biasDetail ? {
-  d1: analysis.biasDetail.d1,
-  h4: analysis.biasDetail.h4,
-  h1: analysis.biasDetail.h1,
-  m30: analysis.biasDetail.m30,
+  higherTimeframes: Object.fromEntries((analysis.biasDetail.htfPair || []).map((p) => [p.tf, p.bias])),
+  directional: Object.fromEntries((analysis.biasDetail.directionalPair || []).map((p) => [p.tf, p.bias])),
   execution: analysis.biasDetail.exec,
+  executionTimeframe: analysis.timeframe,
   higherTimeframe: analysis.htfBias,
   } : null,
 
@@ -12281,7 +12425,7 @@ const { buildTicket } = __req("src/domain/handoff.js");
 const { showTicket, brokerSymbol } = __req("src/ui/ticket.js");
 
 const { newsProximity, hasLiveFeed, agenda } = __req("src/domain/news.js");
-const { RECURRING_ONLY } = __req("src/domain/calendar.js");
+const { RECURRING_ONLY, VERIFIED_ON } = __req("src/domain/calendar.js");
 const { applyTick, seedForming, applyCalibration, makeCalibration, calibrationStale } = __req("src/domain/stream.js");
 const { TickStream } = __req("src/integrations/ticks.js");
 const { answerLocally, starterQuestions } = __req("src/domain/helpdesk.js");
@@ -13235,21 +13379,46 @@ function paintNews(news) {
 
 function newsAgenda(news) {
   const now = Date.now();
-  const rows = agenda(now, 14).slice(0, 5);
+
+  let seenMedium = false;
+  const rows = agenda(now, 21)
+  .filter((e) => {
+  if (e.impact !== 'medium') return true;
+  if (seenMedium) return false;
+  seenMedium = true;
+  return true;
+  })
+  .slice(0, 7);
+
+  const shorten = (t) => {
+  const first = String(t).split(/(?<=\.)\s/)[0];
+  return first.length > 96 ? `${first.slice(0, 93)}…` : first;
+  };
+  const goldLine = (e) => {
+  if (!e.gold) return '';
+  const { hawkish, dovish } = e.gold;
+  if (!hawkish || !dovish) return `<span class="xaggold">${esc(e.gold.channel || '')}</span>`;
+  return `<span class="xaggold"><b>Hot:</b> ${esc(shorten(hawkish))} <b>Soft:</b> ${esc(shorten(dovish))}</span>`;
+  };
 
   const list = rows.length ? `
-  <p class="eyebrow" style="margin-top:var(--sp-4)">Dated releases</p>
+  <p class="eyebrow" style="margin-top:var(--sp-4)">Dated releases — gold impact</p>
   <div class="xagenda">
   ${rows.map((e) => {
   const mins = Math.round((e.at - now) / 60000);
   const when = mins < 0 ? 'now' : mins < 90 ? `${mins}m` : mins < 2160 ? `${Math.round(mins / 60)}h` : `${Math.round(mins / 1440)}d`;
+  const day = new Date(e.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   return `<div class="xagrow ${e.impact === 'extreme' ? 'big' : ''}">
   <span class="xagwhen mono">${esc(when)}</span>
-  <span class="xagname">${esc(e.name)}</span>
+  <span class="xagname">${esc(e.name)}
+  <span class="xagday mono">${esc(day)}</span>
+  </span>
+  <span class="xagimp imp-${esc(e.impact)}">${esc(e.impact === 'extreme' ? 'extreme' : e.impact)}</span>
+  ${goldLine(e)}
   <span class="xagsrc" title="${esc(e.note || '')}">${esc(
-  e.precision === 'exact' ? 'calendar rule'
-  : e.precision === 'scheduled' ? 'published date'
-  : 'live feed',
+  e.precision === 'scheduled' ? `published · ${e.source || 'agency'}`
+  : e.precision === 'live' ? 'live feed'
+  : 'estimated',
   )}</span>
   </div>`;
   }).join('')}
@@ -13260,10 +13429,11 @@ function newsAgenda(news) {
   return `${list}
   ${news.live
   ? callout('info', '<b>Live calendar connected.</b> Every event above comes from the feed.')
-  : callout('gold', `<b>Some dates are known, some are not.</b> FOMC decisions come from the Federal Reserve's published
-  schedule; non-farm payrolls is the first Friday and jobless claims are every Thursday, which are calendar rules
-  rather than guesses. <b>${esc(undated)} are not dated here</b> — their release times are fixed but this app does not
-  know which day. Check a live calendar for those before you place anything.`)}`;
+  : callout('gold', `<b>Some dates are known, some are not.</b> Every dated release above is a date published by the
+  agency that issues it — the Federal Reserve for FOMC, the BLS for payrolls, CPI and PPI, the BEA for PCE and GDP —
+  checked on ${esc(VERIFIED_ON)}. They still move occasionally, so confirm anything you are about to trade through.
+  <b>${esc(undated)} are not dated here</b> — their release times are fixed but this app does not know which day.
+  Check a live calendar for those before you place anything.`)}`;
 }
 
 function setBusy(on) {
@@ -15240,9 +15410,22 @@ const tfMsOf = (id) => (tfOf(id) ? tfOf(id).ms : NaN);
 
 const HTF_TFS = ['D1', 'H4'];
 const DIRECTIONAL_TFS = ['H1', 'M30'];
-const EXECUTION_TFS = ['M15', 'M5', 'M1'];
 
-const ANALYSIS_TFS = [...HTF_TFS, ...DIRECTIONAL_TFS, ...EXECUTION_TFS];
+const EXECUTION_TFS = [...TF_IDS].reverse();
+
+function tiersFor(executionTf) {
+  const i = TF_IDS.indexOf(executionTf);
+  if (i < 0) return { execution: null, directional: [...DIRECTIONAL_TFS], htf: [...HTF_TFS] };
+  const coarser = TF_IDS.slice(i + 1);
+  return {
+  execution: executionTf,
+  directional: coarser.slice(0, 2),
+
+  htf: coarser.slice(2).slice(-2),
+  };
+}
+
+const ANALYSIS_TFS = [...TF_IDS].reverse();
 
 function validateSeries(candles, tfMs, now = Date.now()) {
   const issues = [];
@@ -15411,13 +15594,14 @@ function feedStatusText(status) {
   return 'Feed is live.';
 }
 
-Object.assign(__exports, { TIMEFRAMES, TF_IDS, tfOf, tfMsOf, HTF_TFS, DIRECTIONAL_TFS, EXECUTION_TFS, ANALYSIS_TFS, provider, isRealXauFeed, validateSeries, splitClosed, proxyProvider, setProvider, resetProvider, loadSeries, feedStatusText });
+Object.assign(__exports, { TIMEFRAMES, TF_IDS, tfOf, tfMsOf, HTF_TFS, DIRECTIONAL_TFS, EXECUTION_TFS, ANALYSIS_TFS, provider, isRealXauFeed, tiersFor, validateSeries, splitClosed, proxyProvider, setProvider, resetProvider, loadSeries, feedStatusText });
 
 });
 
 __def("src/domain/confluence.js", function (__exports, __req) {
 
 const { readStructure, biasOf, describeStructure, trendlines, volatilityRead } = __req("src/domain/structure.js");
+const { tiersFor } = __req("src/domain/feed.js");
 const { findFvgs, actionableFvgs, nearestEntryFvg } = __req("src/domain/fvg.js");
 const { findOrderBlocks, actionableBlocks, nearestEntryBlock, insideBlock } = __req("src/domain/orderblocks.js");
 const { readLiquidity, sessionAt } = __req("src/domain/liquidity.js");
@@ -15527,8 +15711,10 @@ function analyzeMarket({ series = {}, checks = {}, settings = {}, now = Date.now
   out.warnings.push('The feed is offline. Everything below is computed from the last data received and may be out of date — verify every level on your broker before acting.');
   }
 
+  const tiers = tiersFor(cfg.executionTf);
+
   const structures = {};
-  for (const tf of ['D1', 'H4', 'H1', 'M30', cfg.executionTf]) {
+  for (const tf of new Set([...tiers.htf, ...tiers.directional, cfg.executionTf])) {
   const s = series[tf];
   structures[tf] = s && s.closed && s.closed.length > 40 ? readStructure(s.closed, settings.structureOptions) : null;
   }
@@ -15538,21 +15724,23 @@ function analyzeMarket({ series = {}, checks = {}, settings = {}, now = Date.now
   const price = Number.isFinite(cfg.price) ? cfg.price : candles[candles.length - 1].close;
   const atr = execStructure ? execStructure.atr : NaN;
 
-  const htfBias = combineBias(structures.D1, structures.H4);
-  const dirBias = combineBias(structures.H1, structures.M30);
+  const htfBias = combineBias(structures[tiers.htf[1]], structures[tiers.htf[0]]);
+  const dirBias = combineBias(structures[tiers.directional[1]], structures[tiers.directional[0]]);
   const execBias = biasOf(execStructure);
 
   out.timeframe = cfg.executionTf;
   out.htfBias = htfBias.bias;
+  out.tiers = tiers;
   out.biasDetail = {
-  d1: biasOf(structures.D1),
-  h4: biasOf(structures.H4),
-  h1: biasOf(structures.H1),
-  m30: biasOf(structures.M30),
+
+  htfPair: tiers.htf.map((tf) => ({ tf, bias: biasOf(structures[tf]) })),
+  directionalPair: tiers.directional.map((tf) => ({ tf, bias: biasOf(structures[tf]) })),
   exec: execBias,
   htf: htfBias.bias,
   directional: dirBias.bias,
-  lines: ['D1', 'H4', 'H1', 'M30', cfg.executionTf].map((tf) => describeStructure(tf, structures[tf])),
+
+  lines: [...tiers.htf, ...tiers.directional, cfg.executionTf]
+  .map((tf) => describeStructure(tf, structures[tf])),
   };
 
   const atrArr = execStructure ? execStructure.atrSeries : [];
@@ -17934,11 +18122,18 @@ function whyList(a) {
 
   const up = a.dir === 'long';
 
-  if (a.biasDetail) {
-  const agree = [a.biasDetail.d1, a.biasDetail.h4].filter((b) => b === (up ? 'bullish' : 'bearish')).length;
-  if (agree === 2) out.push(`D1 and H4 structure are both ${up ? 'bullish' : 'bearish'}, so the higher-timeframe flow is behind the trade.`);
-  else if (agree === 1) out.push(`One higher timeframe is ${up ? 'bullish' : 'bearish'} and the other is not, so the wind is only partly behind this.`);
-  else out.push(`No higher timeframe is ${up ? 'bullish' : 'bearish'} — this is a counter-trend idea and should be sized like one.`);
+  const pair = (a.biasDetail && a.biasDetail.htfPair) || [];
+  if (pair.length) {
+  const want = up ? 'bullish' : 'bearish';
+  const names = pair.map((p) => p.tf);
+  const agree = pair.filter((p) => p.bias === want).length;
+  if (agree === pair.length && pair.length > 1) out.push(`${names[0]} and ${names[1]} structure are both ${want}, so the higher-timeframe flow is behind the trade.`);
+  else if (agree === pair.length) out.push(`${names[0]} structure is ${want}, so the higher-timeframe flow is behind the trade.`);
+  else if (agree > 0) out.push(`${names.find((tf, i) => pair[i].bias === want)} is ${want} and ${names.find((tf, i) => pair[i].bias !== want)} is not, so the wind is only partly behind this.`);
+  else out.push(`Neither ${names.join(' nor ')} is ${want} — this is a counter-trend idea and should be sized like one.`);
+  } else if (a.biasDetail) {
+
+  out.push(`${a.timeframe} is the top of the range this desk reads, so there is no higher timeframe standing behind this — the directional read is doing all the work.`);
   }
 
   const sweep = a.liquidity && a.liquidity.recentSweep;
