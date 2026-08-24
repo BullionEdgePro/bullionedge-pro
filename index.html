@@ -9670,6 +9670,10 @@ async function askGemini({ facts, question, history = [], config = {} }) {
   const text = extractText(data);
   if (!text) throw new Error(blockedReason(data) || 'The model returned an empty response.');
 
+  if (finishReason(data) === 'MAX_TOKENS') {
+  throw new Error('The model ran out of room before it finished answering. Try a shorter question.');
+  }
+
   return { text, model, transport };
   } catch (err) {
   if (err.name === 'AbortError') {
@@ -9704,6 +9708,10 @@ async function describeFailure(response, transport) {
   }
 }
 
+function finishReason(data) {
+  return data && data.candidates && data.candidates[0] && data.candidates[0].finishReason;
+}
+
 function extractText(data) {
   const parts = data && data.candidates && data.candidates[0]
   && data.candidates[0].content && data.candidates[0].content.parts;
@@ -9728,7 +9736,7 @@ async function briefSetup({ facts, config = {} }) {
   system: BRIEF_SYSTEM_PROMPT,
   parts: [{ text: buildPrompt(facts, 'Write the brief.') }],
   config,
-  maxOutputTokens: 700,
+  maxOutputTokens: 1800,
   });
 }
 
@@ -9740,7 +9748,7 @@ async function coachJournal({ summary, question, config = {} }) {
   system: COACH_SYSTEM_PROMPT,
   parts: [{ text: buildCoachPrompt(summary, question) }],
   config,
-  maxOutputTokens: 900,
+  maxOutputTokens: 2000,
   });
 }
 
@@ -9756,7 +9764,8 @@ async function reviewChartImage({ imageDataUrl, facts, question, config = {} }) 
   { text: buildVisionPrompt(facts, question) },
   ],
   config,
-  maxOutputTokens: 800,
+
+  maxOutputTokens: 1600,
   });
 }
 
@@ -9816,7 +9825,8 @@ async function askHelp({ facts, question, history = [], config = {} }) {
   parts: [{ text: buildHelpPrompt(facts, question) }],
   history,
   config,
-  maxOutputTokens: 500,
+
+  maxOutputTokens: 1500,
   });
 }
 
