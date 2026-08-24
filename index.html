@@ -664,7 +664,17 @@ html[data-mode="pro"] .card h2 { font-size: var(--fs-md); }
 .callout.long { background: rgba(70,185,140,.08); border-color: rgba(70,185,140,.3); color: #B6E8D2; }
 .callout.info { background: rgba(90,169,230,.08); border-color: rgba(90,169,230,.28); color: #C2DEF5; }
 
-.tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tablewrap {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  background:
+    linear-gradient(to right, var(--panel) 40%, rgba(10, 18, 20, 0)) left center,
+    linear-gradient(to left,  var(--panel) 40%, rgba(10, 18, 20, 0)) right center,
+    radial-gradient(farthest-side at 0    50%, rgba(0, 0, 0, .55), rgba(0, 0, 0, 0)) left center,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, .55), rgba(0, 0, 0, 0)) right center;
+  background-repeat: no-repeat;
+  background-size: 34px 100%, 34px 100%, 15px 100%, 15px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
 table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); min-width: 620px; }
 th {
   text-align: left; font-family: var(--font-mono); font-size: var(--fs-2xs); letter-spacing: .1em;
