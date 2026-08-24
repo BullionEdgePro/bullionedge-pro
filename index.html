@@ -522,6 +522,12 @@ html[data-mode="pro"] .card h2 { font-size: var(--fs-md); }
 }
 .tip:hover, .tip:focus-visible { border-color: var(--gold); color: var(--gold); background: var(--glow-gold); }
 
+@media (pointer: coarse) {
+  .tip { position: relative; }
+
+  .tip::after { content: ''; position: absolute; inset: -12px; }
+}
+
 #tip-bubble {
   position: fixed; z-index: 400; max-width: 300px;
   background: #0B1718; border: 1px solid var(--line);
@@ -6864,13 +6870,19 @@ const FEATURES = [
   body: 'Reads structure, liquidity, imbalance and location off the candles, then answers buy, sell, or no trade — with the case against printed as plainly as the case for. It says no most of the time.' },
 
   { shot: 'chart', group: 'The engine', icon: '◉', title: 'MT5-style chart, live candles',
-  body: 'Order blocks, fair value gaps, liquidity pools, BOS/CHoCH, engulfing bars, Fibonacci and session shading — each a layer you can switch off. The newest candle streams live and never repaints.' },
+  body: 'The newest candle streams live and never repaints. Zoom, pan, crosshair, price and time scales, full screen — and a chart that opens clean, because a chart carrying nine overlays at once is a chart where none of them means anything.' },
+
+  { shot: 'chart', group: 'The engine', icon: '◈', title: 'Nineteen overlays, none of them forced',
+  body: 'Order blocks, fair value gaps, liquidity pools, BOS/CHoCH, engulfing bars, Fibonacci, premium/discount, session shading, four EMAs, VWAP, RSI, MACD. Every one is off until you switch it on, each is drawn in a colour the chip beside the chart matches, and one tap takes it back off.' },
 
   { shot: 'checklist', group: 'The engine', icon: '✓', title: 'The ten-factor checklist',
   body: 'What you can see and the engine cannot. It shows what it detected beside every item, so you can find out exactly where you and it disagree.' },
 
   { shot: 'plan', group: 'The engine', icon: '△', title: 'Entry, stop, targets, lot size',
   body: 'The stop sits beyond the level that would prove the idea wrong. Targets come from real structure and are spaced so three cannot hide inside one ATR. The size falls out of the loss you accepted.' },
+
+  { shot: 'plan', group: 'The engine', icon: '⇥', title: 'One tap to your own terminal',
+  body: 'The desk assembles the whole order — symbol, volume, entry, stop, targets — and works out whether MetaTrader needs a Buy Limit, a Buy Stop or a market order, which is the part people get wrong by hand. Every value copies on a tap. It hands the ticket over; you send it.' },
 
   { shot: 'news', group: 'The engine', icon: '◴', title: 'A calendar that admits what it knows',
   body: 'Fed decisions are known dates. Payrolls and claims are derived from published rules and labelled as derived. Anything it cannot establish is left out rather than invented — and a release inside your window blocks the trade.' },
@@ -6880,6 +6892,9 @@ const FEATURES = [
 
   { shot: 'risk', group: 'The money', icon: '◑', title: 'Risk manager, and a desk that shuts',
   body: 'Set risk per trade, a daily loss limit and a maximum number of trades while you are calm. They are enforced later, when you are not — the verdict becomes a no-trade until the next session.' },
+
+  { shot: 'settings', group: 'The money', icon: '⇄', title: 'Your real equity, not a number you typed',
+  body: 'Connect a MetaTrader account and the daily loss limit is enforced against what the broker actually says, instead of a figure you entered weeks ago and have not revised. Read-only by construction: it cannot place an order, it never sees your password, and closed trades import themselves into the journal.' },
 
   { shot: 'journal', group: 'The money', icon: '▤', title: 'Journal and the six-stage path',
   body: 'Every trade with its R multiple and the emotion you recorded. Your stage is the first one you have not met — record, defined risk, discipline, selectivity, expectancy, consistency — measured from your own results.' },
@@ -22041,10 +22056,15 @@ const STEPS = [
   },
   {
   n: 9, title: 'Place it with your broker',
-  lead: 'This is where you leave. BullionEdge Pro plans and sizes trades; it does not connect to any broker and cannot place an order.',
+  lead: 'This is where you leave. BullionEdge Pro plans and sizes trades; it cannot place an order, and the ticket is the handover.',
   fig: figBroker,
   body: [
-  'Copy the <b>lot size</b>, the <b>stop</b> and the <b>targets</b> into your own platform by hand.',
+  'Press <b>Order ticket</b> on the trade plan — on the XAU desk or the planner. It assembles the whole order, and every value copies on a tap, because the one you are retyping is usually just the volume.',
+  `It also decides the <b>order type</b>, which is the part people get wrong by hand. MetaTrader will not accept
+  "a buy at 2648" — it needs to know whether that is a Buy Limit below the market, a Buy Stop above it, or a
+  market Buy. Choosing wrong gets you "Invalid price", or worse, fills you on the way up instead of on the
+  retrace you planned for.`,
+  'Set your broker\'s symbol for gold in <b>Settings</b> first: they spell it XAUUSD, GOLD, XAUUSD.m or XAUUSDpro, and a ticket carrying the wrong one has to be retyped.',
   'Set the stop <em>before</em> you enter, not after. Move it to break-even at 1R.',
   'Confirm the level on your broker\'s chart first — their price and spread are the ones you actually trade.',
   ],
@@ -22061,6 +22081,33 @@ const STEPS = [
   ],
   note: 'Below twenty closed trades the probability figure is a conservative base rate, and the app says so rather than flattering you.',
   },
+  {
+  n: 11, title: 'Make the chart yours',
+  lead: 'The chart opens clean on purpose. Nineteen overlays are available and none of them is switched on until you switch it on.',
+  fig: figEngine,
+  body: [
+  'Press <b>+ Indicators</b> under the chart. Order blocks, fair value gaps, liquidity, BOS/CHoCH, engulfing bars, Fibonacci, premium/discount, sessions, four EMAs, VWAP, RSI, MACD and volume.',
+  'Whatever you switch on appears as a chip beneath the chart, in the colour it is drawn in — so you can tell which of four moving averages is the blue line. Tapping the chip takes that overlay back off.',
+  `Why it starts empty: a chart carrying six overlays at once is a chart where none of them is a signal. The one
+  that matters today looks exactly like the five that do not. Add them back one at a time and you will find
+  you keep two or three.`,
+  'Your choices are remembered on this device, so this is a starting point rather than something to redo.',
+  ],
+  note: 'The entry, stop, targets and plan card are not indicators and stay on — hiding the levels the engine just computed would not be decluttering, it would be removing the point.',
+  },
+  {
+  n: 12, title: 'Optional: let it read your real balance',
+  lead: 'Your daily loss limit is only as honest as the account balance you typed in. Connecting MetaTrader replaces that with what the broker actually says.',
+  fig: figBroker,
+  body: [
+  'In <b>Settings → Broker sync</b>, enter your MT5 account number and press <b>Connect this account</b>. Your licence is the proof of entitlement, so there is nothing to sign up for.',
+  'You get back a setup file with everything already filled in. Run it on the computer where MetaTrader is installed, with the terminal open and logged in, and leave the window open while you trade.',
+  'From then on the loss limit is measured against real equity, and closed trades import themselves into the journal with their true prices and costs.',
+  `<b>It is read-only by construction.</b> There is no order method anywhere in it, it never sees your
+  MetaTrader password, and the only thing that leaves your machine is balance, equity and closed trades.`,
+  ],
+  warn: 'It is accurate while your computer and terminal are running, and stale afterwards — so the app refuses any reading older than five minutes rather than showing you a number that has stopped being true.',
+  },
 ];
 
 __exports.default = {
@@ -22073,8 +22120,9 @@ __exports.default = {
   <div class="viewhead">
   <h1>How to use this desk</h1>
   <p class="viewsub">
-  Eight steps from an access key to a logged trade. The whole point is the sixty seconds in the middle —
-  the ones between wanting to click and being allowed to.
+  ${ ''}
+  ${STEPS.length} steps from an access key to a logged trade. The whole point is the sixty seconds in the
+  middle — the ones between wanting to click and being allowed to.
   </p>
   </div>
 
