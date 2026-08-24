@@ -1972,6 +1972,17 @@ kbd {
   font-size: var(--fs-2xs); color: var(--muted); line-height: 1.6;
 }
 
+.xlayergroup.deskgroup.waiting .cbtn.on {
+  border-color: var(--line-2); background: rgba(255,255,255,.02); color: var(--faint);
+}
+.xlayergroup.deskgroup.waiting .cbtn.on .xindswatch { filter: grayscale(1); opacity: .45; }
+
+.xlgnote {
+  margin: 7px 0 0; font-size: var(--fs-2xs); color: var(--muted);
+  line-height: 1.55; max-width: 44ch;
+}
+.xlayergroup.deskgroup.waiting .xlgnote { color: var(--gold-dim); }
+
 /* assets/css/guide.css */
 .gflow {
   display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
@@ -12814,10 +12825,11 @@ __exports.default = {
   queueAnalyse();
   };
 
-  byId('xau-exec').onchange = (e) => {
+  byId('xau-exec').onchange = async (e) => {
   patch({ xau: { executionTf: e.target.value } });
+
+  await refreshAll();
   paintIndicatorBar({ ...DEFAULT_LAYERS, ...state.xau.layers });
-  refreshAll();
   };
   byId('xau-setup').onchange = (e) => { patch({ xau: { setupType: e.target.value } }); queueAnalyse(); };
 
@@ -14061,8 +14073,11 @@ function paintIndicatorBar(layers) {
   to draw structure, zones or moving averages.
   </span>`
   + (note ? `<p class="xind-note">${note}</p>` : '');
+  paintDeskGroup();
   return;
   }
+
+  paintDeskGroup();
 
   host.innerHTML = active.map((key) => `
   <button type="button" class="xindchip" data-layer="${key}" aria-pressed="true"
@@ -14082,14 +14097,43 @@ function layerToggles(layers) {
   ['Chart', ['grid', 'sessions']],
   ['The desk’s own output', ['entry', 'stop', 'targets', 'plan']],
   ];
-  return groups.map(([title, keys]) => `
-  <div class="xlayergroup">
+  return groups.map(([title, keys]) => {
+  const desk = keys[0] === 'entry';
+  return `
+  <div class="xlayergroup${desk ? ' deskgroup' : ''}"${desk ? ' id="xlayer-desk"' : ''}>
   <p class="xlgt">${esc(title)}</p>
   ${keys.map((key) => `
   <button type="button" class="cbtn ${layers[key] ? 'on' : ''}" data-layer="${key}" aria-pressed="${!!layers[key]}">
   <span class="xindswatch" data-ind="${key}" aria-hidden="true"></span>${esc(layerLabel(key))}
   </button>`).join('')}
-  </div>`).join('');
+  ${desk ? '<p class="xlgnote" id="xlayer-desknote"></p>' : ''}
+  </div>`;
+  }).join('');
+}
+
+function paintDeskGroup() {
+  const group = byId('xlayer-desk');
+  const note = byId('xlayer-desknote');
+  if (!group || !note) return;
+
+  const hasPlan = !!(analysis && analysis.plan && analysis.plan.valid);
+  group.classList.toggle('waiting', !hasPlan);
+
+  if (hasPlan) {
+
+  note.textContent = analysis.decision === 'WAIT'
+  ? 'Entry, stop and targets are on the chart. The plan card waits until the desk clears the trade.'
+  : '';
+  return;
+  }
+  if (!analysis) {
+  note.textContent = 'These draw from a trade plan. Press ANALYZE to produce one.';
+  return;
+  }
+  const why = (analysis.hardStops && analysis.hardStops[0])
+  || (analysis.reasons && analysis.reasons[0])
+  || 'the desk did not produce a plan';
+  note.textContent = `Nothing to draw: ${why} A plan appears when the desk finds a setup worth one.`;
 }
 
 function checklistMarkup(checks) {
