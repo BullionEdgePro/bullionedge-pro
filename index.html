@@ -2100,6 +2100,10 @@ kbd {
 }
 .grules b { color: var(--ink); }
 
+@media (max-width: 1079px) and (pointer: coarse) {
+  .gkbd { display: none; }
+}
+
 @media (max-width: 900px) {
   .gstep { grid-template-columns: 1fr; gap: var(--sp-4); }
 
@@ -22617,7 +22621,9 @@ __exports.default = {
   </ul>
   </div>
 
-  <div class="card reveal">
+  <!-- gkbd: hidden on touch devices, where none of this can be typed.
+  See the rule in guide.css for why it is not width alone. -->
+  <div class="card reveal gkbd">
   <p class="eyebrow">Faster once you know your way around</p>
   <h2>Keyboard</h2>
   <div class="kbdlist">
