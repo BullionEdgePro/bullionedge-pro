@@ -12260,10 +12260,16 @@ const { analyzeMarket, SETUP_TYPES, WEIGHTS, WEIGHT_LABELS } = __req("src/domain
 const { checklistByStep, SECTIONS, STEPS, exclusiveSets, checklistProgress, REQUIRED_IDS } = __req("src/domain/xauchecklist.js");
 const { whyList, whyNotList, headline, planText } = __req("src/domain/xauexplain.js");
 const { engulfingMarks } = __req("src/domain/patterns.js");
+const { readStructure, trendlines: trendlinesOf } = __req("src/domain/structure.js");
+const { findFvgs } = __req("src/domain/fvg.js");
+const { findOrderBlocks } = __req("src/domain/orderblocks.js");
+const { readLiquidity } = __req("src/domain/liquidity.js");
+const { premiumDiscount } = __req("src/domain/premium.js");
 const { BROKER_SPEC_DEFAULTS } = __req("src/domain/tradeplan.js");
 const { buildTicket } = __req("src/domain/handoff.js");
 const { showTicket, brokerSymbol } = __req("src/ui/ticket.js");
 
+const { newsProximity, hasLiveFeed, agenda } = __req("src/domain/news.js");
 const { RECURRING_ONLY } = __req("src/domain/calendar.js");
 const { applyTick, seedForming, applyCalibration, makeCalibration, calibrationStale } = __req("src/domain/stream.js");
 const { TickStream } = __req("src/integrations/ticks.js");
@@ -12748,7 +12754,10 @@ __exports.default = {
 
   on(root, 'click', '[data-xtf]', (_e, btn) => showTimeframe(btn.dataset.xtf));
 
-  on(root, 'click', '[data-goto-exectf]', () => showTimeframe(state.xau.executionTf));
+  on(root, 'click', '[data-run-analysis]', async () => {
+  byId('xau-analyse')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  await refreshAll();
+  });
 
   on(root, 'click', '[data-check]', (_e, btn) => {
   const id = btn.dataset.check;
@@ -12820,6 +12829,8 @@ __exports.default = {
 
   byId('xau-analyse').onclick = async () => {
   await refreshAll();
+
+  paintIndicatorBar({ ...DEFAULT_LAYERS, ...state.xau.layers });
   if (state.ai.autoBrief && aiReady() && analysis) writeBrief();
   };
 
@@ -13358,32 +13369,77 @@ function onTick(tick) {
   paintChart();
 }
 
+let structCache = { key: '', value: null };
+
+function chartStructures(tfId) {
+  const s = seriesCache[tfId];
+  const closed = s && s.closed;
+  if (!closed || closed.length < 40) return null;
+
+  const last = closed[closed.length - 1];
+  const key = `${tfId}:${closed.length}:${last && last.time}:${(state.xau.levels || []).length}`;
+  if (structCache.key === key) return structCache.value;
+
+  let value = null;
+  try {
+  const st = readStructure(closed);
+  const atrArr = st ? st.atrSeries : [];
+  const atr = st ? st.atr : NaN;
+  value = {
+  structure: st,
+  events: st && st.events ? st.events : [],
+  fvgs: findFvgs(closed, { atrSeries: atrArr }),
+  blocks: findOrderBlocks(closed, st),
+  liquidity: readLiquidity({
+  candles: closed,
+  swings: st ? st.swings : [],
+  atr,
+  dailyClosed: (seriesCache.D1 && seriesCache.D1.closed) || [],
+  now: new Date(),
+  custom: state.xau.levels || [],
+  }),
+  trendlines: trendlinesOf(st, closed),
+  premium: st && st.legLow && st.legHigh && Number.isFinite(market.spot)
+  ? premiumDiscount(st.legLow.price, st.legHigh.price, market.spot)
+  : null,
+  };
+  } catch (err) {
+
+  console.warn('[xau] chart structures failed:', err);
+  value = null;
+  }
+
+  structCache = { key, value };
+  return value;
+}
+
 function paintChart() {
   if (!mounted || !chart) return;
   const s = seriesCache[state.xau.tf];
   chart.setMeta({ tfLabel: state.xau.tf, quality: provider().quality });
   chart.setData(chartCandles(s));
 
-  const drawnOnExecTf = state.xau.tf === state.xau.executionTf;
   const a = analysis;
 
+  const st = chartStructures(state.xau.tf);
+
   chart.setOverlays({
+  fvgs: st ? st.fvgs : [],
+  blocks: st ? st.blocks : [],
+  events: st ? st.events : [],
 
-  fvgs: drawnOnExecTf && a ? a.fvgs || [] : [],
-  blocks: drawnOnExecTf && a ? a.blocks || [] : [],
-  events: drawnOnExecTf && a && a.structures && a.structures[a.timeframe] ? a.structures[a.timeframe].events : [],
-
-  engulfing: state.xau.layers.engulf === false ? [] : engulfingMarks(
+  engulfing: !({ ...DEFAULT_LAYERS, ...state.xau.layers }).engulf ? [] : engulfingMarks(
   chartCandles(seriesCache[state.xau.tf]),
   (seriesCache[state.xau.tf] && seriesCache[state.xau.tf].atr) || [],
   ),
-  pools: a && a.liquidity ? a.liquidity.pools : [],
+  pools: st && st.liquidity ? st.liquidity.pools : [],
   plan: a && a.plan && a.plan.valid ? a.plan : null,
   ote: a && a.plan && a.plan.valid ? a.plan.ote : null,
-  premium: a && a.premium && a.premium.valid ? a.premium : null,
-  trendlines: drawnOnExecTf && a ? a.trendlines || [] : [],
-  fib: a && a.structures && a.structures[a.timeframe] && a.structures[a.timeframe].legLow && a.structures[a.timeframe].legHigh
-  ? fibLevels(a.structures[a.timeframe].legLow.price, a.structures[a.timeframe].legHigh.price, a.structures[a.timeframe].legDir === 'down' ? 'down' : 'up')
+  premium: st && st.premium && st.premium.valid ? st.premium : null,
+  trendlines: st ? st.trendlines : [],
+  fib: st && st.structure && st.structure.legLow && st.structure.legHigh
+  ? fibLevels(st.structure.legLow.price, st.structure.legHigh.price,
+  st.structure.legDir === 'down' ? 'down' : 'up')
   : [],
   });
 
@@ -13965,12 +14021,23 @@ const LAYER_LABELS = {
 
 const layerLabel = (key) => LAYER_LABELS[key] || key;
 
-const TF_GATED = ['fvg', 'ob', 'structure', 'trendlines'];
+const NEEDS_ANALYSIS = ['entry', 'stop', 'targets', 'plan'];
 
-function undrawable(active) {
-  const onExecTf = state.xau.tf === state.xau.executionTf;
-  if (onExecTf) return [];
-  return active.filter((k) => TF_GATED.includes(k));
+function deskOutputNote(layers) {
+  const merged = { ...DEFAULT_LAYERS, ...layers };
+  if (!NEEDS_ANALYSIS.some((k) => merged[k])) return null;
+  if (analysis && analysis.plan && analysis.plan.valid) return null;
+
+  if (!analysis) {
+  return `The entry zone, stop and targets are drawn from a plan, so they appear once the desk has produced one.
+  <button type="button" class="xind-link" data-run-analysis>Run the analysis</button>`;
+  }
+  return `No entry, stop or targets on the chart because the desk did not produce a plan${
+  analysis.hardStops && analysis.hardStops.length
+  ? ` — ${esc(analysis.hardStops[0])}`
+  : analysis.reasons && analysis.reasons.length
+  ? ` — ${esc(analysis.reasons[0])}`
+  : '.'}`;
 }
 
 function paintIndicatorBar(layers) {
@@ -13984,35 +14051,28 @@ function paintIndicatorBar(layers) {
   count.hidden = active.length === 0;
   }
 
+  const note = deskOutputNote(layers);
+
   if (!active.length) {
+
   host.innerHTML = `
   <span class="xind-empty">
   Clean chart. <button type="button" class="xind-link" data-open-layers>Add indicators</button>
   to draw structure, zones or moving averages.
-  </span>`;
+  </span>`
+  + (note ? `<p class="xind-note">${note}</p>` : '');
   return;
   }
 
-  const blocked = undrawable(active);
-  const execTf = state.xau.executionTf;
-
-  host.innerHTML = active.map((key) => {
-  const off = blocked.includes(key);
-  return `
-  <button type="button" class="xindchip ${off ? 'sleeping' : ''}" data-layer="${key}" aria-pressed="true"
-  title="${off ? `Not drawn on ${esc(state.xau.tf)} — needs the ${esc(execTf)} chart` : `Remove ${esc(layerLabel(key))}`}">
+  host.innerHTML = active.map((key) => `
+  <button type="button" class="xindchip" data-layer="${key}" aria-pressed="true"
+  title="Remove ${esc(layerLabel(key))}">
   <span class="xindswatch" data-ind="${key}" aria-hidden="true"></span>
   ${esc(layerLabel(key))}
   <span class="xindx" aria-hidden="true">×</span>
-  </button>`;
-  }).join('')
+  </button>`).join('')
   + `<button type="button" class="xind-link" data-open-layers>+ add</button>`
-  + (blocked.length ? `
-  <p class="xind-note">
-  ${blocked.map((k) => esc(layerLabel(k))).join(', ')}
-  ${blocked.length === 1 ? 'is' : 'are'} measured on the ${esc(execTf)} candles and cannot be placed on
-  ${esc(state.xau.tf)}. <button type="button" class="xind-link" data-goto-exectf>Show ${esc(execTf)}</button>
-  </p>` : '');
+  + (note ? `<p class="xind-note">${note}</p>` : '');
 }
 
 function layerToggles(layers) {
