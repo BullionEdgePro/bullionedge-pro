@@ -1961,6 +1961,17 @@ kbd {
   .xindchip { min-height: 44px; padding: 6px 12px; }
 }
 
+.xindchip.sleeping {
+  border-color: var(--line-2); background: rgba(255,255,255,.02);
+  color: var(--faint); opacity: .72;
+}
+.xindchip.sleeping .xindswatch { filter: grayscale(1); opacity: .5; }
+
+.xind-note {
+  flex-basis: 100%; margin: 4px 0 0;
+  font-size: var(--fs-2xs); color: var(--muted); line-height: 1.6;
+}
+
 /* assets/css/guide.css */
 .gflow {
   display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
@@ -3639,6 +3650,11 @@ const PERSIST_KEYS = ['ui', 'settings', 'setup', 'market', 'xau', 'ai', 'checks'
 let saveTimer = null;
 let suppressPersist = false;
 
+const PRISTINE = JSON.parse(JSON.stringify(
+  ['ui', 'settings', 'setup', 'market', 'xau', 'ai', 'checks', 'psych', 'copy']
+  .reduce((acc, k) => { acc[k] = state[k]; return acc; }, {}),
+));
+
 function patch(delta, options = {}) {
   let touched = false;
   for (const [key, value] of Object.entries(delta)) {
@@ -3671,6 +3687,12 @@ async function persist() {
 async function hydrate(profileId) {
   suppressPersist = true;
   try {
+
+  for (const key of PERSIST_KEYS) {
+  for (const k of Object.keys(state[key])) delete state[key][k];
+  Object.assign(state[key], JSON.parse(JSON.stringify(PRISTINE[key])));
+  }
+
   const saved = await db.getValue('profile_state_' + profileId, null);
   if (saved && typeof saved === 'object') {
   for (const key of PERSIST_KEYS) {
@@ -3834,8 +3856,16 @@ async function put(store, record) {
   try { localStorage.setItem(lsKey(store, key), JSON.stringify(record)); return key; }
   catch (err) { console.warn('[db] localStorage full:', err); backend = 'memory'; }
   }
-  memory.set(lsKey(store, key), record);
+
+  memory.set(lsKey(store, key), clone(record));
   return key;
+}
+
+function clone(value) {
+  if (typeof structuredClone === 'function') {
+  try { return structuredClone(value); } catch {   }
+  }
+  try { return JSON.parse(JSON.stringify(value)); } catch { return value; }
 }
 
 async function get(store, key) {
@@ -12706,14 +12736,19 @@ __exports.default = {
 
   paintIndicatorBar({ ...DEFAULT_LAYERS, ...state.xau.layers });
 
-  on(root, 'click', '[data-xtf]', (_e, btn) => {
-  const tf = btn.dataset.xtf;
+  const showTimeframe = (tf) => {
   patch({ xau: { tf } });
   root.querySelectorAll('[data-xtf]').forEach((b) => b.classList.toggle('on', b.dataset.xtf === tf));
   chart.setMeta({ tfLabel: tf });
   paintChart();
+
+  paintIndicatorBar({ ...DEFAULT_LAYERS, ...state.xau.layers });
   refreshExec(true);
-  });
+  };
+
+  on(root, 'click', '[data-xtf]', (_e, btn) => showTimeframe(btn.dataset.xtf));
+
+  on(root, 'click', '[data-goto-exectf]', () => showTimeframe(state.xau.executionTf));
 
   on(root, 'click', '[data-check]', (_e, btn) => {
   const id = btn.dataset.check;
@@ -12770,7 +12805,11 @@ __exports.default = {
   queueAnalyse();
   };
 
-  byId('xau-exec').onchange = (e) => { patch({ xau: { executionTf: e.target.value } }); refreshAll(); };
+  byId('xau-exec').onchange = (e) => {
+  patch({ xau: { executionTf: e.target.value } });
+  paintIndicatorBar({ ...DEFAULT_LAYERS, ...state.xau.layers });
+  refreshAll();
+  };
   byId('xau-setup').onchange = (e) => { patch({ xau: { setupType: e.target.value } }); queueAnalyse(); };
 
   on(root, 'click', '#xau-confmode button', (_e, btn) => {
@@ -13926,6 +13965,14 @@ const LAYER_LABELS = {
 
 const layerLabel = (key) => LAYER_LABELS[key] || key;
 
+const TF_GATED = ['fvg', 'ob', 'structure', 'trendlines'];
+
+function undrawable(active) {
+  const onExecTf = state.xau.tf === state.xau.executionTf;
+  if (onExecTf) return [];
+  return active.filter((k) => TF_GATED.includes(k));
+}
+
 function paintIndicatorBar(layers) {
   const host = byId('xau-indbar');
   if (!host) return;
@@ -13946,14 +13993,26 @@ function paintIndicatorBar(layers) {
   return;
   }
 
-  host.innerHTML = active.map((key) => `
-  <button type="button" class="xindchip" data-layer="${key}" aria-pressed="true"
-  title="Remove ${esc(layerLabel(key))}">
+  const blocked = undrawable(active);
+  const execTf = state.xau.executionTf;
+
+  host.innerHTML = active.map((key) => {
+  const off = blocked.includes(key);
+  return `
+  <button type="button" class="xindchip ${off ? 'sleeping' : ''}" data-layer="${key}" aria-pressed="true"
+  title="${off ? `Not drawn on ${esc(state.xau.tf)} — needs the ${esc(execTf)} chart` : `Remove ${esc(layerLabel(key))}`}">
   <span class="xindswatch" data-ind="${key}" aria-hidden="true"></span>
   ${esc(layerLabel(key))}
   <span class="xindx" aria-hidden="true">×</span>
-  </button>`).join('')
-  + `<button type="button" class="xind-link" data-open-layers>+ add</button>`;
+  </button>`;
+  }).join('')
+  + `<button type="button" class="xind-link" data-open-layers>+ add</button>`
+  + (blocked.length ? `
+  <p class="xind-note">
+  ${blocked.map((k) => esc(layerLabel(k))).join(', ')}
+  ${blocked.length === 1 ? 'is' : 'are'} measured on the ${esc(execTf)} candles and cannot be placed on
+  ${esc(state.xau.tf)}. <button type="button" class="xind-link" data-goto-exectf>Show ${esc(execTf)}</button>
+  </p>` : '');
 }
 
 function layerToggles(layers) {
