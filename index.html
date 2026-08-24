@@ -1857,9 +1857,15 @@ kbd {
 
 .xaggold {
   grid-area: gold; color: var(--ink-soft); font-size: var(--fs-xs);
-  line-height: 1.55; opacity: .85;
+  line-height: 1.5; opacity: .88;
 }
-.xaggold b { color: var(--gold); font-weight: 600; }
+.xaggold i { display: block; font-style: normal; text-indent: 0; }
+.xaggold b {
+  color: var(--gold); font-weight: 600;
+
+  float: left; margin-right: 5px;
+}
+.xaggold i::after { content: ''; display: block; clear: both; }
 
 .xagimp {
   grid-area: impact; justify-self: end;
@@ -13451,11 +13457,15 @@ function newsAgenda(news) {
   const first = String(t).split(/(?<=\.)\s/)[0];
   return first.length > 96 ? `${first.slice(0, 93)}…` : first;
   };
+
   const goldLine = (e) => {
   if (!e.gold) return '';
   const { hawkish, dovish } = e.gold;
-  if (!hawkish || !dovish) return `<span class="xaggold">${esc(e.gold.channel || '')}</span>`;
-  return `<span class="xaggold"><b>Hot:</b> ${esc(shorten(hawkish))} <b>Soft:</b> ${esc(shorten(dovish))}</span>`;
+  if (!hawkish || !dovish) return `<span class="xaggold"><i>${esc(e.gold.channel || '')}</i></span>`;
+  return `<span class="xaggold">
+  <b>Hot</b><i>${esc(shorten(hawkish))}</i>
+  <b>Soft</b><i>${esc(shorten(dovish))}</i>
+  </span>`;
   };
 
   const list = rows.length ? `
