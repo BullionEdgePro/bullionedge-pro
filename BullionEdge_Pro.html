@@ -4984,7 +4984,7 @@ Object.assign(__exports, { ZONES, ALL_ZONES, labelFor, isKnownZone, wrap24, city
 __def("src/domain/news.js", function (__exports, __req) {
 
 const { etToLocalHours, fmtH, wrap24 } = __req("src/domain/timezones.js");
-const { datedProximity, datedEvents, scheduleExpired, RELEASES } = __req("src/domain/calendar.js");
+const { datedProximity, datedEvents, scheduleExpired, coversNow, RELEASES } = __req("src/domain/calendar.js");
 
 const RECURRING = [
   { id: 'fomc',   n: 'FOMC Rate Decision',   f: '8× / year',        h: 14, m: 0,  imp: 'extreme',
@@ -5069,7 +5069,7 @@ function formatGap(minutes) {
 
 function recurringProximity(tz, nowDec, now = Date.now()) {
 
-  const dated = scheduleExpired(now) ? new Set() : new Set(Object.keys(RELEASES));
+  const dated = new Set(Object.keys(RELEASES).filter((id) => coversNow(id, now)));
   const relevant = (liveEvents
   ? listEvents(tz)
   : RECURRING.filter((e) => e.h !== null && e.imp !== 'medium' && !dated.has(e.id)));
@@ -5268,6 +5268,57 @@ const RELEASES = {
   [2026, 9, 30], [2026, 10, 29], [2026, 11, 25], [2026, 12, 23],
   ],
   },
+
+  retail: {
+  name: 'Retail Sales',
+  impact: 'high',
+  hour: 8,
+  minute: 30,
+  source: 'Census Bureau',
+  gold: {
+  channel: 'The consumer is two thirds of US output, so this sets the growth half of the rate path.',
+  hawkish: 'A strong print firms the dollar and weighs on gold.',
+  dovish: 'A weak print brings cuts forward and supports it.',
+  },
+  note: 'The control group matters more than the headline — it strips autos, fuel and building materials, and it is the part that feeds GDP. Revisions to the prior month regularly reverse the first move.',
+  dates: [
+  [2026, 9, 16], [2026, 10, 15], [2026, 11, 17], [2026, 12, 16],
+  ],
+  },
+
+  ismmfg: {
+  name: 'ISM Manufacturing PMI',
+  impact: 'high',
+  hour: 10,
+  minute: 0,
+  source: 'Institute for Supply Management',
+  gold: {
+  channel: 'The first read on the month just ended, and it lands before payrolls.',
+  hawkish: 'A reading well above 50 signals expansion and pressures gold.',
+  dovish: 'Below 50 is contraction, which prices in cuts and supports gold.',
+  },
+  note: 'Fifty is the line between growth and contraction, and the prices-paid sub-index is an early inflation read that can move gold even when the headline does not.',
+  dates: [
+  [2026, 9, 1], [2026, 10, 1], [2026, 11, 2], [2026, 12, 1],
+  ],
+  },
+
+  ismsvc: {
+  name: 'ISM Services PMI',
+  impact: 'high',
+  hour: 10,
+  minute: 0,
+  source: 'Institute for Supply Management',
+  gold: {
+  channel: 'Services are the larger share of the economy, so this usually outweighs the manufacturing read.',
+  hawkish: 'Strength here is the more convincing case for higher-for-longer, and the bigger gold headwind.',
+  dovish: 'A drop below 50 in services is a recession signal and strongly gold-supportive.',
+  },
+  note: 'Released two business days after the manufacturing report. When the two disagree, services is the one the market trades.',
+  dates: [
+  [2026, 9, 3], [2026, 10, 5], [2026, 11, 4], [2026, 12, 3],
+  ],
+  },
 };
 
 const SCHEDULE_HORIZON = (() => {
@@ -5297,9 +5348,8 @@ function nfpGuess(year, month) {
 }
 
 const RECURRING_ONLY = [
-  { id: 'retail', name: 'Retail Sales', hour: 8, minute: 30, impact: 'high', cadence: 'Monthly, mid-month', gold: 'Consumer strength feeds the growth-and-dollar channel; a big miss is gold-supportive.' },
-  { id: 'ism', name: 'ISM PMIs', hour: 10, minute: 0, impact: 'high', cadence: 'Manufacturing first business day, services third', gold: 'A sub-50 print signals contraction and tends to support gold through rate-cut pricing.' },
-  { id: 'sentiment', name: 'Michigan Sentiment', hour: 10, minute: 0, impact: 'medium', cadence: 'Preliminary mid-month, final month-end', gold: 'The inflation-expectations component moves gold more than the headline does.' },
+
+  { id: 'sentiment', name: 'Michigan Sentiment', hour: 10, minute: 0, impact: 'medium', cadence: 'Preliminary a mid-month Friday, final the last Friday', gold: 'The inflation-expectations component moves gold more than the headline does.' },
 ];
 
 function eventFrom(id, spec, y, m, d) {
@@ -5372,7 +5422,14 @@ function datedProximity(now = Date.now()) {
 
 const scheduleExpired = (now = Date.now()) => now > SCHEDULE_HORIZON;
 
-Object.assign(__exports, { VERIFIED_ON, RELEASES, SCHEDULE_HORIZON, RECURRING_ONLY, scheduleExpired, easternToUtc, claimsBetween, nfpGuess, datedEvents, nextDated, datedProximity });
+function coversNow(id, now = Date.now()) {
+  const spec = RELEASES[id];
+  if (!spec || !spec.dates.length) return false;
+  const [y, m, d] = spec.dates[spec.dates.length - 1];
+  return now <= easternToUtc(y, m, d, 23, 59);
+}
+
+Object.assign(__exports, { VERIFIED_ON, RELEASES, SCHEDULE_HORIZON, RECURRING_ONLY, scheduleExpired, easternToUtc, claimsBetween, nfpGuess, datedEvents, nextDated, datedProximity, coversNow });
 
 });
 
