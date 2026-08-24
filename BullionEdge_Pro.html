@@ -484,6 +484,15 @@ html[data-mode="pro"] .card h2 { font-size: var(--fs-md); }
   font-family: var(--font-body); font-size: var(--fs-2xs); color: var(--muted);
   letter-spacing: .04em; text-transform: uppercase;
 }
+
+@media (pointer: coarse) {
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
 .field input, .field select, .field textarea {
   width: 100%;
   background: rgba(0,0,0,.32);
@@ -495,7 +504,11 @@ html[data-mode="pro"] .card h2 { font-size: var(--fs-md); }
   outline: none;
   transition: border-color var(--dur-2), box-shadow var(--dur-2), background var(--dur-2);
 }
-.field textarea { font-family: var(--font-body); font-size: var(--fs-md); resize: vertical; min-height: 74px; }
+
+.field textarea {
+  font-family: var(--font-body); font-size: max(16px, var(--fs-md));
+  resize: vertical; min-height: 74px;
+}
 .field input:focus, .field select:focus, .field textarea:focus {
   border-color: var(--gold); box-shadow: 0 0 0 3px var(--glow-gold); background: rgba(0,0,0,.45);
 }
@@ -1260,6 +1273,10 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius
 .switch[aria-checked="true"] { background: var(--gold); }
 .switch[aria-checked="true"]::after { left: 22px; background: var(--gold-ink); }
 
+@media (pointer: coarse) {
+  .switch::before { content: ''; position: absolute; inset: -10px; border-radius: inherit; }
+}
+
 .kbdlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-2); }
 .kbdrow { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); font-size: var(--fs-sm); padding: 7px 0; }
 kbd {
@@ -1359,6 +1376,10 @@ kbd {
   transition: color var(--dur-1), border-color var(--dur-1), background var(--dur-1);
 }
 .cbtn:hover { color: var(--ink); border-color: var(--gold-dim); }
+
+@media (pointer: coarse) {
+  .cbtn { min-height: 34px; padding-top: 7px; padding-bottom: 7px; }
+}
 .cbtn.on { background: rgba(224, 166, 60, .14); border-color: var(--gold); color: var(--gold-bright); }
 
 .styles { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: var(--sp-2); }
@@ -1926,6 +1947,11 @@ kbd {
   border-bottom: 1px solid rgba(224,166,60,.45);
 }
 .xind-link:hover { color: var(--gold-bright); }
+
+@media (pointer: coarse) {
+  .xind-link { position: relative; }
+  .xind-link::after { content: ''; position: absolute; inset: -8px -6px; }
+}
 
 .xindchip {
   display: inline-flex; align-items: center; gap: 7px;
