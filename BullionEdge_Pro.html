@@ -1936,9 +1936,16 @@ kbd {
 
 .xlayers .cbtn { display: inline-flex; align-items: center; gap: 7px; }
 
+@media (max-width: 720px) {
+  .chartctl .cbtn { min-height: 40px; padding: 6px 12px; }
+  .chartctl .xind-add { min-height: 44px; padding: 6px 14px; font-weight: 600; }
+
+  .xlayers .cbtn { min-height: 40px; }
+}
+
 @media (max-width: 560px) {
-  .xindbar { gap: 5px; }
-  .xindchip { min-height: 34px; }
+  .xindbar { gap: 6px; }
+  .xindchip { min-height: 44px; padding: 6px 12px; }
 }
 
 /* assets/css/guide.css */
