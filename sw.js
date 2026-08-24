@@ -67,12 +67,36 @@ self.addEventListener('fetch', (event) => {
   // Cross-origin (fonts, chart CDNs) — leave to the browser's own HTTP cache.
   if (url.origin !== self.location.origin) return;
 
+  /**
+   * Assets: serve the cached copy instantly, then refresh it in the background.
+   *
+   * This used to be cache-first with no revalidation, under a VERSION constant
+   * that has never changed — so an image replaced at the same filename was
+   * cached permanently. Regenerating the feature screenshots, which happens
+   * whenever a screen changes, would have shown returning visitors the old
+   * pictures indefinitely with nothing to indicate why.
+   *
+   * Stale-while-revalidate keeps the instant paint and the offline behaviour,
+   * and costs one background request: the new file lands in the cache now and
+   * appears on the next visit rather than never.
+   */
   if (isAsset(url)) {
     event.respondWith(
-      caches.match(request).then((hit) => hit || fetch(request).then((res) => {
-        if (res.ok) { const copy = res.clone(); caches.open(ASSETS).then((c) => c.put(request, copy)); }
-        return res;
-      })),
+      caches.match(request).then((hit) => {
+        const network = fetch(request)
+          .then((res) => {
+            if (res.ok) { const copy = res.clone(); caches.open(ASSETS).then((c) => c.put(request, copy)); }
+            return res;
+          })
+          // Offline with a cached copy is a hit, not a failure. Offline without
+          // one still fails, exactly as before.
+          .catch((err) => { if (hit) return hit; throw err; });
+
+        // Without this the background refresh is killed as soon as the cached
+        // response is returned, and the cache never actually updates.
+        if (hit) event.waitUntil(network.catch(() => {}));
+        return hit || network;
+      }),
     );
     return;
   }
