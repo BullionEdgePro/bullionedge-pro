@@ -21433,6 +21433,59 @@ __exports.default = {
   let draft = { photo: currentAccount()?.profile?.photo || '' };
   fillProfileForm(currentAccount());
 
+  let saveTimer = null;
+  let lastSaved = '';
+
+  const collectProfile = () => {
+  const out = { photo: draft.photo };
+  for (const key of PROFILE_FIELDS) out[key] = byId(`pf-${key}`)?.value ?? '';
+  return out;
+  };
+
+  const persistProfile = async ({ quiet = true } = {}) => {
+  const account = currentAccount();
+  if (!account) return null;
+
+  const profile = collectProfile();
+
+  const fingerprint = JSON.stringify(profile);
+  if (quiet && fingerprint === lastSaved) return null;
+
+  for (const key of PROFILE_FIELDS) setText(`err-${key}`, '');
+  const res = await saveProfile(account.id, profile);
+
+  if (!res.ok) {
+  for (const [key, message] of Object.entries(res.errors || {})) setText(`err-${key}`, message);
+
+  setText('pf-status', quiet ? '' : '');
+  if (!quiet) toast(res.error, 'bad');
+  return null;
+  }
+
+  lastSaved = fingerprint;
+  refreshAccount(res.account);
+  draft.photo = res.account.profile.photo;
+  setText('pf-status', 'Saved.');
+  return res;
+  };
+
+  lastSaved = JSON.stringify(collectProfile());
+
+  const queueSave = () => {
+  setText('pf-status', 'Saving…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { persistProfile({ quiet: true }); }, 600);
+  };
+
+  for (const key of PROFILE_FIELDS) {
+  on(root, 'input', `#pf-${key}`, queueSave);
+
+  on(root, 'focusout', `#pf-${key}`, () => {
+  clearTimeout(saveTimer);
+  persistProfile({ quiet: true });
+  });
+  }
+
   on(root, 'click', '#btn-photo', () => byId('pf-file')?.click());
 
   on(root, 'change', '#pf-file', async (e) => {
@@ -21445,7 +21498,8 @@ __exports.default = {
   try {
   draft.photo = await fileToSquareDataUrl(file);
   paintPhoto(draft.photo);
-  if (note) note.textContent = `Ready — ${Math.round(draft.photo.length / 1024)} KB. Press Save profile to keep it.`;
+  if (note) note.textContent = `Added — ${Math.round(draft.photo.length / 1024)} KB.`;
+  await persistProfile({ quiet: true });
   } catch (err) {
   if (note) { note.textContent = err.message; note.classList.add('err'); }
   }
@@ -21455,33 +21509,19 @@ __exports.default = {
   draft.photo = '';
   paintPhoto('');
   const note = byId('pf-photo-note');
-  if (note) { note.textContent = 'Photo removed. Press Save profile to confirm.'; note.classList.remove('err'); }
+  if (note) { note.textContent = 'Photo removed.'; note.classList.remove('err'); }
+  persistProfile({ quiet: true });
   });
 
   on(root, 'click', '#btn-profile-save', async (_e, btn) => {
-  const account = currentAccount();
-  if (!account) return;
-
-  const profile = { photo: draft.photo };
-  for (const key of PROFILE_FIELDS) profile[key] = byId(`pf-${key}`)?.value ?? '';
-
-  for (const key of PROFILE_FIELDS) setText(`err-${key}`, '');
-
+  clearTimeout(saveTimer);
   btn.disabled = true;
-  const res = await saveProfile(account.id, profile);
+
+  const res = await persistProfile({ quiet: false });
   btn.disabled = false;
+  if (!res) return;
 
-  if (!res.ok) {
-  for (const [key, message] of Object.entries(res.errors || {})) setText(`err-${key}`, message);
-  setText('pf-status', '');
-  toast(res.error, 'bad');
-  return;
-  }
-
-  refreshAccount(res.account);
-  draft.photo = res.account.profile.photo;
   fillProfileForm(res.account);
-  setText('pf-status', 'Saved.');
   toast('Profile saved.', 'ok');
   });
 
