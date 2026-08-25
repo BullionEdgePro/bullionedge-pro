@@ -266,6 +266,10 @@ html, body {
 }
 body { min-height: 100vh; overflow-x: hidden; }
 
+button, a, [role="switch"], [role="button"], label, summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
 h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); letter-spacing: -0.02em; }
 p { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -1189,7 +1193,10 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius
 
 #assistant-panel {
   position: fixed; right: var(--sp-5); bottom: calc(var(--sp-5) + 68px); z-index: 200;
-  width: min(370px, calc(100vw - 32px)); max-height: min(560px, calc(100vh - 160px));
+  width: min(370px, calc(100vw - 32px));
+
+  max-height: min(560px, calc(100vh - 160px));
+  max-height: min(560px, calc(100dvh - 160px));
   display: none; flex-direction: column;
   background: linear-gradient(165deg, rgba(24,45,44,.96), rgba(10,20,20,.97));
   backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
@@ -3039,7 +3046,9 @@ kbd {
   background: var(--panel-2); border: 1px solid rgba(224,166,60,.35);
   border-radius: var(--r-lg); box-shadow: 0 24px 60px rgba(0,0,0,.6);
 
-  max-height: calc(100vh - var(--sp-5) * 2); overflow-y: auto;
+  max-height: calc(100vh - var(--sp-5) * 2);
+  max-height: calc(100dvh - var(--sp-5) * 2);
+  overflow-y: auto;
 
   transform: translateY(8px);
   transition: transform .35s cubic-bezier(.2,.7,.2,1);
@@ -22091,13 +22100,22 @@ function normaliseAccount(raw) {
   name: String(raw.name || raw.broker || '').slice(0, 60),
 
   readAt: Date.now(),
+
+  pushedAt: (() => {
+  const t = Date.parse(raw.pushedAt || raw.pushed_at || '');
+  return Number.isFinite(t) ? t : null;
+  })(),
   };
 }
 
 const STALE_AFTER_MS = 5 * 60 * 1000;
 
-const isStale = (snapshot, now = Date.now()) =>
-  !snapshot || !Number.isFinite(snapshot.readAt) || now - snapshot.readAt > STALE_AFTER_MS;
+const isStale = (snapshot, now = Date.now()) => {
+  if (!snapshot) return true;
+  const at = Number.isFinite(snapshot.pushedAt) ? snapshot.pushedAt : null;
+  if (at === null) return true;
+  return now - at > STALE_AFTER_MS;
+};
 
 function dayLimitState({ equity, startEquity, maxLossPct }) {
   const e = num(equity);
