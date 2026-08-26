@@ -11741,6 +11741,7 @@ __exports.default = {
   <p class="viewsub">
   Gold spot, structure and four rules-based setups that refresh every two hours. These are starting points to
   confirm against your own chart — not signals, and not your broker's dealing price.
+  The chart runs Monday to Friday on the gold market's own hours.
   </p>
   </div>
 
@@ -12265,6 +12266,8 @@ Object.assign(__exports, { usingFallback, drawChart, zoom, fit, destroyChart });
 
 __def("src/domain/market.js", function (__exports, __req) {
 
+const { dropClosedBars, closedBarCount } = __req("src/domain/hours.js");
+
 const FEED = {
   klines: 'https://api.binance.com/api/v3',
   symbol: 'PAXGUSDT',
@@ -12291,6 +12294,8 @@ const styleForTf = (tf) => STYLES.find((s) => s.tfs.includes(tf)) || null;
 const STALE_MS = 25000;
 
 const market = {
+
+  outOfHours: 0,
   spot: NaN,
   chg24: NaN,
   offset: 0,
@@ -12354,11 +12359,16 @@ async function fetchKlines(tf, limit = 300) {
   const rows = await getJSON(`${FEED.klines}/klines?symbol=${FEED.symbol}&interval=${tf}&limit=${limit}`);
   if (!Array.isArray(rows) || !rows.length) throw new Error('no candles returned');
 
-  return rows.map((c) => ({
+  const parsed = rows.map((c) => ({
   time: Math.floor(c[0] / 1000),
   open: +c[1], high: +c[2], low: +c[3], close: +c[4],
   volume: Number.isFinite(+c[5]) ? +c[5] : NaN,
   }));
+
+  market.outOfHours = closedBarCount(parsed);
+  const open = dropClosedBars(parsed);
+  if (!open.length) throw new Error('no open-market candles returned');
+  return open;
 }
 
 let candleRequest = 0;
@@ -12508,6 +12518,58 @@ function appendHistory(history = [], block = blockOf()) {
 }
 
 Object.assign(__exports, { FEED, TF_LIST, STYLES, styleById, styleForTf, STALE_MS, market, isFresh, BLOCK_MS, blockOf, msToNextBlock, refreshSpot, refreshDaily, fetchKlines, refreshCandles, ema, emaSeries, atr14, pivots, refreshHtfBias, deriveSetup, refreshSetups, appendHistory });
+
+});
+
+__def("src/domain/hours.js", function (__exports, __req) {
+
+const OPEN_DAY = 0;
+const OPEN_HOUR = 17;
+const CLOSE_DAY = 5;
+const CLOSE_HOUR = 17;
+
+const DAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+const nyFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  hour12: false,
+  weekday: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+function newYorkParts(ms) {
+  const parts = Object.fromEntries(
+  nyFormat.formatToParts(new Date(ms)).map((p) => [p.type, p.value]),
+  );
+  return {
+  day: DAY_INDEX[parts.weekday],
+  hour: Number(parts.hour) % 24,
+  minute: Number(parts.minute),
+  };
+}
+
+function isMarketClosed(ms) {
+  const { day, hour } = newYorkParts(ms);
+  if (day === 6) return true;
+  if (day === OPEN_DAY) return hour < OPEN_HOUR;
+  if (day === CLOSE_DAY) return hour >= CLOSE_HOUR;
+  return false;
+}
+
+const isMarketOpen = (ms) => !isMarketClosed(ms);
+
+function dropClosedBars(candles = []) {
+  if (!Array.isArray(candles)) return [];
+  return candles.filter((c) => c && Number.isFinite(c.time) && isMarketOpen(c.time * 1000));
+}
+
+function closedBarCount(candles = []) {
+  if (!Array.isArray(candles)) return 0;
+  return candles.length - dropClosedBars(candles).length;
+}
+
+Object.assign(__exports, { OPEN_DAY, OPEN_HOUR, CLOSE_DAY, CLOSE_HOUR, isMarketOpen, newYorkParts, isMarketClosed, dropClosedBars, closedBarCount });
 
 });
 
@@ -13581,7 +13643,7 @@ function paintPrice() {
   setHtml('xau-datawarn', real || matched ? '' : `
   <p class="t-faint" style="font-size:var(--fs-2xs);margin:0 0 var(--sp-2)">
   Prices are indicative until you match them to your broker
-  ${tip('Candles come from a gold-backed proxy market aligned to the gold spot quote. Open "Match my broker’s price" below, type the price from your terminal, and every level shifts to match it — this line then disappears.')}
+  ${tip('Candles come from a gold-backed proxy market, shifted onto the live gold spot quote, with the bars that formed while gold was shut for the weekend removed — so the chart runs Monday to Friday like a real XAU/USD chart. What is left is still not your broker’s tape. Open "Match my broker’s price" below, type the price from your terminal, and every level shifts to match it — this line then disappears.')}
   </p>`);
 
   const notes = [];
@@ -15606,11 +15668,14 @@ const STALE_LIVE_MS = 25_000;
 const STALE_DELAYED_MS = 120_000;
 
 function proxyProvider() {
+
+  let lastDropped = 0;
+
   return {
   id: 'paxg-proxy',
   quality: 'proxy',
   label: 'PAXG/USD candles aligned to gold spot',
-  note: 'Candles come from a gold-backed token market and are shifted onto the gold spot quote. They track XAU/USD closely but are not your broker\'s tape.',
+  note: 'Candles come from a gold-backed token market and are shifted onto the gold spot quote, and bars that formed while gold was closed for the weekend are removed. They track XAU/USD closely but are not your broker\'s tape.',
 
   getSymbol: () => 'XAUUSD',
 
@@ -15623,6 +15688,7 @@ function proxyProvider() {
   if (!tf) throw new Error(`Unknown timeframe "${tfId}".`);
 
   const raw = await fetchKlines(tf.api, limit);
+  lastDropped = market.outOfHours;
 
   const lastClose = raw[raw.length - 1].close;
   const offset = Number.isFinite(market.spot) && market.spot > 0 ? market.spot - lastClose : 0;
@@ -15648,6 +15714,8 @@ function proxyProvider() {
   quality: 'proxy',
   label: 'INDICATIVE / PROXY DATA',
   source: market.source || 'proxy',
+
+  outOfHoursDropped: lastDropped,
   lastUpdate: market.ts || 0,
   ageMs: market.ts ? age : NaN,
   error: market.error || '',
