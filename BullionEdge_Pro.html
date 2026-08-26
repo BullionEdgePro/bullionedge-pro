@@ -13420,7 +13420,9 @@ function startPolling() {
 
   paintCalibration();
   startTicks();
-  timers.push(setInterval(() => tick(refreshSpot).then(paintPrice), EVERY.spot));
+  timers.push(setInterval(() => tick(refreshSpot).then(paintPrice).then(paintLive), EVERY.spot));
+
+  timers.push(setInterval(paintLive, 1000));
   timers.push(setInterval(() => tick(() => refreshExec(false)), EVERY.exec));
   timers.push(setInterval(() => tick(refreshAll), EVERY.full));
 }
@@ -13772,11 +13774,19 @@ function chartStructures(tfId) {
   return value;
 }
 
+function paintLive() {
+  if (!mounted || !chart) return;
+  const tf = TIMEFRAMES.find((t) => t.id === state.xau.tf);
+  chart.setLive({ price: market.spot, tfMs: tf ? tf.ms : 0 });
+  paintOhlc(null);
+}
+
 function paintChart() {
   if (!mounted || !chart) return;
   const s = seriesCache[state.xau.tf];
   chart.setMeta({ tfLabel: state.xau.tf, quality: provider().quality });
   chart.setData(chartCandles(s));
+  paintLive();
 
   const a = analysis;
 
@@ -13808,7 +13818,22 @@ function paintChart() {
 function paintOhlc(candle) {
   const node = byId('xau-ohlc');
   if (!node) return;
-  if (!candle) { node.innerHTML = ''; return; }
+
+  if (!candle) {
+  const series = seriesCache[state.xau.tf];
+  const bars = chartCandles(series);
+  const newest = bars && bars.length ? bars[bars.length - 1] : null;
+  if (!newest) { node.innerHTML = ''; return; }
+
+  const live = Number.isFinite(market.spot) ? market.spot : newest.close;
+  candle = {
+  ...newest,
+  close: live,
+  high: Math.max(newest.high, live),
+  low: Math.min(newest.low, live),
+  };
+  }
+
   const up = candle.close >= candle.open;
   const cell = (k, v) => `<span class="k">${k}</span><span class="${up ? 't-long' : 't-short'}">${v.toFixed(2)}</span>`;
   node.innerHTML = `${cell('O', candle.open)} ${cell('H', candle.high)} ${cell('L', candle.low)} ${cell('C', candle.close)}`
@@ -14806,6 +14831,7 @@ function createProChart(canvas, options = {}) {
   ctx.clearRect(0, 0, state.width, state.height);
   ctx.fillStyle = COLOR.bg;
   ctx.fillRect(0, 0, state.width, state.height);
+  axisQueue = [];
 
   if (!state.candles.length) {
   ctx.fillStyle = COLOR.faint;
@@ -14834,6 +14860,7 @@ function createProChart(canvas, options = {}) {
   drawEngulfing(ctx, range, start, end, bw);
   drawLowerPanes(ctx, start, end, bw);
   drawAxes(ctx, range, start, end, bw);
+  flushAxisOverlay();
   drawCrosshair(ctx, range);
   drawWatermark(ctx);
   }
@@ -14911,17 +14938,67 @@ function createProChart(canvas, options = {}) {
 
   const last = state.candles[state.candles.length - 1];
   if (last) {
-  const y = yOf(last.close, range);
+  const livePrice = state.live && Number.isFinite(state.live.price)
+  ? state.live.price
+  : last.close;
+  const y = yOf(livePrice, range);
+
+  const up = livePrice >= last.open;
+  const col = up ? COLOR.up : COLOR.down;
+
   ctx.save();
   ctx.setLineDash([3, 3]);
-  ctx.strokeStyle = last.close >= last.open ? COLOR.up : COLOR.down;
+  ctx.strokeStyle = col;
   ctx.beginPath();
   ctx.moveTo(0, Math.round(y) + 0.5);
   ctx.lineTo(plotWidth(), Math.round(y) + 0.5);
   ctx.stroke();
   ctx.restore();
-  tag(ctx, y, last.close.toFixed(state.dp), last.close >= last.open ? COLOR.up : COLOR.down, '#04231A');
+  tag(ctx, y, livePrice.toFixed(state.dp), col, '#04231A');
+
+  axisQueue.push(() => drawCountdown(ctx, y, col));
   }
+  }
+
+  function drawCountdown(ctx, priceY, col) {
+  const remaining = barRemainingMs();
+  if (remaining === null) return;
+
+  const left = plotWidth() + 1;
+  const w = AXIS_W - 1;
+  const top = priceY + 9;
+
+  if (top + 15 > state.height - AXIS_H) return;
+
+  ctx.fillStyle = 'rgba(4,16,15,.92)';
+  ctx.fillRect(left, top, w, 15);
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(left + 0.5, top + 0.5, w - 1, 14);
+  ctx.restore();
+
+  ctx.fillStyle = remaining <= 10_000 ? COLOR.down : 'rgba(234,240,238,.62)';
+  ctx.font = FONT;
+  ctx.textAlign = 'center';
+  ctx.fillText(formatCountdown(remaining), left + w / 2, top + 11);
+  ctx.textAlign = 'left';
+  }
+
+  function barRemainingMs(now = Date.now()) {
+  const tfMs = state.live && state.live.tfMs;
+  if (!Number.isFinite(tfMs) || tfMs <= 0) return null;
+  return tfMs - (now % tfMs);
+  }
+
+  function formatCountdown(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = total % 60;
+  const two = (n) => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${two(m)}:${two(sec)}` : `${two(m)}:${two(sec)}`;
   }
 
   function drawZones(ctx, range, start, end) {
@@ -15372,6 +15449,13 @@ function createProChart(canvas, options = {}) {
   ctx.fillText(`${state.symbol}  ${state.tfLabel}`, 8, 18);
   }
 
+  let axisQueue = [];
+
+  function flushAxisOverlay() {
+  for (const draw of axisQueue) draw();
+  axisQueue = [];
+  }
+
   function line(ctx, y, color, x0 = 0, x1 = plotWidth()) {
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
@@ -15390,12 +15474,15 @@ function createProChart(canvas, options = {}) {
 
   function tag(ctx, y, text, bg, fg) {
   if (y < 0 || y > state.height - AXIS_H) return;
+  axisQueue.push(() => {
   ctx.fillStyle = bg;
   ctx.fillRect(plotWidth() + 1, y - 8, AXIS_W - 1, 16);
   ctx.fillStyle = fg;
   ctx.font = FONT;
   ctx.textAlign = 'left';
   ctx.fillText(text, plotWidth() + 6, y + 3);
+  ctx.textAlign = 'left';
+  });
   }
 
   function setBars(n) {
@@ -15422,6 +15509,15 @@ function createProChart(canvas, options = {}) {
   },
   setOverlays(overlays) { state.overlays = overlays || {}; render(); },
   setLayers(layers) { state.layers = { ...state.layers, ...layers }; render(); },
+
+  setLive(live) {
+  state.live = live && Number.isFinite(live.price)
+  ? { price: live.price, tfMs: Number(live.tfMs) || 0 }
+  : null;
+  render();
+  },
+
+  barRemainingMs,
   setMeta({ tfLabel, symbol, quality, dp }) {
   if (tfLabel !== undefined) state.tfLabel = tfLabel;
   if (symbol !== undefined) state.symbol = symbol;
