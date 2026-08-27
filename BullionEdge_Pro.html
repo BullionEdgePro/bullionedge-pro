@@ -3678,7 +3678,6 @@ const state = {
   riskPct: 0.5,
   pipSize: 0.1,
 
-  tvChart: false,
   stopMode: 'pips',
   instrument: 'XAUUSD',
   maxTradesPerDay: 2,
@@ -12740,12 +12739,8 @@ let timers = [];
 
 let keyOff = null;
 
-let tvOff = null;
-
 let tvMainOff = null;
 let tvMainTf = null;
-
-let tvTf = null;
 
 let ticks = null;
 let forming = null;
@@ -12805,7 +12800,8 @@ __exports.default = {
   </div>
   <div class="seg xsrc" id="xau-src" role="group" aria-label="Chart source" hidden>
   <button type="button" data-src="desk">Desk</button>
-  <button type="button" data-src="tv">TradingView</button>
+  <button type="button" data-src="tv"
+  title="The real OANDA:XAUUSD chart. It loads from TradingView, so choosing it tells them a browser opened this page. The desk's own overlays — entry, stop, targets, structure, the ruler — cannot be drawn on it.">TradingView</button>
   </div>
   </div>
 
@@ -12874,20 +12870,6 @@ __exports.default = {
   <div class="xprogress" id="xau-progress"></div>
   <div class="xchecklist" id="xau-checklist">${checklistMarkup(x.checks || {})}</div>
   </div>
-  <!-- The real XAU/USD tape, off unless asked for. See
-  integrations/tradingview.js for why it is opt-in. -->
-  <div class="card reveal" id="xau-tvcard" style="display:none">
-  <div class="card-head">
-  <div>
-  <p class="eyebrow">Confirmation</p>
-  <h2>TradingView <span class="hint">OANDA:XAUUSD — a second opinion on the level</span></h2>
-  </div>
-  <button class="btn ghost sm" id="xau-tv-off">Hide</button>
-  </div>
-  <div id="xau-tv" class="xtv"></div>
-  <p class="t-faint" style="font-size:var(--fs-2xs);margin-top:var(--sp-2)" id="xau-tv-note"></p>
-  </div>
-
   <div class="card reveal">
   <p class="eyebrow">Step 6 · risk</p>
   <h2>Risk and broker specification</h2>
@@ -13198,14 +13180,6 @@ __exports.default = {
   byId('xc-in').onclick = () => chart.zoom(0.75);
   byId('xc-out').onclick = () => chart.zoom(1.35);
   byId('xc-fit').onclick = () => chart.fit();
-
-  byId('xau-tv-off').onclick = () => {
-  patch({ settings: { tvChart: false } });
-  paintTradingView();
-
-  paintChartSource();
-  toast('TradingView chart hidden. Settings turns it back on.', '');
-  };
 
   on(root, 'click', '#xau-src button', (e, btn) => {
   patch({ xau: { chartSource: btn.dataset.src } });
@@ -13605,7 +13579,6 @@ function startPolling() {
   timers.forEach(clearInterval);
   timers = [];
   if (keyOff) { keyOff(); keyOff = null; }
-  if (tvOff) { tvOff(); tvOff = null; tvTf = null; }
   if (tvMainOff) { tvMainOff(); tvMainOff = null; tvMainTf = null; }
 
   const tick = async (fn) => {
@@ -13984,11 +13957,11 @@ function paintLive() {
 
 function paintChartSource() {
   if (!mounted) return;
-  const allowed = !!state.settings.tvChart;
-  const seg = byId('xau-src');
-  if (seg) seg.hidden = !allowed;
 
-  const mode = allowed && state.xau.chartSource === 'tv' ? 'tv' : 'desk';
+  const seg = byId('xau-src');
+  if (seg) seg.hidden = false;
+
+  const mode = state.xau.chartSource === 'tv' ? 'tv' : 'desk';
   if (seg) {
   seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.src === mode));
   }
@@ -14020,35 +13993,6 @@ function paintChartSource() {
   if (chart) chart.resize();
 }
 
-function paintTradingView() {
-  if (!mounted) return;
-  const card = byId('xau-tvcard');
-  if (!card) return;
-
-  const wanted = !!state.settings.tvChart;
-  if (!wanted) {
-  if (tvOff) { tvOff(); tvOff = null; tvTf = null; }
-  card.style.display = 'none';
-  return;
-  }
-
-  card.style.display = '';
-  const tf = state.xau.tf;
-  if (tvOff && tvTf === tf) return;
-
-  if (tvOff) tvOff();
-  tvOff = mountTradingView(byId('xau-tv'), { timeframe: tf });
-  tvTf = tf;
-
-  setText('xau-tv-note', '');
-  setTimeout(() => {
-  if (!mounted || !state.settings.tvChart) return;
-  setText('xau-tv-note', tvRendered(byId('xau-tv'))
-  ? 'Loaded from TradingView. The desk\u2019s own chart above is what the engine reads.'
-  : 'TradingView did not load \u2014 offline, or something is blocking it. Everything else on this screen still works.');
-  }, 4000);
-}
-
 function paintChart() {
   if (!mounted || !chart) return;
   const s = seriesCache[state.xau.tf];
@@ -14062,7 +14006,6 @@ function paintChart() {
   });
   chart.setData(chartCandles(s));
   paintLive();
-  paintTradingView();
   paintChartSource();
 
   const a = analysis;
@@ -22196,24 +22139,6 @@ __exports.default = {
   </div>
 
   <div class="card reveal">
-  <p class="eyebrow">Read-only</p>
-  <h2>TradingView chart <span class="hint">The real XAU/USD chart, beside the desk's own.</span></h2>
-
-  <div class="toggle">
-  <div class="tlab">Show the TradingView chart<span class="sub">Adds a panel on the XAU/USD screen showing OANDA:XAUUSD — the chart TradingView's own gold page uses — so you can confirm a level against a tape you already trust.</span></div>
-  <button type="button" class="switch" role="switch" id="set-tv"
-  aria-checked="${!!s.settings.tvChart}" aria-label="Show the TradingView chart"></button>
-  </div>
-
-  ${callout('', `<b>This one reaches outside.</b> Everything else here runs on your device and
-  contacts nobody. The TradingView panel is loaded from TradingView, which means switching it
-  on tells them a browser opened this page — the same as visiting their site would. Your
-  journal, notes and settings are not sent anywhere and are not readable by the panel.
-  The checklist, the risk maths and the trade plan carry on working with it off, or with it
-  on and no connection at all.`)}
-  </div>
-
-  <div class="card reveal">
   <h2>Broker sync <span class="hint">Reads balance, equity and closed trades. It cannot place an order.</span></h2>
 
   <div class="toggle">
@@ -22462,13 +22387,6 @@ __exports.default = {
 
   const v = e.target.value.trim().toUpperCase().slice(0, 20);
   patch({ settings: { brokerSymbol: v || 'XAUUSD' } });
-  });
-
-  on(root, 'click', '#set-tv', (e, btn) => {
-  const next = btn.getAttribute('aria-checked') !== 'true';
-  btn.setAttribute('aria-checked', String(next));
-  patch({ settings: { tvChart: next } });
-  toast(next ? 'TradingView chart on. It loads from TradingView.' : 'TradingView chart off.', 'ok');
   });
 
   const setBroker = (next) => {
