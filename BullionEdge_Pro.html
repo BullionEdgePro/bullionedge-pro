@@ -1977,6 +1977,8 @@ kbd {
   width: 10px; height: 10px; border-radius: 3px; flex: none;
   background: var(--line-2); box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
 }
+
+.xindswatch[data-ind="zones"]      { background: linear-gradient(180deg, #E0704A 0 50%, #46B98C 50% 100%); }
 .xindswatch[data-ind="fvg"]        { background: #46B98C; }
 .xindswatch[data-ind="ob"]         { background: #5C86C2; }
 .xindswatch[data-ind="liquidity"]  { background: #E0A63C; }
@@ -12702,6 +12704,7 @@ const { createProChart, DEFAULT_LAYERS, activeIndicators } = __req("src/ui/proch
 
 const { market, refreshSpot } = __req("src/domain/market.js");
 const { getInstrument } = __req("src/domain/instruments.js");
+const { findLevels } = __req("src/domain/levels.js");
 const { mountChart: mountTradingView, hasRendered: tvRendered } = __req("src/integrations/tradingview.js");
 const { loadSeries, provider, TIMEFRAMES, EXECUTION_TFS, ANALYSIS_TFS, feedStatusText } = __req("src/domain/feed.js");
 const { analyzeMarket, SETUP_TYPES, WEIGHTS, WEIGHT_LABELS } = __req("src/domain/confluence.js");
@@ -14066,7 +14069,11 @@ function paintChart() {
 
   const st = chartStructures(state.xau.tf);
 
+  const closedForLevels = (s && s.closed) || [];
+  const levels = st && st.structure ? findLevels(st.structure, closedForLevels, { max: 6 }) : [];
+
   chart.setOverlays({
+  levels,
   fvgs: st ? st.fvgs : [],
   blocks: st ? st.blocks : [],
   events: st ? st.events : [],
@@ -14668,6 +14675,7 @@ function modelOptions(selected, models = GEMINI_MODELS) {
 }
 
 const LAYER_LABELS = {
+  zones: 'Support / resistance',
   fvg: 'FVG', ob: 'Order blocks', structure: 'BOS / CHoCH', liquidity: 'Liquidity',
   engulf: 'Engulfing', sr: 'Prev day / week', custom: 'Your levels',
   trendlines: 'Trendlines', fib: 'Fibonacci / OTE', pd: 'Premium / discount',
@@ -14738,7 +14746,7 @@ function paintIndicatorBar(layers) {
 
 function layerToggles(layers) {
   const groups = [
-  ['Structure & zones', ['fvg', 'ob', 'structure', 'liquidity', 'engulf', 'sr', 'custom', 'trendlines', 'fib', 'pd']],
+  ['Structure & zones', ['zones', 'fvg', 'ob', 'structure', 'liquidity', 'engulf', 'sr', 'custom', 'trendlines', 'fib', 'pd']],
   ['Indicators', ['ema20', 'ema50', 'ema100', 'ema200', 'rsi', 'macd', 'vwap', 'volume']],
   ['Chart', ['grid', 'sessions']],
   ['The desk’s own output', ['entry', 'stop', 'targets', 'plan']],
@@ -14857,6 +14865,8 @@ const FONT = '10px "IBM Plex Mono", ui-monospace, monospace';
 
 const DEFAULT_LAYERS = {
 
+  zones: false,
+
   grid: true,
   sessions: false,
   volume: false,
@@ -14887,6 +14897,7 @@ const DEFAULT_LAYERS = {
 };
 
 const INDICATOR_KEYS = [
+  'zones',
   'fvg', 'ob', 'liquidity', 'structure', 'engulf', 'sr', 'custom',
   'trendlines', 'fib', 'pd', 'sessions', 'volume',
   'ema20', 'ema50', 'ema100', 'ema200', 'rsi', 'macd', 'vwap',
@@ -15186,6 +15197,7 @@ function createProChart(canvas, options = {}) {
   if (state.layers.sessions) drawSessions(ctx, start, end, bw);
   if (state.layers.pd) drawPremiumDiscount(ctx, range);
   if (state.layers.grid) drawGrid(ctx, range);
+  if (state.layers.zones) drawLevels(ctx, range);
 
   drawZones(ctx, range, start, end);
   drawPlan(ctx, range);
@@ -15202,6 +15214,53 @@ function createProChart(canvas, options = {}) {
   drawMeasure(ctx, range);
   drawCrosshair(ctx, range);
   drawWatermark(ctx);
+  }
+
+  function drawLevels(ctx, range) {
+  const zones = (state.overlays && state.overlays.levels) || [];
+  if (!zones.length) return;
+
+  const w = plotWidth();
+  const strongest = Math.max(...zones.map((z) => z.strength || 0), 1);
+
+  for (const z of zones) {
+  const yHi = yOf(z.hi, range);
+  const yLo = yOf(z.lo, range);
+  if (yLo < PAD_T || yHi > PAD_T + plotHeight()) continue;
+
+  const top = Math.min(yHi, yLo);
+  const h = Math.max(2, Math.abs(yLo - yHi));
+
+  const weight = 0.25 + 0.75 * Math.min(1, (z.strength || 0) / strongest);
+
+  const col = z.kind === 'support' ? COLOR.up
+  : z.kind === 'resistance' ? COLOR.down
+  : COLOR.custom || COLOR.text;
+
+  ctx.save();
+  ctx.globalAlpha = 0.10 * weight;
+  ctx.fillStyle = col;
+  ctx.fillRect(0, top, w, h);
+  ctx.globalAlpha = 0.55 * weight;
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1;
+
+  ctx.setLineDash(z.breaks > 0 ? [5, 4] : []);
+  ctx.beginPath();
+  ctx.moveTo(0, Math.round(top) + 0.5);
+  ctx.lineTo(w, Math.round(top) + 0.5);
+  ctx.moveTo(0, Math.round(top + h) + 0.5);
+  ctx.lineTo(w, Math.round(top + h) + 0.5);
+  ctx.stroke();
+  ctx.restore();
+
+  const tag = `${z.kind === 'support' ? 'S' : z.kind === 'resistance' ? 'R' : 'LVL'}`
+  + ` · ${z.touches}x${z.breaks ? ` · broken ${z.breaks}x` : ''}${z.flipped ? ' · flipped' : ''}`;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0.5, weight);
+  label(ctx, 4, top + h + 10, tag, col);
+  ctx.restore();
+  }
   }
 
   function drawGrid(ctx, range) {
@@ -16122,6 +16181,123 @@ function momentumRead(candles, dir) {
 }
 
 Object.assign(__exports, { rsiSeries, rsiLast, macdSeries, vwapSeries, momentumRead });
+
+});
+
+__def("src/domain/levels.js", function (__exports, __req) {
+
+const CLUSTER_ATR = 0.45;
+
+const MIN_WIDTH_ATR = 0.12;
+
+const MAX_AGE_BARS = 400;
+
+function findLevels(structure, candles = [], opts = {}) {
+  const swings = (structure && structure.swings) || [];
+  const atr = Number(structure && structure.atr);
+  if (!swings.length || !Number.isFinite(atr) || atr <= 0 || candles.length < 20) return [];
+
+  const max = Number.isFinite(opts.max) ? opts.max : 6;
+  const tolerance = atr * (Number.isFinite(opts.clusterAtr) ? opts.clusterAtr : CLUSTER_ATR);
+  const lastIndex = candles.length - 1;
+  const price = candles[lastIndex].close;
+
+  const sorted = swings
+  .filter((s) => Number.isFinite(s.price) && Number.isFinite(s.i))
+  .filter((s) => lastIndex - s.i <= MAX_AGE_BARS)
+  .slice()
+  .sort((a, b) => a.price - b.price);
+  if (!sorted.length) return [];
+
+  const clusters = [];
+  let current = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+  const s = sorted[i];
+  if (s.price - current[0].price <= tolerance) current.push(s);
+  else { clusters.push(current); current = [s]; }
+  }
+  clusters.push(current);
+
+  const zones = clusters
+  .filter((c) => c.length >= 2)
+  .map((c) => buildZone(c, candles, atr, price, lastIndex));
+
+  return zones
+  .sort((a, b) => b.strength - a.strength)
+  .slice(0, max);
+}
+
+function buildZone(cluster, candles, atr, price, lastIndex) {
+  const prices = cluster.map((s) => s.price);
+  let lo = Math.min(...prices);
+  let hi = Math.max(...prices);
+
+  const minWidth = atr * MIN_WIDTH_ATR;
+  if (hi - lo < minWidth) {
+  const mid = (hi + lo) / 2;
+  lo = mid - minWidth / 2;
+  hi = mid + minWidth / 2;
+  }
+
+  const newest = cluster.reduce((a, s) => (s.i > a.i ? s : a), cluster[0]);
+  const ageBars = lastIndex - newest.i;
+
+  let breaks = 0;
+  let above = null;
+  for (let i = newest.i + 1; i < candles.length; i++) {
+  const c = candles[i];
+  if (!c) continue;
+  const side = c.close > hi ? true : c.close < lo ? false : null;
+  if (side === null) continue;
+  if (above !== null && side !== above) breaks++;
+  above = side;
+  }
+
+  const touches = cluster.length;
+
+  const recency = Math.pow(0.5, ageBars / 150);
+
+  const survived = Math.pow(0.55, breaks);
+  const strength = touches * recency * survived;
+
+  const mid = (hi + lo) / 2;
+  const kind = price >= hi ? 'support' : price <= lo ? 'resistance' : 'inside';
+
+  return {
+  lo,
+  hi,
+  mid,
+  touches,
+  breaks,
+  ageBars,
+  kind,
+  strength,
+
+  label: kind === 'support' ? 'Support' : kind === 'resistance' ? 'Resistance' : 'Level (price inside)',
+
+  flipped: breaks > 0 && touches >= 3,
+  from: cluster.map((s) => ({ i: s.i, time: s.time, price: s.price, type: s.type })),
+  };
+}
+
+function bracket(zones = [], price) {
+  if (!Number.isFinite(price)) return { above: null, below: null };
+  let above = null;
+  let below = null;
+  for (const z of zones) {
+  if (z.lo > price && (!above || z.lo < above.lo)) above = z;
+  if (z.hi < price && (!below || z.hi > below.hi)) below = z;
+  }
+  return { above, below };
+}
+
+function pipsTo(zone, price, pip = 0.1) {
+  if (!zone || !Number.isFinite(price) || !(pip > 0)) return NaN;
+  const edge = price < zone.lo ? zone.lo : price > zone.hi ? zone.hi : price;
+  return (edge - price) / pip;
+}
+
+Object.assign(__exports, { findLevels, bracket, pipsTo });
 
 });
 
