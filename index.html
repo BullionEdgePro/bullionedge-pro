@@ -3377,6 +3377,8 @@ const psychologyView = __req("src/ui/views/psychology.js").default;
 const copytradeView = __req("src/ui/views/copytrade.js").default;
 const journalView = __req("src/ui/views/journal.js").default;
 const riskView = __req("src/ui/views/risk.js").default;
+const { requestPersistence, markStorage, evictionSuspected, lastSeen } = __req("src/core/persist.js");
+const { allAccounts } = __req("src/ui/accounts.js");
 const settingsView = __req("src/ui/views/settings.js").default;
 const guideView = __req("src/ui/views/guide.js").default;
 
@@ -3386,6 +3388,18 @@ async function boot() {
 
   const backend = await db.init();
   patch({ storageBackend: backend }, { transient: true, silent: true });
+
+  const persistence = await requestPersistence();
+  patch({ storagePersisted: !!persistence.persisted }, { transient: true, silent: true });
+
+  const accounts = await allAccounts();
+  const count = Object.keys(accounts || {}).length;
+  if (evictionSuspected(count)) {
+  const seen = lastSeen();
+  const when = seen && seen.at ? new Date(seen.at).toLocaleDateString() : 'earlier';
+  patch({ storageWiped: { when, accounts: seen ? seen.accounts : 0 } }, { transient: true, silent: true });
+  }
+  markStorage(count);
 
   initBackground(byId('bg-canvas'));
   initTooltips();
@@ -3635,6 +3649,10 @@ const state = {
   profileName: '',
   view: 'dashboard',
   storageBackend: 'idb',
+
+  storagePersisted: false,
+
+  storageWiped: null,
 
   ui: {
   mode: 'beginner',
@@ -6200,6 +6218,7 @@ __def("src/ui/auth.js", function (__exports, __req) {
 
 const { byId, valOf } = __req("src/core/dom.js");
 const { state, patch, hydrate } = __req("src/core/state.js");
+const { toast } = __req("src/ui/overlays.js");
 const { emit, EV } = __req("src/core/bus.js");
 const { initLanding, hideLanding } = __req("src/ui/landing.js");
 const { resetRouter } = __req("src/ui/router.js");
@@ -6237,6 +6256,16 @@ async function initAuth(enterCallback) {
 
   const account = await resumeSession();
   if (account) { await enter(account); return; }
+
+  if (state.storageWiped) {
+  const { when, accounts } = state.storageWiped;
+  toast(
+  `This browser cleared its stored data since ${when}. `
+  + `${accounts === 1 ? 'An account' : `${accounts} accounts`} and any journal on it are gone. `
+  + 'Settings explains how to stop it happening again, and Restore brings back a backup.',
+  'bad',
+  );
+  }
 
   if (location.hash === '#admin') showGate();
   else showLanding();
@@ -6490,6 +6519,179 @@ async function withBusy(btn, fn) {
 }
 
 Object.assign(__exports, { ACCESS, currentAccount, initAuth, paintIdentity, refreshAccount });
+
+});
+
+__def("src/ui/overlays.js", function (__exports, __req) {
+
+const { esc } = __req("src/core/dom.js");
+
+let toastHost = null;
+
+function host() {
+  if (toastHost) return toastHost;
+  toastHost = document.getElementById('toast-host');
+  if (!toastHost) {
+  toastHost = document.createElement('div');
+  toastHost.id = 'toast-host';
+  toastHost.setAttribute('role', 'status');
+  toastHost.setAttribute('aria-live', 'polite');
+  document.body.appendChild(toastHost);
+  }
+  return toastHost;
+}
+
+function toast(message, kind = '', ms = 3600) {
+  const node = document.createElement('div');
+  node.className = 'toast ' + kind;
+  node.innerHTML = `<span>${esc(message)}</span>`;
+  host().appendChild(node);
+
+  const remove = () => {
+  node.classList.add('out');
+  setTimeout(() => node.remove(), 240);
+  };
+  const timer = setTimeout(remove, ms);
+  node.addEventListener('click', () => { clearTimeout(timer); remove(); });
+  return remove;
+}
+
+let openModal = null;
+
+function modal({ title, body = '', actions = [{ label: 'Close', value: null, kind: 'ghost' }], dismissible = true }) {
+  return new Promise((resolve) => {
+  close(null);
+
+  const scrim = document.createElement('div');
+  scrim.className = 'modal-scrim';
+  scrim.innerHTML = `
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <h3 id="modal-title">${esc(title)}</h3>
+  <div class="msub">${body}</div>
+  <div class="modal-actions">
+  ${actions.map((a, i) => `<button class="btn ${a.kind || ''}" data-idx="${i}">${esc(a.label)}</button>`).join('')}
+  </div>
+  </div>`;
+  document.body.appendChild(scrim);
+  requestAnimationFrame(() => scrim.classList.add('on'));
+
+  const previouslyFocused = document.activeElement;
+
+  const finish = (value) => {
+  scrim.classList.remove('on');
+  setTimeout(() => scrim.remove(), 220);
+  document.removeEventListener('keydown', onKey, true);
+  openModal = null;
+  if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
+  resolve(value);
+  };
+
+  scrim.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-idx]');
+  if (btn) { finish(actions[Number(btn.dataset.idx)].value); return; }
+  if (dismissible && e.target === scrim) finish(null);
+  });
+
+  const onKey = (e) => {
+  if (e.key === 'Escape' && dismissible) { e.preventDefault(); finish(null); return; }
+  if (e.key !== 'Tab') return;
+  const focusables = scrim.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (!focusables.length) return;
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  document.addEventListener('keydown', onKey, true);
+
+  openModal = finish;
+  setTimeout(() => {
+  const firstBtn = scrim.querySelector('.modal-actions .btn');
+  if (firstBtn) firstBtn.focus();
+  }, 60);
+  });
+}
+
+function close(value = null) {
+  if (openModal) openModal(value);
+}
+
+function confirm(title, body, confirmLabel = 'Confirm', kind = 'danger') {
+  return modal({
+  title, body,
+  actions: [
+  { label: 'Cancel', value: false, kind: 'ghost' },
+  { label: confirmLabel, value: true, kind },
+  ],
+  });
+}
+
+let bubble = null;
+let hideTimer = null;
+
+function initTooltips() {
+  bubble = document.getElementById('tip-bubble');
+  if (!bubble) {
+  bubble = document.createElement('div');
+  bubble.id = 'tip-bubble';
+  bubble.setAttribute('role', 'tooltip');
+  document.body.appendChild(bubble);
+  }
+
+  const show = (target) => {
+  const text = target.getAttribute('data-tip');
+  if (!text) return;
+  clearTimeout(hideTimer);
+  bubble.innerHTML = text;
+  bubble.classList.add('on');
+  position(target);
+  };
+
+  const hide = () => {
+  hideTimer = setTimeout(() => bubble.classList.remove('on'), 90);
+  };
+
+  document.addEventListener('pointerover', (e) => {
+  const target = e.target.closest('[data-tip]');
+  if (target) show(target);
+  });
+  document.addEventListener('pointerout', (e) => {
+  if (e.target.closest('[data-tip]')) hide();
+  });
+  document.addEventListener('focusin', (e) => {
+  const target = e.target.closest('[data-tip]');
+  if (target) show(target);
+  });
+  document.addEventListener('focusout', (e) => {
+  if (e.target.closest('[data-tip]')) hide();
+  });
+
+  document.addEventListener('click', (e) => {
+  const target = e.target.closest('.tip[data-tip]');
+  if (!target) return;
+  e.preventDefault();
+  if (bubble.classList.contains('on')) hide();
+  else show(target);
+  });
+  window.addEventListener('scroll', () => bubble.classList.remove('on'), { passive: true });
+}
+
+function position(target) {
+  const rect = target.getBoundingClientRect();
+  const bubbleRect = bubble.getBoundingClientRect();
+  const gap = 9;
+
+  let left = rect.left + rect.width / 2 - bubbleRect.width / 2;
+  left = Math.max(10, Math.min(left, window.innerWidth - bubbleRect.width - 10));
+
+  let top = rect.top - bubbleRect.height - gap;
+  if (top < 10) top = rect.bottom + gap;
+
+  bubble.style.left = left + 'px';
+  bubble.style.top = top + 'px';
+}
+
+Object.assign(__exports, { toast, modal, close, confirm, initTooltips });
 
 });
 
@@ -9085,179 +9287,6 @@ Object.assign(__exports, { OWNER_ACCESS });
 
 });
 
-__def("src/ui/overlays.js", function (__exports, __req) {
-
-const { esc } = __req("src/core/dom.js");
-
-let toastHost = null;
-
-function host() {
-  if (toastHost) return toastHost;
-  toastHost = document.getElementById('toast-host');
-  if (!toastHost) {
-  toastHost = document.createElement('div');
-  toastHost.id = 'toast-host';
-  toastHost.setAttribute('role', 'status');
-  toastHost.setAttribute('aria-live', 'polite');
-  document.body.appendChild(toastHost);
-  }
-  return toastHost;
-}
-
-function toast(message, kind = '', ms = 3600) {
-  const node = document.createElement('div');
-  node.className = 'toast ' + kind;
-  node.innerHTML = `<span>${esc(message)}</span>`;
-  host().appendChild(node);
-
-  const remove = () => {
-  node.classList.add('out');
-  setTimeout(() => node.remove(), 240);
-  };
-  const timer = setTimeout(remove, ms);
-  node.addEventListener('click', () => { clearTimeout(timer); remove(); });
-  return remove;
-}
-
-let openModal = null;
-
-function modal({ title, body = '', actions = [{ label: 'Close', value: null, kind: 'ghost' }], dismissible = true }) {
-  return new Promise((resolve) => {
-  close(null);
-
-  const scrim = document.createElement('div');
-  scrim.className = 'modal-scrim';
-  scrim.innerHTML = `
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-  <h3 id="modal-title">${esc(title)}</h3>
-  <div class="msub">${body}</div>
-  <div class="modal-actions">
-  ${actions.map((a, i) => `<button class="btn ${a.kind || ''}" data-idx="${i}">${esc(a.label)}</button>`).join('')}
-  </div>
-  </div>`;
-  document.body.appendChild(scrim);
-  requestAnimationFrame(() => scrim.classList.add('on'));
-
-  const previouslyFocused = document.activeElement;
-
-  const finish = (value) => {
-  scrim.classList.remove('on');
-  setTimeout(() => scrim.remove(), 220);
-  document.removeEventListener('keydown', onKey, true);
-  openModal = null;
-  if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
-  resolve(value);
-  };
-
-  scrim.addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-idx]');
-  if (btn) { finish(actions[Number(btn.dataset.idx)].value); return; }
-  if (dismissible && e.target === scrim) finish(null);
-  });
-
-  const onKey = (e) => {
-  if (e.key === 'Escape' && dismissible) { e.preventDefault(); finish(null); return; }
-  if (e.key !== 'Tab') return;
-  const focusables = scrim.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-  if (!focusables.length) return;
-  const first = focusables[0];
-  const last = focusables[focusables.length - 1];
-  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-  };
-  document.addEventListener('keydown', onKey, true);
-
-  openModal = finish;
-  setTimeout(() => {
-  const firstBtn = scrim.querySelector('.modal-actions .btn');
-  if (firstBtn) firstBtn.focus();
-  }, 60);
-  });
-}
-
-function close(value = null) {
-  if (openModal) openModal(value);
-}
-
-function confirm(title, body, confirmLabel = 'Confirm', kind = 'danger') {
-  return modal({
-  title, body,
-  actions: [
-  { label: 'Cancel', value: false, kind: 'ghost' },
-  { label: confirmLabel, value: true, kind },
-  ],
-  });
-}
-
-let bubble = null;
-let hideTimer = null;
-
-function initTooltips() {
-  bubble = document.getElementById('tip-bubble');
-  if (!bubble) {
-  bubble = document.createElement('div');
-  bubble.id = 'tip-bubble';
-  bubble.setAttribute('role', 'tooltip');
-  document.body.appendChild(bubble);
-  }
-
-  const show = (target) => {
-  const text = target.getAttribute('data-tip');
-  if (!text) return;
-  clearTimeout(hideTimer);
-  bubble.innerHTML = text;
-  bubble.classList.add('on');
-  position(target);
-  };
-
-  const hide = () => {
-  hideTimer = setTimeout(() => bubble.classList.remove('on'), 90);
-  };
-
-  document.addEventListener('pointerover', (e) => {
-  const target = e.target.closest('[data-tip]');
-  if (target) show(target);
-  });
-  document.addEventListener('pointerout', (e) => {
-  if (e.target.closest('[data-tip]')) hide();
-  });
-  document.addEventListener('focusin', (e) => {
-  const target = e.target.closest('[data-tip]');
-  if (target) show(target);
-  });
-  document.addEventListener('focusout', (e) => {
-  if (e.target.closest('[data-tip]')) hide();
-  });
-
-  document.addEventListener('click', (e) => {
-  const target = e.target.closest('.tip[data-tip]');
-  if (!target) return;
-  e.preventDefault();
-  if (bubble.classList.contains('on')) hide();
-  else show(target);
-  });
-  window.addEventListener('scroll', () => bubble.classList.remove('on'), { passive: true });
-}
-
-function position(target) {
-  const rect = target.getBoundingClientRect();
-  const bubbleRect = bubble.getBoundingClientRect();
-  const gap = 9;
-
-  let left = rect.left + rect.width / 2 - bubbleRect.width / 2;
-  left = Math.max(10, Math.min(left, window.innerWidth - bubbleRect.width - 10));
-
-  let top = rect.top - bubbleRect.height - gap;
-  if (top < 10) top = rect.bottom + gap;
-
-  bubble.style.left = left + 'px';
-  bubble.style.top = top + 'px';
-}
-
-Object.assign(__exports, { toast, modal, close, confirm, initTooltips });
-
-});
-
 __def("src/ui/background.js", function (__exports, __req) {
 
 const { prefersReducedMotion } = __req("src/ui/motion.js");
@@ -11237,6 +11266,76 @@ function initInstall() {
 }
 
 Object.assign(__exports, { initInstall });
+
+});
+
+__def("src/core/persist.js", function (__exports, __req) {
+
+const MARKER = 'be:storage-marker';
+
+async function storageState() {
+  const api = typeof navigator !== 'undefined' && navigator.storage;
+  if (!api || typeof api.persisted !== 'function') {
+  return { supported: false, persisted: false, asked: false };
+  }
+  try {
+  return { supported: true, persisted: await api.persisted(), asked: true };
+  } catch {
+  return { supported: false, persisted: false, asked: false };
+  }
+}
+
+async function requestPersistence() {
+  const api = typeof navigator !== 'undefined' && navigator.storage;
+  if (!api || typeof api.persist !== 'function') return { supported: false, persisted: false };
+  try {
+  if (typeof api.persisted === 'function' && await api.persisted()) {
+  return { supported: true, persisted: true, already: true };
+  }
+  return { supported: true, persisted: await api.persist(), already: false };
+  } catch {
+  return { supported: false, persisted: false };
+  }
+}
+
+async function storageEstimate() {
+  const api = typeof navigator !== 'undefined' && navigator.storage;
+  if (!api || typeof api.estimate !== 'function') return null;
+  try {
+  const { usage = 0, quota = 0 } = await api.estimate();
+  if (!quota) return null;
+  return { usage, quota, usedPct: (usage / quota) * 100 };
+  } catch { return null; }
+}
+
+function markStorage(accountCount = 0) {
+  try {
+  localStorage.setItem(MARKER, JSON.stringify({
+  at: Date.now(),
+  accounts: accountCount,
+  }));
+  } catch {   }
+}
+
+function evictionSuspected(accountCount) {
+  try {
+  const raw = localStorage.getItem(MARKER);
+  if (!raw) return false;
+  const mark = JSON.parse(raw);
+  return Number(mark.accounts) > 0 && Number(accountCount) === 0;
+  } catch { return false; }
+}
+
+function lastSeen() {
+  try {
+  const raw = localStorage.getItem(MARKER);
+  if (!raw) return null;
+  const mark = JSON.parse(raw);
+  return Number.isFinite(mark.at) ? { at: mark.at, accounts: Number(mark.accounts) || 0 } : null;
+  } catch { return null; }
+}
+
+Object.assign(__exports, { storageState, requestPersistence, storageEstimate, markStorage, evictionSuspected, lastSeen });
 
 });
 
@@ -21650,6 +21749,7 @@ const { setEnabled: setParticles } = __req("src/ui/background.js");
 const { applyAccessibility, SHORTCUTS } = __req("src/ui/shortcuts.js");
 const { toast, confirm } = __req("src/ui/overlays.js");
 const { callout, tip } = __req("src/ui/components.js");
+const { storageState, storageEstimate, requestPersistence } = __req("src/core/persist.js");
 const { currentAccount, refreshAccount } = __req("src/ui/auth.js");
 const { saveProfile } = __req("src/ui/accounts.js");
 const { CHECKOUT, planLabel } = __req("src/domain/licensing.js");
@@ -22067,6 +22167,15 @@ __exports.default = {
   toast('Profile saved.', 'ok');
   });
 
+  on(root, 'click', '#btn-persist', async () => {
+  const res = await requestPersistence();
+  toast(res.persisted
+  ? 'Done — this browser will keep your data.'
+  : 'The browser refused. Installing the app to your home screen usually earns it; until then, export backups.',
+  res.persisted ? 'ok' : 'bad');
+  paintStorage(getBackend());
+  });
+
   on(root, 'click', '#btn-backup', () => exportBackup());
   on(root, 'click', '#btn-csv2', () => exportCsv());
   on(root, 'click', '#btn-restore', () => byId('restore-file')?.click());
@@ -22221,11 +22330,7 @@ __exports.default = {
   paintSubscription();
 
   const backend = getBackend();
-  setHtml('storage-host', backend === 'memory'
-  ? callout('', '<b>Storage is unavailable.</b> Nothing you enter will survive a page reload — private browsing or a blocked storage setting. Export a backup before you close the tab.')
-  : backend === 'local'
-  ? callout('gold', '<b>Using localStorage.</b> IndexedDB was not available, so screenshots and long journals may hit a size limit. Everything still works, but take backups.')
-  : callout('long', '<b>Using IndexedDB.</b> Journals, screenshots and settings persist on this device until you clear site data.'));
+  paintStorage(backend);
 
   setHtml('diag-host', [
   ['Storage', backend === 'idb' ? 'IndexedDB' : backend === 'local' ? 'localStorage' : 'Memory only'],
@@ -22285,6 +22390,37 @@ function renderAiNote(root) {
 
 function setText(id, text) { const n = byId(id); if (n) n.textContent = text; }
 function setHtml(id, html) { const n = byId(id); if (n) n.innerHTML = html; }
+
+async function paintStorage(backend) {
+  if (backend === 'memory') {
+  setHtml('storage-host', callout('', '<b>Storage is unavailable.</b> Nothing you enter will survive a page reload — private browsing, or a blocked storage setting. Export a backup before you close the tab.'));
+  return;
+  }
+  if (backend === 'local') {
+  setHtml('storage-host', callout('gold', '<b>Using localStorage.</b> IndexedDB was not available, so screenshots and long journals may hit a size limit. Everything still works, but take backups.'));
+  return;
+  }
+
+  const st = await storageState();
+  const est = await storageEstimate();
+  const room = est
+  ? ` Currently ${(est.usage / 1048576).toFixed(1)} MB of roughly ${(est.quota / 1048576).toFixed(0)} MB.`
+  : '';
+
+  if (st.persisted) {
+  setHtml('storage-host', callout('long',
+  `<b>Using IndexedDB, and protected.</b> This browser has agreed to keep your data until you delete
+  it, rather than treating it as a cache it may clear on its own.${room} A backup is still the only
+  copy that survives this browser being reinstalled.`));
+  return;
+  }
+
+  setHtml('storage-host', callout('gold',
+  `<b>Using IndexedDB — but this browser has not promised to keep it.</b> By default it may clear stored
+  data when space runs low, or if anything on this computer is set to wipe site data on exit. That is
+  how a profile and a journal vanish overnight while signing in still appears to work.${room}
+  <button class="btn ghost sm" id="btn-persist" style="margin-top:var(--sp-3)">Ask this browser to keep my data</button>`));
+}
 
 function fillProfileForm(account) {
   const card = byId('profile-card');
