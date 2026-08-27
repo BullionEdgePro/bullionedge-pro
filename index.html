@@ -2050,6 +2050,13 @@ kbd {
 
 #xau-canvas.measuring { cursor: crosshair; }
 
+.xtv { height: 460px; width: 100%; border-radius: var(--r-md); overflow: hidden; }
+@media (max-width: 720px) { .xtv { height: 320px; } }
+
+.tradingview-widget-copyright { font-size: var(--fs-2xs); color: var(--faint); padding-top: 4px; }
+.tradingview-widget-copyright a { color: var(--muted); text-decoration: none; }
+.tradingview-widget-copyright a:hover { color: var(--gold); }
+
 /* assets/css/guide.css */
 .gflow {
   display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
@@ -3390,7 +3397,7 @@ async function boot() {
 
   busOn(EV.TOAST, ({ message, kind }) => toast(message, kind || ''));
 
-  [dashboardView, liveView, xauView, analyseView, psychologyView, copytradeView, journalView, riskView, guideView, settingsView]
+  [dashboardView, xauView, liveView, analyseView, psychologyView, copytradeView, journalView, riskView, guideView, settingsView]
   .forEach(registerView);
 
   byId('rail').innerHTML = renderNav();
@@ -3644,6 +3651,8 @@ const state = {
   capital: 1000,
   riskPct: 0.5,
   pipSize: 0.1,
+
+  tvChart: false,
   stopMode: 'pips',
   instrument: 'XAUUSD',
   maxTradesPerDay: 2,
@@ -12586,6 +12595,7 @@ const { createProChart, DEFAULT_LAYERS, activeIndicators } = __req("src/ui/proch
 
 const { market, refreshSpot } = __req("src/domain/market.js");
 const { getInstrument } = __req("src/domain/instruments.js");
+const { mountChart: mountTradingView, hasRendered: tvRendered } = __req("src/integrations/tradingview.js");
 const { loadSeries, provider, TIMEFRAMES, EXECUTION_TFS, ANALYSIS_TFS, feedStatusText } = __req("src/domain/feed.js");
 const { analyzeMarket, SETUP_TYPES, WEIGHTS, WEIGHT_LABELS } = __req("src/domain/confluence.js");
 const { checklistByStep, SECTIONS, STEPS, exclusiveSets, checklistProgress, REQUIRED_IDS } = __req("src/domain/xauchecklist.js");
@@ -12619,6 +12629,10 @@ let chart = null;
 let timers = [];
 
 let keyOff = null;
+
+let tvOff = null;
+
+let tvTf = null;
 
 let ticks = null;
 let forming = null;
@@ -12735,6 +12749,19 @@ __exports.default = {
 
   <div class="xprogress" id="xau-progress"></div>
   <div class="xchecklist" id="xau-checklist">${checklistMarkup(x.checks || {})}</div>
+  </div>
+  <!-- The real XAU/USD tape, off unless asked for. See
+  integrations/tradingview.js for why it is opt-in. -->
+  <div class="card reveal" id="xau-tvcard" style="display:none">
+  <div class="card-head">
+  <div>
+  <p class="eyebrow">Confirmation</p>
+  <h2>TradingView <span class="hint">OANDA:XAUUSD — a second opinion on the level</span></h2>
+  </div>
+  <button class="btn ghost sm" id="xau-tv-off">Hide</button>
+  </div>
+  <div id="xau-tv" class="xtv"></div>
+  <p class="t-faint" style="font-size:var(--fs-2xs);margin-top:var(--sp-2)" id="xau-tv-note"></p>
   </div>
 
   <div class="card reveal">
@@ -13047,6 +13074,12 @@ __exports.default = {
   byId('xc-in').onclick = () => chart.zoom(0.75);
   byId('xc-out').onclick = () => chart.zoom(1.35);
   byId('xc-fit').onclick = () => chart.fit();
+
+  byId('xau-tv-off').onclick = () => {
+  patch({ settings: { tvChart: false } });
+  paintTradingView();
+  toast('TradingView chart hidden. Settings turns it back on.', '');
+  };
 
   const rulerBtn = byId('xc-ruler');
   rulerBtn.onclick = () => {
@@ -13437,6 +13470,7 @@ function startPolling() {
   timers.forEach(clearInterval);
   timers = [];
   if (keyOff) { keyOff(); keyOff = null; }
+  if (tvOff) { tvOff(); tvOff = null; tvTf = null; }
 
   const tick = async (fn) => {
   if (!mounted) return;
@@ -13812,6 +13846,35 @@ function paintLive() {
   paintOhlc(null);
 }
 
+function paintTradingView() {
+  if (!mounted) return;
+  const card = byId('xau-tvcard');
+  if (!card) return;
+
+  const wanted = !!state.settings.tvChart;
+  if (!wanted) {
+  if (tvOff) { tvOff(); tvOff = null; tvTf = null; }
+  card.style.display = 'none';
+  return;
+  }
+
+  card.style.display = '';
+  const tf = state.xau.tf;
+  if (tvOff && tvTf === tf) return;
+
+  if (tvOff) tvOff();
+  tvOff = mountTradingView(byId('xau-tv'), { timeframe: tf });
+  tvTf = tf;
+
+  setText('xau-tv-note', '');
+  setTimeout(() => {
+  if (!mounted || !state.settings.tvChart) return;
+  setText('xau-tv-note', tvRendered(byId('xau-tv'))
+  ? 'Loaded from TradingView. The desk\u2019s own chart above is what the engine reads.'
+  : 'TradingView did not load \u2014 offline, or something is blocking it. Everything else on this screen still works.');
+  }, 4000);
+}
+
 function paintChart() {
   if (!mounted || !chart) return;
   const s = seriesCache[state.xau.tf];
@@ -13825,6 +13888,7 @@ function paintChart() {
   });
   chart.setData(chartCandles(s));
   paintLive();
+  paintTradingView();
 
   const a = analysis;
 
@@ -15886,6 +15950,76 @@ function momentumRead(candles, dir) {
 }
 
 Object.assign(__exports, { rsiSeries, rsiLast, macdSeries, vwapSeries, momentumRead });
+
+});
+
+__def("src/integrations/tradingview.js", function (__exports, __req) {
+
+const SCRIPT_SRC = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+
+const INTERVAL = {
+  M1: '1', M5: '5', M15: '15', M30: '30', H1: '60', H4: '240', D1: 'D',
+};
+
+const SYMBOL = 'OANDA:XAUUSD';
+const intervalFor = (tf) => INTERVAL[tf] || '15';
+
+function mountChart(host, { timeframe = 'M15', theme = 'dark' } = {}) {
+  if (!host) return () => {};
+  host.innerHTML = '';
+
+  const container = document.createElement('div');
+  container.className = 'tradingview-widget-container';
+  container.style.cssText = 'height:100%;width:100%';
+
+  const widget = document.createElement('div');
+  widget.className = 'tradingview-widget-container__widget';
+  widget.style.cssText = 'height:calc(100% - 32px);width:100%';
+  container.appendChild(widget);
+
+  const credit = document.createElement('div');
+  credit.className = 'tradingview-widget-copyright';
+  const link = document.createElement('a');
+  link.href = 'https://www.tradingview.com/symbols/XAUUSD/';
+  link.rel = 'noopener nofollow';
+  link.target = '_blank';
+  link.textContent = 'XAU/USD chart';
+  credit.appendChild(link);
+  credit.appendChild(document.createTextNode(' by TradingView'));
+  container.appendChild(credit);
+
+  const script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src = SCRIPT_SRC;
+  script.async = true;
+  script.text = JSON.stringify({
+  symbol: SYMBOL,
+  interval: intervalFor(timeframe),
+  theme,
+  style: '1',
+  locale: 'en',
+  autosize: true,
+  timezone: 'Etc/UTC',
+  hide_side_toolbar: true,
+  allow_symbol_change: false,
+
+  save_image: false,
+  calendar: false,
+  hide_volume: false,
+  });
+  container.appendChild(script);
+  host.appendChild(container);
+
+  return () => { host.innerHTML = ''; };
+}
+
+function hasRendered(host) {
+  if (!host) return false;
+  const frame = host.querySelector('iframe');
+  return !!(frame && frame.clientHeight > 40);
+}
+
+Object.assign(__exports, { SYMBOL, intervalFor, mountChart, hasRendered });
 
 });
 
@@ -21714,6 +21848,23 @@ __exports.default = {
 
   <div class="card reveal">
   <p class="eyebrow">Read-only</p>
+  <h2>TradingView chart <span class="hint">The real XAU/USD chart, beside the desk's own.</span></h2>
+
+  <div class="toggle">
+  <div class="tlab">Show the TradingView chart<span class="sub">Adds a panel on the XAU/USD screen showing OANDA:XAUUSD — the chart TradingView's own gold page uses — so you can confirm a level against a tape you already trust.</span></div>
+  <button type="button" class="switch" role="switch" id="set-tv"
+  aria-checked="${!!s.settings.tvChart}" aria-label="Show the TradingView chart"></button>
+  </div>
+
+  ${callout('', `<b>This one reaches outside.</b> Everything else here runs on your device and
+  contacts nobody. The TradingView panel is loaded from TradingView, which means switching it
+  on tells them a browser opened this page — the same as visiting their site would. Your
+  journal, notes and settings are not sent anywhere and are not readable by the panel.
+  The checklist, the risk maths and the trade plan carry on working with it off, or with it
+  on and no connection at all.`)}
+  </div>
+
+  <div class="card reveal">
   <h2>Broker sync <span class="hint">Reads balance, equity and closed trades. It cannot place an order.</span></h2>
 
   <div class="toggle">
@@ -21953,6 +22104,13 @@ __exports.default = {
 
   const v = e.target.value.trim().toUpperCase().slice(0, 20);
   patch({ settings: { brokerSymbol: v || 'XAUUSD' } });
+  });
+
+  on(root, 'click', '#set-tv', (e, btn) => {
+  const next = btn.getAttribute('aria-checked') !== 'true';
+  btn.setAttribute('aria-checked', String(next));
+  patch({ settings: { tvChart: next } });
+  toast(next ? 'TradingView chart on. It loads from TradingView.' : 'TradingView chart off.', 'ok');
   });
 
   const setBroker = (next) => {
