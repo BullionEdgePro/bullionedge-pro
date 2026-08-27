@@ -2048,6 +2048,8 @@ kbd {
 }
 .xlayergroup.deskgroup.waiting .xlgnote { color: var(--gold-dim); }
 
+#xau-canvas.measuring { cursor: crosshair; }
+
 /* assets/css/guide.css */
 .gflow {
   display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
@@ -12583,6 +12585,7 @@ const { callout, tip } = __req("src/ui/components.js");
 const { createProChart, DEFAULT_LAYERS, activeIndicators } = __req("src/ui/prochart.js");
 
 const { market, refreshSpot } = __req("src/domain/market.js");
+const { getInstrument } = __req("src/domain/instruments.js");
 const { loadSeries, provider, TIMEFRAMES, EXECUTION_TFS, ANALYSIS_TFS, feedStatusText } = __req("src/domain/feed.js");
 const { analyzeMarket, SETUP_TYPES, WEIGHTS, WEIGHT_LABELS } = __req("src/domain/confluence.js");
 const { checklistByStep, SECTIONS, STEPS, exclusiveSets, checklistProgress, REQUIRED_IDS } = __req("src/domain/xauchecklist.js");
@@ -12614,6 +12617,8 @@ const EVERY = { spot: 5000, exec: 30_000, full: 300_000 };
 
 let chart = null;
 let timers = [];
+
+let keyOff = null;
 
 let ticks = null;
 let forming = null;
@@ -12684,6 +12689,8 @@ __exports.default = {
   <button class="cbtn" id="xc-in" aria-label="Zoom in">+ zoom</button>
   <button class="cbtn" id="xc-out" aria-label="Zoom out">− zoom</button>
   <button class="cbtn" id="xc-fit">fit</button>
+  <button class="cbtn" id="xc-ruler" aria-pressed="false"
+  title="Measure a move in pips. Hold Shift and drag on the chart, or switch this on and drag.">ruler</button>
   <button class="cbtn ${layers.grid ? 'on' : ''}" id="xc-grid" aria-pressed="${!!layers.grid}">grid</button>
   <button class="cbtn on" id="xc-auto" aria-pressed="true">auto-scale</button>
   <button class="cbtn" id="xc-full">full screen</button>
@@ -13040,6 +13047,15 @@ __exports.default = {
   byId('xc-in').onclick = () => chart.zoom(0.75);
   byId('xc-out').onclick = () => chart.zoom(1.35);
   byId('xc-fit').onclick = () => chart.fit();
+
+  const rulerBtn = byId('xc-ruler');
+  rulerBtn.onclick = () => {
+  const on = !chart.rulerMode();
+  chart.setRuler(on);
+  rulerBtn.classList.toggle('on', on);
+  rulerBtn.setAttribute('aria-pressed', String(on));
+  byId('xau-canvas')?.classList.toggle('measuring', on);
+  };
   byId('xc-grid').onclick = (e) => toggleLayer('grid', e.currentTarget);
   byId('xc-auto').onclick = (e) => {
   const next = !chart.autoScale();
@@ -13069,6 +13085,20 @@ __exports.default = {
   on(root, 'click', '[data-layer]', (_e, btn) => toggleLayer(btn.dataset.layer, btn));
 
   paintIndicatorBar({ ...DEFAULT_LAYERS, ...state.xau.layers });
+
+  const onKey = (e) => {
+  if (e.key !== 'Escape' || !chart) return;
+  if (chart.hasMeasure()) chart.clearMeasure();
+  if (chart.rulerMode()) {
+  chart.setRuler(false);
+  const btn = byId('xc-ruler');
+  btn?.classList.remove('on');
+  btn?.setAttribute('aria-pressed', 'false');
+  byId('xau-canvas')?.classList.remove('measuring');
+  }
+  };
+  document.addEventListener('keydown', onKey);
+  keyOff = () => document.removeEventListener('keydown', onKey);
 
   const showTimeframe = (tf) => {
   patch({ xau: { tf } });
@@ -13406,6 +13436,7 @@ __exports.default = {
 function startPolling() {
   timers.forEach(clearInterval);
   timers = [];
+  if (keyOff) { keyOff(); keyOff = null; }
 
   const tick = async (fn) => {
   if (!mounted) return;
@@ -13784,7 +13815,14 @@ function paintLive() {
 function paintChart() {
   if (!mounted || !chart) return;
   const s = seriesCache[state.xau.tf];
-  chart.setMeta({ tfLabel: state.xau.tf, quality: provider().quality });
+  chart.setMeta({
+  tfLabel: state.xau.tf,
+  quality: provider().quality,
+
+  pip: Number.isFinite(state.settings.pipSize) && state.settings.pipSize > 0
+  ? state.settings.pipSize
+  : getInstrument(state.brokerSymbol || 'XAUUSD').pip,
+  });
   chart.setData(chartCandles(s));
   paintLive();
 
@@ -14643,6 +14681,11 @@ function createProChart(canvas, options = {}) {
 
   cursor: null,
   dragging: null,
+
+  pip: 0.1,
+
+  measure: null,
+  rulerMode: false,
   width: 0,
   height: 0,
   listeners: [],
@@ -14675,6 +14718,12 @@ function createProChart(canvas, options = {}) {
   bind(canvas, 'mousemove', (e) => {
   const rect = canvas.getBoundingClientRect();
   state.cursor = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  if (state.measure && !state.measure.done) {
+  state.measure.to = pointAt(state.cursor.x, state.cursor.y);
+  render();
+  return;
+  }
+
   if (state.dragging) {
   const dx = state.cursor.x - state.dragging.x;
   const bw = plotWidth() / state.barsVisible;
@@ -14696,13 +14745,38 @@ function createProChart(canvas, options = {}) {
   if (state.onHover) state.onHover(null);
   });
 
+  function pointAt(px, py) {
+  const range = priceRange();
+  const bw = plotWidth() / state.barsVisible;
+  const { start } = visibleRange();
+  return {
+  index: start + Math.round(px / bw),
+  price: priceAt(py, range),
+  };
+  }
+
   bind(canvas, 'mousedown', (e) => {
   const rect = canvas.getBoundingClientRect();
-  state.dragging = { x: e.clientX - rect.left, offset: state.offset };
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+
+  if (e.shiftKey || state.rulerMode) {
+  state.measure = { anchor: pointAt(px, py), to: null };
+  state.dragging = null;
+  render();
+  return;
+  }
+  state.dragging = { x: px, offset: state.offset };
   canvas.style.cursor = 'grabbing';
   });
 
   bind(window, 'mouseup', () => {
+
+  if (state.measure) {
+  if (!state.measure.to) state.measure = null;
+  else state.measure.done = true;
+  render();
+  }
   state.dragging = null;
   canvas.style.cursor = 'crosshair';
   });
@@ -14720,7 +14794,16 @@ function createProChart(canvas, options = {}) {
   pinch = { dist: touchDist(e), bars: state.barsVisible };
   } else if (e.touches.length === 1) {
   const rect = canvas.getBoundingClientRect();
-  state.dragging = { x: e.touches[0].clientX - rect.left, offset: state.offset };
+  const x = e.touches[0].clientX - rect.left;
+  const y = e.touches[0].clientY - rect.top;
+
+  if (state.rulerMode) {
+  state.measure = { anchor: pointAt(x, y), to: null };
+  state.dragging = null;
+  render();
+  return;
+  }
+  state.dragging = { x, offset: state.offset };
   }
   }, { passive: true });
 
@@ -14729,6 +14812,14 @@ function createProChart(canvas, options = {}) {
   e.preventDefault();
   const d = touchDist(e);
   if (d > 0) setBars(Math.round(pinch.bars * (pinch.dist / d)));
+  } else if (state.measure && !state.measure.done && e.touches.length === 1) {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  state.measure.to = pointAt(
+  e.touches[0].clientX - rect.left,
+  e.touches[0].clientY - rect.top,
+  );
+  render();
   } else if (state.dragging && e.touches.length === 1) {
   e.preventDefault();
   const rect = canvas.getBoundingClientRect();
@@ -14744,7 +14835,16 @@ function createProChart(canvas, options = {}) {
   }
   }, { passive: false });
 
-  bind(canvas, 'touchend', () => { pinch = null; state.dragging = null; });
+  bind(canvas, 'touchend', () => {
+  pinch = null;
+  state.dragging = null;
+
+  if (state.measure) {
+  if (!state.measure.to) state.measure = null;
+  else state.measure.done = true;
+  render();
+  }
+  });
 
   const touchDist = (e) => Math.hypot(
   e.touches[0].clientX - e.touches[1].clientX,
@@ -14833,6 +14933,8 @@ function createProChart(canvas, options = {}) {
   ctx.fillRect(0, 0, state.width, state.height);
   axisQueue = [];
 
+  if (canvas.dataset) canvas.dataset.bars = String(state.barsVisible);
+
   if (!state.candles.length) {
   ctx.fillStyle = COLOR.faint;
   ctx.font = FONT;
@@ -14861,6 +14963,7 @@ function createProChart(canvas, options = {}) {
   drawLowerPanes(ctx, start, end, bw);
   drawAxes(ctx, range, start, end, bw);
   flushAxisOverlay();
+  drawMeasure(ctx, range);
   drawCrosshair(ctx, range);
   drawWatermark(ctx);
   }
@@ -14917,23 +15020,43 @@ function createProChart(canvas, options = {}) {
   }
 
   function drawCandles(ctx, range, start, end, bw) {
-  const body = Math.max(1, bw * 0.66);
+
+  const body = Math.max(1, Math.min(26, bw * 0.58));
+  const thin = body < 3;
+
   for (let i = start; i < end; i++) {
   const c = state.candles[i];
   if (!c) continue;
   const x = xOf(i);
   const up = c.close >= c.open;
-  ctx.strokeStyle = up ? COLOR.up : COLOR.down;
-  ctx.fillStyle = up ? COLOR.up : COLOR.down;
+  const col = up ? COLOR.up : COLOR.down;
+  ctx.strokeStyle = col;
+  ctx.fillStyle = col;
 
+  const xc = Math.round(x) + 0.5;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(Math.round(x) + 0.5, yOf(c.high, range));
-  ctx.lineTo(Math.round(x) + 0.5, yOf(c.low, range));
+  ctx.moveTo(xc, Math.round(yOf(c.high, range)));
+  ctx.lineTo(xc, Math.round(yOf(c.low, range)));
   ctx.stroke();
 
   const yo = yOf(c.open, range);
-  const yc = yOf(c.close, range);
-  ctx.fillRect(x - body / 2, Math.min(yo, yc), body, Math.max(1, Math.abs(yc - yo)));
+  const yc2 = yOf(c.close, range);
+  const top = Math.min(yo, yc2);
+  const h = Math.abs(yc2 - yo);
+  const left = Math.round(x - body / 2);
+  const w = Math.max(1, Math.round(body));
+
+  if (h < 1) {
+
+  ctx.fillRect(left, Math.round(top), w, 1);
+  } else if (thin) {
+  ctx.fillRect(left, Math.round(top), w, Math.round(h));
+  } else {
+
+  ctx.fillRect(left, Math.round(top), w, Math.round(h));
+  ctx.strokeRect(left + 0.5, Math.round(top) + 0.5, w - 1, Math.round(h) - 1);
+  }
   }
 
   const last = state.candles[state.candles.length - 1];
@@ -15449,6 +15572,98 @@ function createProChart(canvas, options = {}) {
   ctx.fillText(`${state.symbol}  ${state.tfLabel}`, 8, 18);
   }
 
+  function drawMeasure(ctx, range) {
+  const m = state.measure;
+  if (!m || !m.to) return;
+
+  const bw = plotWidth() / state.barsVisible;
+  const { start } = visibleRange();
+  const xAt = (i) => (i - start) * bw + bw / 2;
+
+  const x1 = xAt(m.anchor.index);
+  const x2 = xAt(m.to.index);
+  const y1 = yOf(m.anchor.price, range);
+  const y2 = yOf(m.to.price, range);
+
+  const diff = m.to.price - m.anchor.price;
+  const up = diff >= 0;
+  const col = up ? COLOR.up : COLOR.down;
+  const pip = Number.isFinite(state.pip) && state.pip > 0 ? state.pip : 0.1;
+
+  const left = Math.min(x1, x2);
+  const top = Math.min(y1, y2);
+  const w = Math.abs(x2 - x1);
+  const h = Math.abs(y2 - y1);
+
+  ctx.save();
+
+  ctx.fillStyle = up ? 'rgba(70,185,140,.12)' : 'rgba(224,112,74,.12)';
+  ctx.fillRect(left, top, Math.max(w, 1), Math.max(h, 1));
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 3]);
+  ctx.strokeRect(left + 0.5, top + 0.5, Math.max(w, 1), Math.max(h, 1));
+
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  const head = 5;
+  const dir = up ? 1 : -1;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - head, y2 + head * dir);
+  ctx.lineTo(x2 + head, y2 + head * dir);
+  ctx.closePath();
+  ctx.fillStyle = col;
+  ctx.fill();
+  ctx.restore();
+
+  const bars = Math.abs(m.to.index - m.anchor.index);
+  const pips = diff / pip;
+  const pct = m.anchor.price ? (diff / m.anchor.price) * 100 : 0;
+  const span = spanLabel(bars);
+
+  const lines = [
+  `${up ? '+' : ''}${diff.toFixed(state.dp)}  (${up ? '+' : ''}${pct.toFixed(2)}%)`,
+  `${up ? '+' : ''}${pips.toFixed(1)} pips`,
+  `${bars} bar${bars === 1 ? '' : 's'}${span ? `  ·  ${span}` : ''}`,
+  ];
+
+  ctx.font = FONT;
+  const boxW = Math.max(...lines.map((t) => ctx.measureText(t).width)) + 16;
+  const boxH = lines.length * 14 + 10;
+
+  let bx = Math.min(Math.max(x2 + 10, 4), plotWidth() - boxW - 4);
+  let by = y2 + (up ? -boxH - 12 : 12);
+  if (by < PAD_T) by = PAD_T + 2;
+  if (by + boxH > PAD_T + plotHeight()) by = PAD_T + plotHeight() - boxH - 2;
+
+  ctx.fillStyle = 'rgba(6,20,19,.94)';
+  ctx.fillRect(bx, by, boxW, boxH);
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx + 0.5, by + 0.5, boxW - 1, boxH - 1);
+
+  ctx.textAlign = 'left';
+  lines.forEach((t, i) => {
+
+  ctx.fillStyle = i === 1 ? col : 'rgba(234,240,238,.82)';
+  ctx.fillText(t, bx + 8, by + 15 + i * 14);
+  });
+  }
+
+  function spanLabel(bars) {
+  const tfMs = state.live && state.live.tfMs;
+  if (!Number.isFinite(tfMs) || tfMs <= 0 || !bars) return '';
+  const mins = Math.round((bars * tfMs) / 60_000);
+  if (mins < 60) return `${mins}m`;
+  const hours = mins / 60;
+  if (hours < 48) return `${hours.toFixed(hours < 10 ? 1 : 0)}h`;
+  return `${(hours / 24).toFixed(1)}d`;
+  }
+
   let axisQueue = [];
 
   function flushAxisOverlay() {
@@ -15518,13 +15733,24 @@ function createProChart(canvas, options = {}) {
   },
 
   barRemainingMs,
-  setMeta({ tfLabel, symbol, quality, dp }) {
+  setMeta({ tfLabel, symbol, quality, dp, pip }) {
   if (tfLabel !== undefined) state.tfLabel = tfLabel;
   if (symbol !== undefined) state.symbol = symbol;
   if (quality !== undefined) state.quality = quality;
   if (dp !== undefined) state.dp = dp;
+
+  if (pip !== undefined && Number.isFinite(pip) && pip > 0) state.pip = pip;
   render();
   },
+
+  setRuler(on) {
+  state.rulerMode = !!on;
+  if (!on) state.measure = null;
+  render();
+  },
+  rulerMode: () => state.rulerMode,
+  clearMeasure() { state.measure = null; render(); },
+  hasMeasure: () => !!(state.measure && state.measure.to),
   layers: () => ({ ...state.layers }),
   zoom, fit, resize, render,
   setAutoScale(on) { state.autoScale = !!on; state.manualRange = null; render(); },
