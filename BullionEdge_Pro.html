@@ -2170,6 +2170,33 @@ kbd {
   .gstep:nth-child(even) .gstep-fig  { order: 0; }
 }
 
+.gquick { margin-bottom: var(--sp-6); }
+.gquick-list { counter-reset: gq; list-style: none; margin: var(--sp-4) 0 0; padding: 0; }
+.gquick-list li {
+  counter-increment: gq; position: relative;
+  padding: 0 0 var(--sp-4) 46px; margin: 0;
+}
+.gquick-list li::before {
+  content: counter(gq);
+  position: absolute; left: 0; top: 0;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 700;
+  color: var(--gold); background: var(--glow-gold);
+  border: 1px solid rgba(224,166,60,.35);
+}
+.gquick-list li > b { display: block; margin-bottom: var(--sp-1); color: var(--ink); }
+.gquick-list li > span { display: block; color: var(--ink-soft); line-height: 1.6; }
+.gquick-list li:last-child { padding-bottom: 0; }
+.gquick-foot {
+  margin: var(--sp-5) 0 0; padding-top: var(--sp-4);
+  border-top: 1px solid var(--line-2); color: var(--ink-soft); line-height: 1.6;
+}
+@media (max-width: 560px) {
+  .gquick-list li { padding-left: 38px; }
+  .gquick-list li::before { width: 26px; height: 26px; font-size: var(--fs-xs); }
+}
+
 /* assets/css/landing.css */
 #landing {
   display: none;
@@ -7287,7 +7314,7 @@ function markup() {
   ${faq('Do you guarantee profits?',
   'No honest tool can, and anyone who does is lying to you. What it does is tighten every factor you actually control: a position size that cannot quietly exceed the risk you set, a score that has to be earned before you get a green light, and the exact win rate each plan needs to break even — so you know what you are aiming at before you risk anything. Most accounts are lost to oversizing and revenge trades, not to bad entries.')}
   ${faq('Where is my data stored?',
-  'In your browser, on your device. There is no account server and nothing syncs. That means it is private, and it also means clearing site data deletes it — so use the backup export.')}
+  'In your browser, on your device. Nothing syncs by default and there is no account to sign into. That makes it private, and it also means clearing site data deletes it — so either export a file backup, or switch on the encrypted off-device copy in Settings, which encrypts your account in your browser before it sends anything and leaves the server holding bytes it has no key for.')}
   ${faq('How do I pay and get access?',
   CHECKOUT.enabled
   ? 'Choose a plan and pay at the checkout — card, PayPal or Apple/Google Pay. Your licence key is emailed the moment payment clears, and you activate it on the login screen. Nobody has to be awake for this; it works at 3am.'
@@ -13197,6 +13224,11 @@ __exports.default = {
   onHover: paintOhlc,
   });
 
+  window.__bepChart = {
+  overlays: () => chart.overlays(),
+  drawnCounts: () => chart.drawnCounts(),
+  };
+
   const sizeOnce = () => { if (chart) chart.resize(); };
   requestAnimationFrame(sizeOnce);
   setTimeout(sizeOnce, 60);
@@ -13998,7 +14030,8 @@ function paintChart() {
   const st = chartStructures(state.xau.tf);
 
   const closedForLevels = (s && s.closed) || [];
-  const levels = st && st.structure ? findLevels(st.structure, closedForLevels, { max: 6 }) : [];
+
+  const levels = st && st.structure ? findLevels(st.structure, closedForLevels, { perSide: 1 }) : [];
 
   chart.setOverlays({
   levels,
@@ -14623,6 +14656,63 @@ function deskOutputNote(layers) {
   : '.'}`;
 }
 
+function emptyLayerNote(layers) {
+  if (!chart || !chart.drawnCounts) return null;
+  const merged = { ...DEFAULT_LAYERS, ...layers };
+  const drawn = chart.drawnCounts();
+  const o = (chart.overlays && chart.overlays()) || {};
+  const tf = esc(state.xau.tf);
+
+  const live = (arr) => (arr || []).filter((x) => x.state !== 'mitigated').length;
+
+  const cases = [
+  {
+  key: 'fvg',
+  on: merged.fvg,
+  drawn: drawn.fvg,
+  found: (o.fvgs || []).length,
+  alive: live(o.fvgs),
+  label: 'Fair value gaps',
+  filled: `all of them have been filled on ${tf}`,
+  hint: 'Gold closes its low-timeframe imbalances quickly — H1 and H4 usually still hold some.',
+  },
+  {
+  key: 'ob',
+  on: merged.ob,
+  drawn: drawn.ob,
+  found: (o.blocks || []).length,
+  alive: live(o.blocks),
+  label: 'Order blocks',
+  filled: `all of them have been mitigated on ${tf}`,
+  hint: 'Try a higher timeframe.',
+  },
+  {
+  key: 'zones',
+  on: merged.zones,
+  drawn: drawn.zones,
+  found: (o.levels || []).length,
+  alive: (o.levels || []).length,
+  label: 'Support and resistance',
+  filled: `price has not turned at the same area twice on ${tf}`,
+  hint: 'A level needs at least two touches before it is one.',
+  },
+  ];
+
+  const lines = [];
+  for (const c of cases) {
+  if (!c.on || c.drawn > 0) continue;
+  if (!c.found) {
+  lines.push(`<b>${esc(c.label)}:</b> none found on ${tf}. ${esc(c.hint)}`);
+  } else if (!c.alive) {
+  lines.push(`<b>${esc(c.label)}:</b> ${c.found} found, ${esc(c.filled)} — so there is nothing live to draw. ${esc(c.hint)}`);
+  } else {
+
+  lines.push(`<b>${esc(c.label)}:</b> ${c.alive} still open, but ${c.alive === 1 ? 'it is' : 'they are'} outside the prices on screen. Zoom out to reach ${c.alive === 1 ? 'it' : 'them'}.`);
+  }
+  }
+  return lines.length ? lines.join('<br>') : null;
+}
+
 function paintIndicatorBar(layers) {
   const host = byId('xau-indbar');
   if (!host) return;
@@ -14634,7 +14724,7 @@ function paintIndicatorBar(layers) {
   count.hidden = active.length === 0;
   }
 
-  const note = deskOutputNote(layers);
+  const note = [deskOutputNote(layers), emptyLayerNote(layers)].filter(Boolean).join('<br>');
 
   if (!active.length) {
 
@@ -14801,6 +14891,8 @@ function createProChart(canvas, options = {}) {
   canvas,
   ctx: canvas.getContext('2d'),
   candles: [],
+
+  drawn: { fvg: 0, ob: 0, zones: 0 },
   overlays: {},
   layers: { ...DEFAULT_LAYERS, ...(options.layers || {}) },
   dp: options.dp || 2,
@@ -15063,6 +15155,8 @@ function createProChart(canvas, options = {}) {
   ensureSized();
   if (!state.width) return;
 
+  state.drawn = { fvg: 0, ob: 0, zones: 0 };
+
   ctx.clearRect(0, 0, state.width, state.height);
   ctx.fillStyle = COLOR.bg;
   ctx.fillRect(0, 0, state.width, state.height);
@@ -15115,6 +15209,7 @@ function createProChart(canvas, options = {}) {
   const yHi = yOf(z.hi, range);
   const yLo = yOf(z.lo, range);
   if (yLo < PAD_T || yHi > PAD_T + plotHeight()) continue;
+  state.drawn.zones++;
 
   const top = Math.min(yHi, yLo);
   const h = Math.max(2, Math.abs(yLo - yHi));
@@ -15310,6 +15405,7 @@ function createProChart(canvas, options = {}) {
   function drawZones(ctx, range, start, end) {
   const o = state.overlays;
   const right = plotWidth();
+  const bottom = PAD_T + plotHeight();
 
   if (state.layers.fvg) {
   for (const g of o.fvgs || []) {
@@ -15319,6 +15415,8 @@ function createProChart(canvas, options = {}) {
   ctx.fillStyle = g.dir === 'bull' ? COLOR.fvgBull : COLOR.fvgBear;
   const yTop = yOf(g.top, range);
   const yBot = yOf(g.bottom, range);
+
+  if (yBot > PAD_T && yTop < bottom) state.drawn.fvg++;
   ctx.fillRect(x0, yTop, right - x0, Math.max(1, yBot - yTop));
   label(ctx, x0 + 3, yTop + 9, `FVG${g.state === 'partial' ? ' ·' : ''}`, g.dir === 'bull' ? COLOR.up : COLOR.down);
   }
@@ -15331,6 +15429,7 @@ function createProChart(canvas, options = {}) {
   if (x0 > right) continue;
   const yTop = yOf(b.top, range);
   const yBot = yOf(b.bottom, range);
+  if (yBot > PAD_T && yTop < bottom) state.drawn.ob++;
   ctx.fillStyle = b.activeDir === 'bull' ? COLOR.obBull : COLOR.obBear;
   ctx.fillRect(x0, yTop, right - x0, Math.max(1, yBot - yTop));
   ctx.strokeStyle = b.activeDir === 'bull' ? 'rgba(92,134,194,.45)' : 'rgba(224,166,60,.4)';
@@ -15906,6 +16005,9 @@ function createProChart(canvas, options = {}) {
   render();
   },
   setOverlays(overlays) { state.overlays = overlays || {}; render(); },
+
+  overlays() { return state.overlays; },
+  drawnCounts() { return { ...state.drawn }; },
   setLayers(layers) { state.layers = { ...state.layers, ...layers }; render(); },
 
   setLive(live) {
@@ -16110,9 +16212,19 @@ function findLevels(structure, candles = [], opts = {}) {
   .filter((c) => c.length >= 2)
   .map((c) => buildZone(c, candles, atr, price, lastIndex));
 
-  return zones
-  .sort((a, b) => b.strength - a.strength)
-  .slice(0, max);
+  const ranked = zones.sort((a, b) => b.strength - a.strength);
+
+  if (Number.isFinite(opts.perSide) && opts.perSide > 0) {
+  const near = (z) => (z.kind === 'support' ? price - z.hi : z.lo - price);
+  const pick = (kind) => ranked
+  .filter((z) => z.kind === kind)
+  .sort((a, b) => near(a) - near(b))
+  .slice(0, opts.perSide);
+
+  return [...pick('resistance'), ...pick('support')];
+  }
+
+  return ranked.slice(0, max);
 }
 
 function buildZone(cluster, candles, atr, price, lastIndex) {
@@ -21676,6 +21788,7 @@ const { CHECKOUT, planLabel } = __req("src/domain/licensing.js");
 const { readEntitlement, STATE } = __req("src/domain/entitlement.js");
 const { LIMITS, initials, displayNameFor } = __req("src/domain/profile.js");
 const { fileToSquareDataUrl, ACCEPT } = __req("src/ui/photo.js");
+const cloud = __req("src/integrations/backup.js");
 
 const PROFILE_FIELDS = ['displayName', 'email', 'broker', 'country', 'city', 'address', 'bio'];
 
@@ -21696,7 +21809,7 @@ __exports.default = {
   <div class="card reveal" id="profile-card">
   <p class="eyebrow">Your profile</p>
   <h2>Who you are
-  <span class="hint">Shown only to you, in the corner of this desk. Every field is optional and none of it leaves this device.</span>
+  <span class="hint">Shown only to you, in the corner of this desk. Every field is optional, and none of it leaves this device unless you switch on the encrypted backup below — which sends it in a form nobody but you can read.</span>
   </h2>
 
   <div class="pf-head">
@@ -21825,6 +21938,39 @@ __exports.default = {
   <button class="btn ghost sm" id="btn-restore">Restore from backup</button>
   </div>
   <input type="file" id="restore-file" accept="application/json,.json" hidden>
+  </div>
+
+  ${ ''}
+  <div class="card reveal" id="cloud-card">
+  <p class="eyebrow">Your data · optional</p>
+  <h2>Keep a copy off this device
+  <span class="hint">A file backup only helps if you remembered to take one. This takes it for you.</span>
+  </h2>
+
+  ${callout('', `<b>What leaves this device, exactly.</b> Your account is encrypted here, in this browser,
+  before anything is sent — and only the encrypted bytes go. The server holds a copy it has no key for,
+  so nobody operating it can read your name, your email or a single trade. <b>The cost of that is real:
+  lose the secret below and the copy cannot be recovered by anyone, including us.</b> There is no reset
+  link, because a reset would mean the server could read it.`)}
+
+  <div id="cloud-status" style="margin:var(--sp-3) 0"></div>
+
+  <div class="field">
+  <label for="cloud-secret">The secret that unlocks it</label>
+  <input id="cloud-secret" type="password" autocomplete="off" spellcheck="false"
+  placeholder="Your licence key">
+  <p class="t-faint" style="font-size:var(--fs-2xs);margin-top:var(--sp-1)">
+  Your licence key is filled in automatically when you have one, and it is the easy answer — it is in
+  your purchase email, so it survives losing this browser. Type something else if you would rather use
+  your own passphrase, and then keep it somewhere safe.
+  </p>
+  </div>
+
+  <div class="row tight" style="margin-top:var(--sp-3)">
+  <button class="btn sm" id="btn-cloud-save">Back up now</button>
+  <button class="btn ghost sm" id="btn-cloud-restore">Restore onto this device</button>
+  <button class="btn ghost sm" id="btn-cloud-forget">Delete the stored copy</button>
+  </div>
   </div>
 
   <div class="card reveal" id="sub-card">
@@ -22078,6 +22224,64 @@ __exports.default = {
   paintStorage(getBackend());
   });
 
+  on(root, 'click', '#btn-cloud-save', async () => {
+  const secret = cloudSecret();
+  if (!secret) { toast('Enter the secret that will unlock the backup.', 'bad'); return; }
+  const btn = byId('btn-cloud-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Encrypting…'; }
+  try {
+  const res = await cloud.backUp(secret);
+  toast(`Backed up — ${Math.round(res.bytes / 1024)} KB, encrypted.`, 'ok');
+  await paintCloud();
+  } catch (err) {
+  toast(err.message, 'bad');
+  } finally {
+  if (btn) { btn.disabled = false; btn.textContent = 'Back up now'; }
+  }
+  });
+
+  on(root, 'click', '#btn-cloud-restore', async () => {
+  const secret = cloudSecret();
+  if (!secret) { toast('Enter the secret the backup was made with.', 'bad'); return; }
+
+  const ok = await confirm(
+  'Replace everything on this device?',
+  `<p>The stored copy will overwrite the profile, settings and journal in this browser.
+  Anything here that is not in the backup is lost.</p>
+  <p class="t-faint">If you are not sure, export a file backup first.</p>`,
+  'Restore and overwrite',
+  );
+  if (!ok) return;
+
+  try {
+  const res = await cloud.restore(secret);
+  toast('Restored. Reloading so everything reads from the restored account.', 'ok');
+
+  setTimeout(() => window.location.reload(), 900);
+  void res;
+  } catch (err) {
+  toast(err.message, 'bad');
+  }
+  });
+
+  on(root, 'click', '#btn-cloud-forget', async () => {
+  const secret = cloudSecret();
+  if (!secret) { toast('Enter the secret the backup was made with.', 'bad'); return; }
+  const ok = await confirm(
+  'Delete the stored copy?',
+  '<p>The copy held off this device is removed. Nothing in this browser is touched.</p>',
+  'Delete it',
+  );
+  if (!ok) return;
+  try {
+  await cloud.forget(secret);
+  toast('The stored copy has been deleted.', 'ok');
+  await paintCloud();
+  } catch (err) {
+  toast(err.message, 'bad');
+  }
+  });
+
   on(root, 'click', '#btn-backup', () => exportBackup());
   on(root, 'click', '#btn-csv2', () => exportCsv());
   on(root, 'click', '#btn-restore', () => byId('restore-file')?.click());
@@ -22227,6 +22431,11 @@ __exports.default = {
   const backend = getBackend();
   paintStorage(backend);
 
+  const cloudBox = byId('cloud-secret');
+  const acct = currentAccount();
+  if (cloudBox && acct && acct.licenseKey) cloudBox.value = acct.licenseKey;
+  paintCloud();
+
   setHtml('diag-host', [
   ['Storage', backend === 'idb' ? 'IndexedDB' : backend === 'local' ? 'localStorage' : 'Memory only'],
   ['Charts', hasChartJs() ? 'Chart.js' : 'Built-in fallback'],
@@ -22285,6 +22494,45 @@ function renderAiNote(root) {
 
 function setText(id, text) { const n = byId(id); if (n) n.textContent = text; }
 function setHtml(id, html) { const n = byId(id); if (n) n.innerHTML = html; }
+
+function cloudSecret() {
+  const node = byId('cloud-secret');
+  return node ? String(node.value || '').trim() : '';
+}
+
+async function paintCloud() {
+  const host = byId('cloud-status');
+  if (!host) return;
+
+  if (!cloud.available()) {
+  host.innerHTML = callout('', '<b>Not available in this browser.</b> Encrypting the backup needs WebCrypto, which private windows sometimes withhold. The file export above still works.');
+  return;
+  }
+  if (!cloud.BACKUP_ENDPOINT) {
+  host.innerHTML = callout('', '<b>No backup service is configured.</b> This build has nowhere to send it. The file export above still works.');
+  return;
+  }
+
+  const secret = cloudSecret();
+  if (!secret) {
+  host.innerHTML = '<p class="t-sm t-muted">Enter a secret below to see whether a copy is already stored.</p>';
+  return;
+  }
+
+  host.innerHTML = '<p class="t-sm t-muted">Checking…</p>';
+  const info = await cloud.status(secret);
+  if (!info) {
+  host.innerHTML = callout('', '<b>Could not reach the backup service.</b> It may be offline, or you may be. Nothing has changed on this device.');
+  return;
+  }
+  if (!info.exists) {
+  host.innerHTML = '<p class="t-sm t-muted">No copy stored yet for this secret.</p>';
+  return;
+  }
+  const when = new Date(info.updatedAt);
+  host.innerHTML = callout('long',
+  `<b>A copy is stored.</b> ${Math.round(info.bytes / 1024)} KB, encrypted, last written ${esc(when.toLocaleString())}.`);
+}
 
 async function paintStorage(backend) {
   if (backend === 'memory') {
@@ -22906,6 +23154,156 @@ Object.assign(__exports, { ACCEPT, fileToSquareDataUrl });
 
 });
 
+__def("src/integrations/backup.js", function (__exports, __req) {
+
+const { exportAll, importAll } = __req("src/core/db.js");
+
+const BACKUP_ENDPOINT = '';
+
+const SALT = 'bullionedge.pro/backup/v1';
+
+const ROUNDS = 210_000;
+
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
+const b64 = (buf) => {
+  const bytes = new Uint8Array(buf);
+  let s = '';
+
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+  s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(s);
+};
+
+const unb64 = (s) => {
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};
+
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+
+const available = () => typeof crypto !== 'undefined'
+  && !!crypto.subtle
+  && typeof indexedDB !== 'undefined';
+
+async function backupId(licenceKey) {
+  const digest = await crypto.subtle.digest('SHA-256', enc.encode(`${SALT}:id:${licenceKey}`));
+  return hex(digest);
+}
+
+async function encryptionKey(licenceKey) {
+  const base = await crypto.subtle.importKey('raw', enc.encode(licenceKey), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+  { name: 'PBKDF2', salt: enc.encode(SALT), iterations: ROUNDS, hash: 'SHA-256' },
+  base,
+  { name: 'AES-GCM', length: 256 },
+  false,
+  ['encrypt', 'decrypt'],
+  );
+}
+
+async function seal(licenceKey, payload) {
+  const key = await encryptionKey(licenceKey);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const body = enc.encode(JSON.stringify(payload));
+  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, body);
+
+  const joined = new Uint8Array(iv.length + cipher.byteLength);
+  joined.set(iv, 0);
+  joined.set(new Uint8Array(cipher), iv.length);
+  return b64(joined);
+}
+
+async function unseal(licenceKey, blob) {
+  const bytes = unb64(blob);
+  if (bytes.length < 13) throw new Error('That backup is truncated and cannot be read.');
+  const key = await encryptionKey(licenceKey);
+  const iv = bytes.subarray(0, 12);
+  const body = bytes.subarray(12);
+  let plain;
+  try {
+  plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, body);
+  } catch {
+
+  throw new Error('This backup was made with a different licence key, so it cannot be opened here.');
+  }
+  return JSON.parse(dec.decode(plain));
+}
+
+const endpointFor = (id) => `${BACKUP_ENDPOINT}?id=${encodeURIComponent(id)}`;
+
+async function problem(res) {
+  let detail = '';
+  try {
+  const body = await res.json();
+  detail = body.hint || body.error || '';
+  } catch {   }
+  if (res.status === 413) return new Error(`That account is too large to back up. ${detail}`);
+  if (res.status === 404) return new Error('There is no backup stored for this licence key yet.');
+  if (res.status === 503) return new Error('The backup service is not configured yet.');
+  return new Error(detail ? `Backup service: ${detail}` : `Backup service returned ${res.status}.`);
+}
+
+async function backUp(licenceKey) {
+  if (!available()) throw new Error('This browser cannot encrypt, so it cannot back up.');
+  if (!licenceKey) throw new Error('A licence key is needed to encrypt the backup.');
+  if (!BACKUP_ENDPOINT) throw new Error('No backup service is configured.');
+
+  const payload = await exportAll();
+  const blob = await seal(licenceKey, payload);
+  const id = await backupId(licenceKey);
+
+  const res = await fetch(endpointFor(id), {
+  method: 'PUT',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ blob }),
+  });
+  if (!res.ok) throw await problem(res);
+  return res.json();
+}
+
+async function status(licenceKey) {
+  if (!available() || !licenceKey || !BACKUP_ENDPOINT) return null;
+  const id = await backupId(licenceKey);
+  let res;
+  try { res = await fetch(endpointFor(id)); }
+  catch { return null; }
+  if (res.status === 404) return { exists: false };
+  if (!res.ok) return null;
+  const body = await res.json();
+  return { exists: true, bytes: body.bytes, updatedAt: body.updatedAt };
+}
+
+async function restore(licenceKey) {
+  if (!available()) throw new Error('This browser cannot decrypt, so it cannot restore.');
+  if (!licenceKey) throw new Error('A licence key is needed to decrypt the backup.');
+
+  const id = await backupId(licenceKey);
+  const res = await fetch(endpointFor(id));
+  if (!res.ok) throw await problem(res);
+
+  const body = await res.json();
+  const payload = await unseal(licenceKey, body.blob);
+  await importAll(payload);
+  return { updatedAt: body.updatedAt, bytes: body.bytes };
+}
+
+async function forget(licenceKey) {
+  if (!licenceKey) throw new Error('A licence key is needed.');
+  const id = await backupId(licenceKey);
+  const res = await fetch(endpointFor(id), { method: 'DELETE' });
+  if (!res.ok) throw await problem(res);
+  return true;
+}
+
+Object.assign(__exports, { BACKUP_ENDPOINT, available, backupId, backUp, status, restore, forget });
+
+});
+
 __def("src/ui/views/guide.js", function (__exports, __req) {
 
 const { esc } = __req("src/core/dom.js");
@@ -23239,8 +23637,8 @@ __exports.default = {
   <h1>How to use this desk</h1>
   <p class="viewsub">
   ${ ''}
-  ${STEPS.length} steps from an access key to a logged trade. The whole point is the sixty seconds in the
-  middle — the ones between wanting to click and being allowed to.
+  Four steps to your first answer, then ${STEPS.length} in full for when you want the detail. The whole
+  point is the sixty seconds in the middle — the ones between wanting to click and being allowed to.
   </p>
   </div>
 
@@ -23253,6 +23651,48 @@ __exports.default = {
   ${callout('gold', `<b>Before anything else.</b> This is planning and journaling software. It has no broker
   connection, it cannot place, modify or close an order, and it does not know where price is going. Every trade
   is executed by you, on your own platform, at your own risk.`)}
+
+  ${ ''}
+  <div class="card gold reveal gquick">
+  <p class="eyebrow">Start here</p>
+  <h2>The whole thing in four steps</h2>
+  <p class="t-muted" style="margin-top:calc(var(--sp-2) * -1)">
+  Everything below this card is detail you can come back for. You do not need it to get an answer today.
+  </p>
+
+  <ol class="gquick-list">
+  <li>
+  <b>Set two numbers, once.</b>
+  <span>Open <b>Desk → Settings</b> and enter your account balance and how much of it you are willing
+  to lose on one trade — 1% or less if you are not sure. Nothing else on that screen has to be touched.
+  The desk will not size a position until these exist, and it will tell you which one is missing.</span>
+  </li>
+  <li>
+  <b>Open XAU/USD and wait a moment.</b>
+  <span>It reads the chart by itself — structure, liquidity, imbalance, where price sits in its range,
+  momentum — and scores what it finds out of a hundred. There is nothing to fill in and nothing to tick.</span>
+  </li>
+  <li>
+  <b>Read the answer, then the working under it.</b>
+  <span>Buy candidate, sell candidate, or no trade. <b>No trade is the most common answer and it is a
+  real one.</b> Underneath, every component shows what it scored out of what it could, so you can see
+  which evidence carried the verdict and decide whether you agree.</span>
+  </li>
+  <li>
+  <b>If it is a trade, copy the plan to your broker.</b>
+  <span>Entry zone, stop, targets and the exact lot size — the size falls out of your stop and the risk
+  you set in step one, so it is never a number you pick. <b>Order ticket</b> lays it out to type in.
+  Place it on your own platform. Then <b>Save</b>, so the journal can tell you later whether any of this
+  is working for you.</span>
+  </li>
+  </ol>
+
+  <p class="gquick-foot">
+  <b>If you only remember one thing:</b> the position size is the product. Entries are easy to find and
+  impossible to be reliably right about; the size you take is the part you fully control, and it is what
+  decides whether a bad run is a setback or the end of the account.
+  </p>
+  </div>
 
   <ol class="gsteps">
   ${STEPS.map((s) => `
