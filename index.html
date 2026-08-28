@@ -9,7 +9,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="Score your gold and FX trade plan before you click. BullionEdge Pro is an offline-first pre-trade checklist, position-size risk manager and trading journal.">
+<meta name="description" content="Score your gold trade before you click. BullionEdge Pro runs the whole pre-trade check for you from closed candles — no boxes to tick — then sizes the position and keeps the journal. Offline-first.">
 <title>BullionEdge Pro — AI Pre-Trade Checklist for Gold &amp; FX</title>
 
 <!-- ==================== Search and social ====================
@@ -33,7 +33,7 @@
 <meta property="og:site_name" content="BullionEdge Pro">
 <meta property="og:url" content="https://bullionedgepro.github.io/bullionedge-pro/">
 <meta property="og:title" content="BullionEdge Pro — AI Pre-Trade Checklist for Gold &amp; FX">
-<meta property="og:description" content="Score your gold and FX trade plan before you click. An offline-first pre-trade checklist, position-size risk manager and trading journal.">
+<meta property="og:description" content="Score your gold trade before you click. The whole pre-trade check runs itself from closed candles — no boxes to tick. Position sizing and journal included, offline-first.">
 <meta property="og:image" content="https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp">
 <meta property="og:image:width" content="1600">
 <meta property="og:image:height" content="900">
@@ -42,7 +42,7 @@
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="BullionEdge Pro — AI Pre-Trade Checklist for Gold &amp; FX">
-<meta name="twitter:description" content="Score your gold and FX trade plan before you click. An offline-first pre-trade checklist, position-size risk manager and trading journal.">
+<meta name="twitter:description" content="Score your gold trade before you click. The whole pre-trade check runs itself from closed candles — no boxes to tick. Position sizing and journal included, offline-first.">
 <meta name="twitter:image" content="https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp">
 
 <!-- Prices, term lengths and the feature list are the ones in
@@ -64,12 +64,12 @@
   "softwareVersion": "2.0.0",
   "inLanguage": "en",
   "image": "https://bullionedgepro.github.io/bullionedge-pro/gallery/web/hero-poster.webp",
-  "description": "BullionEdge Pro scores a gold or FX trade plan before it is placed. It is a rules-based pre-trade checklist, position-size risk manager, session clock and trading journal that runs entirely in the browser and keeps working with no connection. It is not a signal service and does not predict prices.",
+  "description": "BullionEdge Pro scores a gold trade plan before it is placed. It runs the pre-trade check itself — structure, liquidity, imbalance, location and momentum, all measured from closed candles rather than asked for — and is also a position-size risk manager, session clock and trading journal. It runs entirely in the browser and keeps working with no connection. It is not a signal service and does not predict prices.",
   "featureList": [
     "XAU/USD pre-trade analysis engine reading market structure, liquidity, fair value gaps and order blocks from the chart",
     "Buy, sell or no-trade verdict with entry zone, structural stop, targets and reward-to-risk",
     "MT5-style gold chart with the detected structures drawn on it",
-    "Rules-based pre-trade checklist and 100-point confluence score",
+    "Rules-based pre-trade check and 100-point confluence score, computed rather than ticked",
     "Position and lot sizing that never exceeds your nominated risk",
     "Optional AI assistant that explains the analysis and is checked for invented prices",
     "Trading journal with a measured six-stage development path and full local export",
@@ -972,6 +972,13 @@ tr:last-child td { border-bottom: none; }
   margin-left: auto; font-family: var(--font-mono); font-size: 9.5px;
   padding: 2px 6px; border-radius: var(--r-pill); background: var(--gold); color: var(--gold-ink); font-weight: 600;
 }
+.rail .navgroup { display: flex; flex-direction: column; gap: 3px; }
+.rail .navgroup + .navgroup { margin-top: var(--sp-4); }
+.rail .navgrouph {
+  margin: 0 0 var(--sp-1); padding: 0 var(--sp-3);
+  font-size: var(--fs-2xs); letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted-2, var(--muted)); font-weight: 600;
+}
 .rail .railfoot { margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--line-2); }
 .modeswitch { margin-top: var(--sp-4); }
 .modeswitch .lbl { font-size: var(--fs-2xs); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; }
@@ -990,6 +997,8 @@ tr:last-child td { border-bottom: none; }
     padding: 4px 2px calc(4px + env(safe-area-inset-bottom));
   }
 
+  .rail .navgroup { display: contents; }
+  .rail .navgrouph { display: none; }
   .rail .navbtn[data-tier="secondary"] { display: none; }
   .rail .navbtn.more { display: flex; }
 
@@ -3741,8 +3750,6 @@ const state = {
   layers: {},
   weights: {},
   levels: [],
-  checks: {},
-  confirm: {},
   },
 
   ai: {
@@ -3754,8 +3761,6 @@ const state = {
   autoBrief: false,
   },
 
-  checks: {},
-
   psych: {},
 
   copy: {},
@@ -3765,13 +3770,13 @@ const state = {
   analysis: null,
 };
 
-const PERSIST_KEYS = ['ui', 'settings', 'setup', 'market', 'xau', 'ai', 'checks', 'psych', 'copy'];
+const PERSIST_KEYS = ['ui', 'settings', 'setup', 'market', 'xau', 'ai', 'psych', 'copy'];
 
 let saveTimer = null;
 let suppressPersist = false;
 
 const PRISTINE = JSON.parse(JSON.stringify(
-  ['ui', 'settings', 'setup', 'market', 'xau', 'ai', 'checks', 'psych', 'copy']
+  ['ui', 'settings', 'setup', 'market', 'xau', 'ai', 'psych', 'copy']
   .reduce((acc, k) => { acc[k] = state[k]; return acc; }, {}),
 ));
 
@@ -3827,17 +3832,16 @@ async function hydrate(profileId) {
 }
 
 function resetSetup() {
-  state.checks = {};
   state.psych = {};
   state.analysis = null;
-  emit(EV.STATE, { keys: ['checks', 'psych', 'analysis'] });
+  emit(EV.STATE, { keys: ['psych', 'analysis'] });
   schedulePersist();
 }
 
 function snapshot() {
   return JSON.parse(JSON.stringify({
   ui: state.ui, settings: state.settings, setup: state.setup,
-  checks: state.checks, psych: state.psych, copy: state.copy,
+  psych: state.psych, copy: state.copy,
   journalCount: state.journal.length,
   }));
 }
@@ -4188,7 +4192,7 @@ const { scoreTrade, confidenceFrom, estimateWinProbability, decide, gradeOf, FAC
 const { getInstrument } = __req("src/domain/instruments.js");
 
 function analyse(state, now = Date.now()) {
-  const { settings, setup, checks: manualChecks, psych: psychAnswers, journal } = state;
+  const { settings, setup, psych: psychAnswers, journal } = state;
   const spec = getInstrument(settings.instrument);
 
   const session = readSession(settings.tz);
@@ -4218,11 +4222,24 @@ function analyse(state, now = Date.now()) {
   setup.dir, setup.entry, plan.stopPrice, setup.support, setup.resistance, plan.pip,
   );
 
-  const checks = { ...manualChecks };
+  const checks = {};
+
   checks.session = !!session.active && !session.weekend;
   checks.rr = plan.valid && Number.isFinite(plan.rr) && plan.rr >= 1.5;
   checks.limit = !risk.deskShut;
   checks.vol = setup.spread !== 'wide' && setup.volatility !== 'low';
+
+  checks.trend = !!zone.withTrend;
+
+  checks.level = zone.valid && zone.quality > 0;
+
+  checks.pullback = zone.valid && (setup.dir === 'long' ? zone.position <= 0.5 : zone.position >= 0.5);
+
+  checks.momentum = setup.structure === 'bos' || setup.structure === 'choch';
+
+  checks.rsi = zone.valid && (setup.dir === 'long' ? zone.position <= 0.9 : zone.position >= 0.1);
+
+  checks.news = newsRead.level === 'clear';
 
   const psych = readPsychology(psychAnswers);
 
@@ -4252,14 +4269,13 @@ function analyse(state, now = Date.now()) {
 }
 
 function workflowSteps({ zone, plan, checks, psych, score, decision }) {
-  const manualAnswered = FACTORS.filter((f) => !f.auto).filter((f) => checks[f.id]).length;
+
   const stages = [
-  { key: 'market',    label: 'Market',       done: zone.valid },
-  { key: 'analysis',  label: 'AI analysis',  done: zone.valid && zone.kind !== 'wait' },
-  { key: 'risk',      label: 'Risk',         done: plan.valid },
-  { key: 'confirm',   label: 'Confirmation', done: manualAnswered >= 4 },
-  { key: 'psych',     label: 'Psychology',   done: psych.complete },
-  { key: 'score',     label: 'Score',        done: score.mandatoryOk && decision.key !== 'avoid' },
+  { key: 'market',    label: 'Market',      done: zone.valid },
+  { key: 'analysis',  label: 'AI analysis', done: zone.valid && zone.kind !== 'wait' },
+  { key: 'risk',      label: 'Risk',        done: plan.valid },
+  { key: 'psych',     label: 'Psychology',  done: psych.complete },
+  { key: 'score',     label: 'Score',       done: score.mandatoryOk && decision.key !== 'avoid' },
   ];
   const firstPending = stages.findIndex((s) => !s.done);
   return stages.map((s, i) => ({ ...s, active: i === firstPending }));
@@ -7098,7 +7114,7 @@ function markup() {
   <ol>
   <li>Set your capital, your risk percentage and your timezone once.</li>
   <li>Enter the pair, direction, entry, stop and target — in pips or in price.</li>
-  <li>Work the ten-factor checklist. Mandatory factors cannot be skipped.</li>
+  <li>Read the ten factors, worked out from what you entered and from the clock and calendar.</li>
   <li>Answer the psychology check honestly.</li>
   <li>Read the verdict, the reasons behind it, and the exact position size.</li>
   </ol>
@@ -7373,10 +7389,10 @@ const EXPECT = {
   ],
   day: [
   { t: 'Open the desk.', b: 'Live gold, the session clock in your own timezone, and what the higher timeframes are doing.' },
-  { t: 'Work the checklist.', b: 'You tick what you can genuinely see. The engine shows what it detected beside each box, and never ticks one for you.' },
+  { t: 'See what it found.', b: 'Structure, liquidity, imbalance and location, each measured from closed candles and shown with what it scored out of what it could.' },
   { t: 'Press Analyze.', b: 'Structure, liquidity, imbalance, location and momentum are weighed into one score, with the case against stated as plainly as the case for.' },
   { t: 'Get an answer.', b: 'Buy candidate, sell candidate, or no trade — and if it is a trade, the entry zone, stop, three targets and the exact lot size.' },
-  { t: 'Decide.', b: 'You confirm you have checked the levels on your own broker, then place it there. Or you do not.' },
+  { t: 'Decide.', b: 'Check the levels against your own broker and place it there. Or do not — a skipped trade costs nothing.' },
   { t: 'Log it.', b: 'Outcome, emotion, whether you followed the plan. Over time this is what turns the score from a guess into something calibrated to you.' },
   ],
 };
@@ -7392,8 +7408,8 @@ const FEATURES = [
   { shot: 'chart', group: 'The engine', icon: '◈', title: 'Nineteen overlays, none of them forced',
   body: 'Order blocks, fair value gaps, liquidity pools, BOS/CHoCH, engulfing bars, Fibonacci, premium/discount, session shading, four EMAs, VWAP, RSI, MACD. Every one is off until you switch it on, each is drawn in a colour the chip beside the chart matches, and one tap takes it back off.' },
 
-  { shot: 'checklist', group: 'The engine', icon: '✓', title: 'The ten-factor checklist',
-  body: 'What you can see and the engine cannot. It shows what it detected beside every item, so you can find out exactly where you and it disagree.' },
+  { shot: 'checklist', group: 'The engine', icon: '✓', title: 'It shows its working',
+  body: 'Ten weighted components, each with what it earned out of what it could — so the score at the top is arithmetic you can check rather than a verdict you have to take on trust. Nothing to tick: every line was measured from closed candles.' },
 
   { shot: 'plan', group: 'The engine', icon: '△', title: 'Entry, stop, targets, lot size',
   body: 'The stop sits beyond the level that would prove the idea wrong. Targets come from real structure and are spaced so three cannot hide inside one ATR. The size falls out of the loss you accepted.' },
@@ -8035,7 +8051,7 @@ const CLAIMS = [
   t: 'It is built to tell you no',
   b: 'Weekend, news blackout, daily limit reached, position too small to place, or an honest answer on the '
   + 'psychology check — any one of those overrides the score outright. A 90/100 setup still gets refused.',
-  check: 'Run the checklist on a Sunday, or inside a news window. Watch it refuse a setup it otherwise likes.',
+  check: 'Open the desk on a Sunday, or inside a news window. Watch it refuse a setup it otherwise likes.',
   },
 ];
 
@@ -8074,7 +8090,7 @@ const TRUST = [
   },
   {
   k: 'Works with no connection',
-  v: 'The full checklist, risk calculation and plan run offline. Put the phone in aeroplane mode and try it.',
+  v: 'The full analysis, risk calculation and plan run offline. Put the phone in aeroplane mode and try it.',
   },
 ];
 
@@ -8209,8 +8225,32 @@ const navBtn = (v, cls = 'navbtn') => `
   ${v.badge ? `<span class="badge" data-badge="${v.id}"></span>` : ''}
   </button>`;
 
+const NAV_GROUPS = [
+  { label: 'Trade',  ids: ['xau', 'live', 'analyse'] },
+  { label: 'Review', ids: ['journal', 'dashboard', 'psychology', 'copytrade'] },
+  { label: 'Desk',   ids: ['risk', 'guide', 'settings'] },
+];
+
 function renderNav() {
-  return listViews().map((v) => navBtn(v)).join('') + `
+  const all = listViews();
+  const byId2 = new Map(all.map((v) => [v.id, v]));
+  const grouped = new Set(NAV_GROUPS.flatMap((g) => g.ids));
+
+  const groups = NAV_GROUPS.map((g) => {
+  const items = g.ids.map((id) => byId2.get(id)).filter(Boolean);
+  if (!items.length) return '';
+  return `<div class="navgroup">
+  <p class="navgrouph">${g.label}</p>
+  ${items.map((v) => navBtn(v)).join('')}
+  </div>`;
+  }).join('');
+
+  const orphans = all.filter((v) => !grouped.has(v.id));
+  const rest = orphans.length
+  ? `<div class="navgroup">${orphans.map((v) => navBtn(v)).join('')}</div>`
+  : '';
+
+  return groups + rest + `
   <button class="navbtn more" id="nav-more" type="button"
   aria-haspopup="dialog" aria-expanded="false" aria-controls="navsheet">
   <span class="ico" aria-hidden="true">⋯</span>
@@ -9523,7 +9563,7 @@ function render(analysis) {
   if (!analysis) {
   body.innerHTML = `<div class="amsg">
   <div class="atitle">Ready when you are</div>
-  Fill in your levels and stop on the <b>Analyse</b> screen and I will walk the setup through the checklist with you.
+  Fill in your levels and stop on the <b>Analyse</b> screen and I will walk you through what the ten factors came out as.
   </div>`;
   return;
   }
@@ -10381,8 +10421,6 @@ function buildFacts(analysis, extra = {}) {
   missingConfirmations: analysis.missingConfirmations || [],
   conflicts: (analysis.conflicts || []).map((c) => c.title),
   blockingReasons: analysis.hardStops || [],
-
-  traderChecklistLeans: analysis.checklistBias ? analysis.checklistBias.dir : null,
   };
 }
 
@@ -10458,7 +10496,7 @@ const HELP_SYSTEM_PROMPT = `You are the help assistant inside BullionEdge Pro, a
 
 WHAT THE APP DOES
 - XAU/USD screen: reads market structure, liquidity, fair value gaps and order blocks from candle data, scores the setup out of 100, and answers buy candidate, sell candidate, or no trade. Produces an entry zone, a structural stop, up to three targets and a position size.
-- Analyse screen: scores a setup the trader types in themselves, against a ten-factor checklist with four mandatory factors.
+- Analyse screen: scores a setup the trader types in themselves. Its ten factors are derived from what they entered and from the clock and calendar — there is nothing to tick anywhere in the app.
 - Live screen: gold spot, a candle chart, and four rules-based setups refreshed every two hours.
 - Journal: logged trades, outcomes, and a six-stage development path measured from them.
 - Psychology: readiness questions that can block a trade outright.
@@ -10691,8 +10729,8 @@ set earlier, at a calmer moment than the one you are in now.`,
   keys: ['predict', 'probability', 'win rate', 'accuracy', 'will it', 'guarantee', 'signal', 'forecast', 'sure', 'reliable', 'work'],
   text: `It does not predict anything. There is no forecast anywhere in this app.
 
-What it does is measure the setup you are already looking at against a checklist, size the position
-against the risk you set, and refuse the trade when your own rules say no. Every number on the
+What it does is measure the setup you are already looking at against a weighted rulebook, size the
+position against the risk you set, and refuse the trade when your own rules say no. Every number on the
 analysis screen is derived from closed candles that have already printed. Nothing is projected
 forward, and no part of the app has an opinion about where price goes next.
 
@@ -10836,15 +10874,22 @@ high-impact release falls inside the window you set, the verdict becomes a no-tr
   },
   {
   id: 'checklist',
-  title: 'The checklist you tick yourself',
-  keys: ['checklist', 'tick', 'check', 'steps', 'boxes', 'confirm', 'mandatory', 'required'],
+  title: 'Where the checklist went',
+  keys: ['checklist', 'tick', 'check', 'steps', 'boxes', 'confirm', 'mandatory', 'required', 'missing'],
   view: 'xau',
-  text: `The checklist is what you can see and the engine cannot. It runs in steps, some items are
-mandatory, and the engine reads your ticks as inputs to the same score.
+  text: `There isn't one any more. The gold desk used to open with eighty-five boxes and the analyser
+with ten more, and they are gone.
 
-Tick honestly. Nothing checks your answers, which means the checklist is the one place in this app
-where you can lie your way to a green verdict. A high score built on ticks you did not earn is worth
-less than an honest low one.`,
+They were removed because they did not do anything. Ticking all eighty-five left the score exactly
+where it started, and ticking the eighty-one that were not marked mandatory left the verdict on
+NO TRADE. The four that did matter asserted things the app already knew: that a balance was set,
+that a risk percentage was set, that the stop was structurally justified, and that the confirmation
+candle had closed — the last of which is true by construction, because every detector here is fed
+closed candles only.
+
+What is on that screen now is the evidence itself: ten weighted components with what each one
+scored out of what it could. If a level on your own chart contradicts it, that disagreement is
+worth more than any box would have been.`,
   },
   {
   id: 'offline',
@@ -10853,8 +10898,8 @@ less than an honest low one.`,
   text: `Install it from your browser's menu — "Add to Home screen" on a phone, the install icon in the
 address bar on a desktop — and it runs as an app.
 
-Once installed, everything except the price feed works with no connection at all: the analysis, the
-checklist, sizing, the journal, the dashboard. Your data lives on your device.`,
+Once installed, everything except the price feed works with no connection at all: the analysis,
+the scoring, sizing, the journal, the dashboard. Your data lives on your device.`,
   },
   {
   id: 'privacy',
@@ -10887,7 +10932,7 @@ It needs honest inputs and a real sample. Recorded carelessly, it is noise.`,
   text: `Set your balance and risk percentage on the Risk screen first — every number the app produces
 depends on those, and the defaults are not yours.
 
-Then open XAU/USD, let the engine read the candles, work down the checklist, and read the verdict.
+Then open XAU/USD, let the engine read the candles, and read the verdict and the working behind it.
 Save the plan to the journal whether or not you take it; the trades you passed on are data too.
 
 The Guide screen walks the whole thing in ten steps with pictures.`,
@@ -11932,7 +11977,7 @@ __exports.default = {
   <button class="btn sm block" id="load-sig" style="margin-top:var(--sp-3)">
   Load the highlighted setup into the analyser →
   </button>
-  ${callout('gold', '<b>These are ideas, not instructions.</b> A setup that agrees with the daily trend is still just a starting point. Confirm it on your own chart, size it in the analyser, and let the checklist decide.')}
+  ${callout('gold', '<b>These are ideas, not instructions.</b> A setup that agrees with the daily trend is still just a starting point. Confirm it on your own chart, size it in the analyser, and let the score decide.')}
   </div>
 
   <div class="card reveal">
@@ -12707,7 +12752,6 @@ const { findLevels } = __req("src/domain/levels.js");
 const { mountChart: mountTradingView, hasRendered: tvRendered } = __req("src/integrations/tradingview.js");
 const { loadSeries, provider, TIMEFRAMES, EXECUTION_TFS, ANALYSIS_TFS, feedStatusText } = __req("src/domain/feed.js");
 const { analyzeMarket, SETUP_TYPES, WEIGHTS, WEIGHT_LABELS } = __req("src/domain/confluence.js");
-const { checklistByStep, SECTIONS, STEPS, exclusiveSets, checklistProgress, REQUIRED_IDS } = __req("src/domain/xauchecklist.js");
 const { whyList, whyNotList, headline, planText } = __req("src/domain/xauexplain.js");
 const { engulfingMarks } = __req("src/domain/patterns.js");
 const { readStructure, trendlines: trendlinesOf } = __req("src/domain/structure.js");
@@ -12750,15 +12794,6 @@ let seriesCache = {};
 let analysis = null;
 let lastClosedBar = 0;
 let busy = false;
-
-const FINAL_CHECKS = [
-  { id: 'fcReviewed', t: 'I reviewed the setup myself' },
-  { id: 'fcPrice',    t: 'I verified the price on my broker' },
-  { id: 'fcSl',       t: 'I verified the stop loss' },
-  { id: 'fcTp',       t: 'I verified the targets' },
-  { id: 'fcRisk',     t: 'I understand the risk and can afford this loss' },
-  { id: 'fcSave',     t: 'I want to save this trade plan' },
-];
 
 __exports.default = {
   id: 'xau',
@@ -12859,19 +12894,14 @@ __exports.default = {
   <div class="card reveal">
   <div class="card-head">
   <div>
-  <p class="eyebrow">Step 1–6 · you fill this in</p>
-  <h2>Pre-trade checklist ${tip('The engine will tell you what it detected, but it will never tick a box for you. The checklist exists to make you look at your own chart — one that fills itself in is a spinner with extra steps.')}</h2>
-  </div>
-  <div class="row tight">
-  <button class="btn ghost sm" id="xau-clear">Reset</button>
+  <p class="eyebrow">What the desk found</p>
+  <h2>The reading ${tip('Every line here was measured from closed candles. This is the same evidence the score is built from, shown so you can disagree with it — not so you can re-enter it.')}</h2>
   </div>
   </div>
-
-  <div class="xprogress" id="xau-progress"></div>
-  <div class="xchecklist" id="xau-checklist">${checklistMarkup(x.checks || {})}</div>
+  <div class="xreading" id="xau-reading"></div>
   </div>
   <div class="card reveal">
-  <p class="eyebrow">Step 6 · risk</p>
+  <p class="eyebrow">Risk</p>
   <h2>Risk and broker specification</h2>
   <div class="row">
   <div class="field">
@@ -12949,7 +12979,7 @@ __exports.default = {
   </div>
 
   <div class="card reveal">
-  <p class="eyebrow">Step 3 · your own marks</p>
+  <p class="eyebrow">Your own marks</p>
   <h2>Custom levels ${tip('Levels you drew yourself. They are drawn on the chart and offered to the target engine like any other level, but they are always labelled as yours — a target leaning on your own line is a different claim from one leaning on the previous day high.')}</h2>
   <div class="row tight">
   <div class="field" style="flex:1 1 120px">
@@ -12978,7 +13008,7 @@ __exports.default = {
 
   <div class="col">
   <div class="card reveal">
-  <p class="eyebrow">Step 7 · the engine</p>
+  <p class="eyebrow">The engine</p>
   <h2>Analysis settings</h2>
   <div class="row">
   <div class="field">
@@ -13120,18 +13150,12 @@ __exports.default = {
   </div>
 
   <div class="card reveal" id="xau-plan-card">
-  <p class="eyebrow">Step 8 · the plan</p>
+  <p class="eyebrow">The plan</p>
   <h2>Trade plan</h2>
   <div id="xau-plan"></div>
 
   <div class="xfinal" id="xau-final" hidden>
-  <p class="eyebrow" style="margin-top:var(--sp-4)">Step 9 · your decision</p>
-  <div class="xfinalchecks">
-  ${FINAL_CHECKS.map((f) => `
-  <button type="button" class="xcheck" role="checkbox" aria-checked="false" data-final="${f.id}">
-  <span class="xbox"></span><span class="xct">${esc(f.t)}</span>
-  </button>`).join('')}
-  </div>
+  <p class="eyebrow" style="margin-top:var(--sp-4)">Your decision</p>
   <div class="row tight" style="margin-top:var(--sp-3)">
   <button class="btn" id="xau-save" disabled>SAVE TRADE PLAN</button>
   <button class="btn ghost" id="xau-copy">Copy plan</button>
@@ -13259,32 +13283,6 @@ __exports.default = {
   await refreshAll();
   });
 
-  on(root, 'click', '[data-check]', (_e, btn) => {
-  const id = btn.dataset.check;
-  const checks = { ...(state.xau.checks || {}) };
-  const next = !checks[id];
-  checks[id] = next;
-
-  if (next) {
-  for (const [, ids] of exclusiveSets()) {
-  if (!ids.includes(id)) continue;
-  for (const other of ids) if (other !== id) checks[other] = false;
-  }
-  }
-
-  patch({ xau: { checks } });
-  paintChecklist();
-  queueAnalyse();
-  });
-
-  byId('xau-clear').onclick = () => {
-  patch({ xau: { checks: {}, confirm: {} } });
-  paintChecklist();
-  paintPlan();
-  queueAnalyse();
-  toast('Checklist reset.', 'ok');
-  };
-
   const numberField = (id, apply) => {
   const node = byId(id);
   if (!node) return;
@@ -13335,16 +13333,6 @@ __exports.default = {
   if (state.ai.autoBrief && aiReady() && analysis) writeBrief();
   };
 
-  on(root, 'click', '[data-final]', (_e, btn) => {
-  const id = btn.dataset.final;
-  const confirm = { ...(state.xau.confirm || {}) };
-  confirm[id] = !confirm[id];
-  patch({ xau: { confirm } });
-  btn.classList.toggle('on', !!confirm[id]);
-  btn.setAttribute('aria-checked', String(!!confirm[id]));
-  syncSaveButton();
-  });
-
   byId('xau-copy').onclick = async () => {
   if (!analysis) return;
   try {
@@ -13358,7 +13346,7 @@ __exports.default = {
   byId('xau-ticket').onclick = () => {
   const symbol = brokerSymbol(state.settings);
   if (!analysis) {
-  showTicket({ ok: false, problems: ['The desk has not produced a read yet. Give it a moment, or run the checklist.'] }, symbol);
+  showTicket({ ok: false, problems: ['The desk has not produced a read yet. Give it a moment.'] }, symbol);
   return;
   }
   showTicket(buildTicket(analysis.plan, { symbol, dp: 2, price: analysis.price }), symbol);
@@ -13369,8 +13357,6 @@ __exports.default = {
   try {
   await logTradePlan(analysis);
   toast('Trade plan saved to your journal.', 'ok');
-  patch({ xau: { confirm: {} } });
-  root.querySelectorAll('[data-final]').forEach((b) => { b.classList.remove('on'); b.setAttribute('aria-checked', 'false'); });
   syncSaveButton();
   } catch (err) {
   toast(err.message, 'bad');
@@ -13556,7 +13542,7 @@ __exports.default = {
   });
 
   syncChartHeight({ ...DEFAULT_LAYERS, ...state.xau.layers });
-  paintChecklist();
+  paintReading();
   paintLevels();
   paintWeights();
   paintAsk();
@@ -13664,7 +13650,6 @@ function runAnalysis() {
   try {
   analysis = analyzeMarket({
   series: seriesCache,
-  checks: x.checks || {},
   settings: {
   executionTf: x.executionTf,
   confirmationMode: x.confirmationMode,
@@ -13698,7 +13683,7 @@ function runAnalysis() {
   paintVerdict();
   paintMatrix();
   paintPlan();
-  paintChecklist();
+  paintReading();
   paintDebug();
   paintStamp();
 }
@@ -14177,12 +14162,6 @@ function paintPlan() {
 
   if (final) {
   final.hidden = false;
-  const confirmState = state.xau.confirm || {};
-  final.querySelectorAll('[data-final]').forEach((b) => {
-  const on = !!confirmState[b.dataset.final];
-  b.classList.toggle('on', on);
-  b.setAttribute('aria-checked', String(on));
-  });
   syncSaveButton();
   }
 }
@@ -14205,49 +14184,44 @@ function paintPlanOverlay() {
   </div>`;
 }
 
-function paintChecklist() {
+function paintReading() {
   if (!mounted) return;
-  const checks = state.xau.checks || {};
-  const detections = analysis ? analysis.detections : {};
+  const host = byId('xau-reading');
+  if (!host) return;
 
-  const root = byId('xau-checklist');
-  if (root) {
-  root.querySelectorAll('[data-check]').forEach((btn) => {
-  const id = btn.dataset.check;
-  const on = !!checks[id];
-  btn.classList.toggle('on', on);
-  btn.setAttribute('aria-checked', String(on));
-
-  const chip = btn.querySelector('.xai');
-  const d = detections[id];
-  if (chip) {
-  if (!d) { chip.textContent = ''; chip.className = 'xai'; }
-  else if (d.detected) {
-  chip.textContent = `AI: detected · ${d.confidence}`;
-  chip.className = 'xai yes';
-  chip.title = d.note || '';
-  } else {
-  chip.textContent = 'AI: not seen';
-  chip.className = 'xai no';
-  chip.title = d.note || '';
-  }
-  }
-  });
+  const a = analysis;
+  if (!a || !a.breakdown || !a.breakdown.length) {
+  host.innerHTML = '<p class="t-faint">The desk is still reading the chart.</p>';
+  return;
   }
 
-  const p = checklistProgress(checks);
-  setHtml('xau-progress', `
-  <div class="xsteps">
-  ${STEPS.filter((s) => p.perStep[s.id]).map((s) => {
-  const done = p.perStep[s.id];
-  const full = done.done === done.total;
-  return `<div class="xstep ${done.done ? (full ? 'done' : 'part') : ''}">
-  <span class="n">${s.n}</span><span class="l">${esc(s.label)}</span><span class="c mono">${done.done}/${done.total}</span>
+  const rows = [...a.breakdown].sort((x, y) => y.earned - x.earned);
+
+  host.innerHTML = `
+  <div class="xrd">
+  ${rows.map((r) => {
+  const pct = r.weight ? Math.max(0, Math.min(100, (r.earned / r.weight) * 100)) : 0;
+  const cls = pct >= 75 ? 'ok' : pct >= 35 ? 'part' : 'none';
+  return `<div class="xrdrow">
+  <span class="xrdl">${esc(r.label)}</span>
+  <span class="xrdbar"><i class="${cls}" style="width:${pct.toFixed(0)}%"></i></span>
+  <span class="xrdn mono">${r.earned.toFixed(0)}<span class="t-faint">/${r.weight}</span></span>
   </div>`;
   }).join('')}
   </div>
-  <div class="xreq">Required before a plan is produced: ${REQUIRED_IDS.map((id) => `<span class="${checks[id] ? 'ok' : 'miss'}">${checks[id] ? '✓' : '○'}</span>`).join(' ')}
-  <span class="t-faint">${REQUIRED_IDS.filter((id) => !checks[id]).length} outstanding</span></div>`);
+
+  ${a.confirmations && a.confirmations.length ? `
+  <p class="eyebrow" style="margin-top:var(--sp-4)">Confirmed</p>
+  ${a.confirmations.map((c) => `<div class="xconfrow ok">✓ ${esc(c)}</div>`).join('')}` : ''}
+
+  ${a.warnings && a.warnings.length ? `
+  <p class="eyebrow" style="margin-top:var(--sp-4)">Against it</p>
+  ${a.warnings.map((w) => `<div class="xconfrow warn">! ${esc(w)}</div>`).join('')}` : ''}
+
+  ${a.missingConfirmations && a.missingConfirmations.length ? `
+  <p class="eyebrow" style="margin-top:var(--sp-4)">Still missing</p>
+  ${a.missingConfirmations.map((m) => `<div class="xconfrow miss">○ ${esc(m)}</div>`).join('')}` : ''}
+  `;
 }
 
 function paintDebug() {
@@ -14275,7 +14249,7 @@ function paintDebug() {
 
 function paintStamp() {
   setHtml('xau-stamp', `Last analysed <b id="xau-stampclock">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</b>
-  · recalculates on a new closed candle, a checklist change, or this button.`);
+  · recalculates on a new closed candle, a setting change, or this button.`);
 }
 
 function paintConditions() {
@@ -14733,39 +14707,10 @@ function paintDeskGroup() {
   note.textContent = `Nothing to draw: ${why} A plan appears when the desk finds a setup worth one.`;
 }
 
-function checklistMarkup(checks) {
-  return checklistByStep().map((step) => {
-  const sections = SECTIONS.filter((sc) => sc.step === step.id);
-  const body = sections.length
-  ? sections.map((sc) => {
-  const items = step.items.filter(sc.match);
-  if (!items.length) return '';
-  return `<p class="xsec">${esc(sc.label)}</p>${items.map(itemMarkup).join('')}`;
-  }).join('')
-  : step.items.map(itemMarkup).join('');
-
-  return `<details class="xgroup" ${step.id === 'context' ? 'open' : ''}>
-  <summary><span class="n">${step.n}</span>${esc(step.label)}<span class="xgh">${esc(step.hint)}</span></summary>
-  <div class="xgbody">${body}</div>
-  </details>`;
-
-  function itemMarkup(item) {
-  const on = !!checks[item.id];
-  return `<button type="button" class="xcheck ${on ? 'on' : ''}" role="checkbox" aria-checked="${on}" data-check="${item.id}">
-  <span class="xbox"></span>
-  <span class="xct">${esc(item.t)}<span class="xcn">${esc(item.n)}</span></span>
-  <span class="xai"></span>
-  </button>`;
-  }
-  }).join('');
-}
-
 function syncSaveButton() {
   const btn = byId('xau-save');
   if (!btn) return;
-  const confirmState = state.xau.confirm || {};
-  const all = FINAL_CHECKS.every((f) => confirmState[f.id]);
-  btn.disabled = !all || !analysis || analysis.decision === 'WAIT';
+  btn.disabled = !analysis || analysis.decision === 'WAIT';
 }
 
 function setText(id, text) { const n = byId(id); if (n) n.textContent = text; }
@@ -16539,7 +16484,6 @@ const { readPatterns, triggerPattern, isRetest } = __req("src/domain/patterns.js
 const { premiumDiscount, favoursDirection } = __req("src/domain/premium.js");
 const { momentumRead } = __req("src/domain/indicators.js");
 const { generateTradePlan, lifecycleOf, BROKER_SPEC_DEFAULTS } = __req("src/domain/tradeplan.js");
-const { checklistBias, missingRequired, CHECKLIST } = __req("src/domain/xauchecklist.js");
 
 const WEIGHTS = {
   structure: 20,
@@ -16600,7 +16544,7 @@ const ANALYSIS_DEFAULTS = {
   setupType: 'AUTO',
 };
 
-function analyzeMarket({ series = {}, checks = {}, settings = {}, now = Date.now() } = {}) {
+function analyzeMarket({ series = {}, settings = {}, now = Date.now() } = {}) {
   const cfg = { ...ANALYSIS_DEFAULTS, ...settings };
   const weights = { ...WEIGHTS, ...(settings.weights || {}) };
   const dp = 2;
@@ -16745,26 +16689,14 @@ function analyzeMarket({ series = {}, checks = {}, settings = {}, now = Date.now
   });
 
   const detections = buildDetections({ execStructure, fvgs, htfFvgs, blocks, liquidity, patterns, leg, dir, price, atr, candles });
-  const userBias = checklistBias(checks);
   const conflicts = [];
   if (chosen.conflict) conflicts.push(chosen.conflict);
 
-  const engineWord = dir === 'long' ? 'bullish' : 'bearish';
-  if (userBias.dir !== 'neutral' && userBias.dir !== engineWord) {
-  conflicts.push({
-  kind: 'checklist',
-  title: 'Your checklist and the structure read disagree',
-  user: userBias.dir,
-  engine: engineWord,
-  text: `Your ticks add up to ${userBias.dir}; the structure read is ${engineWord}. One of you is looking at something the other is not. Do not resolve it by taking the trade — resolve it by finding out which.`,
-  });
-  }
-
-  const missing = collectMissing({ checks, plan, trigger, cfg, detections, dir });
+  const missing = collectMissing({ plan, trigger, cfg, dir });
 
   const hardStops = collectHardStops({
   cfg, plan, execStructure, liquidity, momentum, conflicts, chosen,
-  checks, price, atr, dataStatus: out.dataStatus, trigger, lifecycle, spread,
+  price, atr, dataStatus: out.dataStatus, trigger, lifecycle, spread,
   });
 
   const total = Math.round(scored.total);
@@ -16827,7 +16759,6 @@ function analyzeMarket({ series = {}, checks = {}, settings = {}, now = Date.now
   reasons,
   hardStops,
   detections,
-  checklistBias: userBias,
   momentum,
   session,
   riskLimits: cfg.riskState || null,
@@ -17093,7 +17024,7 @@ function readSpread(cfg) {
   };
 }
 
-function collectHardStops({ cfg, plan, execStructure, momentum, conflicts, checks, price, atr, dataStatus, lifecycle, spread }) {
+function collectHardStops({ cfg, plan, execStructure, momentum, conflicts, price, atr, dataStatus, lifecycle, spread }) {
   const stops = [];
 
   if (dataStatus === 'offline') stops.push('The price feed is offline. Levels computed from stale candles are not safe to trade.');
@@ -17121,9 +17052,11 @@ function collectHardStops({ cfg, plan, execStructure, momentum, conflicts, check
   const htfConflict = conflicts.find((c) => c.kind === 'htf-exec');
   if (htfConflict && !(execStructure && execStructure.lastMSS)) stops.push(htfConflict.text);
 
-  const missing = missingRequired(checks);
-  if (missing.length) {
-  stops.push(`Required checklist items are unanswered: ${missing.map((m) => m.t).join(', ')}.`);
+  if (!(cfg.capital > 0)) {
+  stops.push('No account balance is set, so a position size cannot be calculated. Set it in Settings.');
+  }
+  if (!(cfg.riskPct > 0)) {
+  stops.push('No risk-per-trade percentage is set, so a position size cannot be calculated. Set it in Settings.');
   }
 
   if (lifecycle && lifecycle.state === 'EXPIRED') stops.push(lifecycle.note);
@@ -17139,19 +17072,13 @@ function collectHardStops({ cfg, plan, execStructure, momentum, conflicts, check
   return stops;
 }
 
-function collectMissing({ checks, plan, trigger, cfg, detections, dir }) {
+function collectMissing({ plan, trigger, cfg, dir }) {
+
   const out = [];
   if (!trigger && cfg.confirmationMode === 'close') out.push(`A closed ${cfg.executionTf} confirmation candle in the ${dir === 'long' ? 'bullish' : 'bearish'} direction.`);
-  if (!checks.cdClosed) out.push('Your confirmation that the trigger candle has actually closed.');
   if (plan.valid && !plan.size.available) out.push(`Position size: ${plan.size.reason}`);
-  if (plan.valid && plan.size.available && plan.size.assumed) out.push('Confirmation of your broker\'s contract size, tick size and tick value — the size below assumes the standard 100-ounce contract.');
-  if (!checks.nwClear && !checks.nwReleased) out.push('A check of the economic calendar for the next hour.');
-  for (const [id, d] of Object.entries(detections)) {
-  if (d.detected && d.important && !checks[id]) {
-  const item = CHECKLIST.find((c) => c.id === id);
-  if (item) out.push(`Your confirmation of: ${item.t} (the engine detected it, you have not agreed).`);
-  }
-  }
+  if (plan.valid && plan.size.available && plan.size.assumed) out.push('Your broker\'s contract size, tick size and tick value — the size below assumes the standard 100-ounce contract.');
+  if (cfg.news && cfg.news.level && cfg.news.level !== 'clear' && cfg.news.level !== 'blackout') out.push(cfg.news.text);
   return out.slice(0, 8);
 }
 
@@ -18860,188 +18787,6 @@ Object.assign(__exports, { BROKER_SPEC_DEFAULTS, PLAN_DEFAULTS, LIFECYCLE, value
 
 });
 
-__def("src/domain/xauchecklist.js", function (__exports, __req) {
-
-const STEPS = [
-  { id: 'context',   n: 1, label: 'Market context',     hint: 'What kind of market is this, and which way is it leaning?' },
-  { id: 'structure', n: 2, label: 'HTF structure',      hint: 'What has price actually done to its own highs and lows?' },
-  { id: 'liquidity', n: 3, label: 'Liquidity',          hint: 'Whose stops are resting where, and have they been taken?' },
-  { id: 'zone',      n: 4, label: 'FVG / order block',  hint: 'Is there a defined area to enter from, rather than mid-air?' },
-  { id: 'entry',     n: 5, label: 'Entry confirmation', hint: 'Has the trigger actually printed, on a closed candle?' },
-  { id: 'risk',      n: 6, label: 'Risk management',    hint: 'Is the loss defined, affordable and structurally justified?' },
-  { id: 'analysis',  n: 7, label: 'AI analysis',        hint: 'Run the engine over everything above.' },
-  { id: 'plan',      n: 8, label: 'Trade plan',         hint: 'Entry, stop, targets and size, written down before you act.' },
-  { id: 'decision',  n: 9, label: 'Human decision',     hint: 'You place the order, or you do not. Nothing here places it.' },
-];
-
-const CHECKLIST = [
-
-  { id: 'ctxHtfTrend',   group: 'context', bias: 'neutral', t: 'Higher-timeframe trend identified', n: 'You have looked at D1 and H4 and can say what they are doing.' },
-  { id: 'ctxH4',         group: 'context', bias: 'neutral', t: 'H4 structure identified',           n: 'Last H4 break was a BOS or a CHoCH, and you know which.' },
-  { id: 'ctxH1',         group: 'context', bias: 'neutral', t: 'H1 structure identified',           n: 'Same question one timeframe down.' },
-  { id: 'ctxRegime',     group: 'context', bias: 'neutral', t: 'Market regime identified',          n: 'Trending, ranging, expanding or coiled — they are not traded the same way.' },
-  { id: 'ctxTrending',   group: 'context', bias: 'neutral', exclusive: 'regime', t: 'Trending market',      n: 'Structure is breaking one way repeatedly.' },
-  { id: 'ctxRanging',    group: 'context', bias: 'neutral', exclusive: 'regime', t: 'Ranging market',       n: 'Price is rotating between two edges.' },
-  { id: 'ctxExpansion',  group: 'context', bias: 'neutral', exclusive: 'regime', t: 'Expansion phase',      n: 'Ranges are widening — stops need more room.' },
-  { id: 'ctxConsol',     group: 'context', bias: 'neutral', exclusive: 'regime', t: 'Consolidation phase',  n: 'Coiled and quiet — breakouts fail here often.' },
-  { id: 'ctxBull',       group: 'context', bias: 'bull',    exclusive: 'bias',   t: 'Bullish bias',         n: 'Your read, not the engine\'s.' },
-  { id: 'ctxBear',       group: 'context', bias: 'bear',    exclusive: 'bias',   t: 'Bearish bias',         n: 'Your read, not the engine\'s.' },
-  { id: 'ctxNeutral',    group: 'context', bias: 'neutral', exclusive: 'bias',   t: 'Neutral bias',         n: 'No view is a legitimate view.' },
-
-  { id: 'stHH',    group: 'structure', bias: 'bull',    t: 'Higher high',              n: 'The last high took out the one before it.' },
-  { id: 'stHL',    group: 'structure', bias: 'bull',    t: 'Higher low',               n: 'The last low held above the one before it.' },
-  { id: 'stLH',    group: 'structure', bias: 'bear',    t: 'Lower high',               n: 'The last high failed short of the one before it.' },
-  { id: 'stLL',    group: 'structure', bias: 'bear',    t: 'Lower low',                n: 'The last low broke the one before it.' },
-  { id: 'stBOS',   group: 'structure', bias: 'neutral', t: 'Break of structure (BOS)', n: 'A break in the direction the trend was already going.' },
-  { id: 'stCHoCH', group: 'structure', bias: 'neutral', t: 'Change of character (CHoCH)', n: 'A break against the established trend — the first warning.' },
-  { id: 'stMSS',   group: 'structure', bias: 'neutral', t: 'Market structure shift (MSS)', n: 'A CHoCH that arrived with real displacement behind it.' },
-  { id: 'stDisp',  group: 'structure', bias: 'neutral', t: 'Strong displacement',      n: 'A candle that went one way and closed where it went.' },
-  { id: 'stCont',  group: 'structure', bias: 'neutral', t: 'Structural continuation',  n: 'The break continues the existing story.' },
-  { id: 'stRev',   group: 'structure', bias: 'neutral', t: 'Structural reversal',      n: 'The break contradicts it.' },
-
-  { id: 'lqPDH',      group: 'liquidity', bias: 'bear',    t: 'Previous day high swept',  n: 'Wicked above yesterday\'s high and closed back under it.' },
-  { id: 'lqPDL',      group: 'liquidity', bias: 'bull',    t: 'Previous day low swept',   n: 'Wicked below yesterday\'s low and closed back above it.' },
-  { id: 'lqPWH',      group: 'liquidity', bias: 'bear',    t: 'Previous week high swept', n: 'Same test, one timeframe up.' },
-  { id: 'lqPWL',      group: 'liquidity', bias: 'bull',    t: 'Previous week low swept',  n: 'Same test, one timeframe up.' },
-  { id: 'lqAsiaH',    group: 'liquidity', bias: 'bear',    t: 'Asian high swept',         n: 'The Asian range high was taken and rejected.' },
-  { id: 'lqAsiaL',    group: 'liquidity', bias: 'bull',    t: 'Asian low swept',          n: 'The Asian range low was taken and rejected.' },
-  { id: 'lqLdnH',     group: 'liquidity', bias: 'bear',    t: 'London high swept',        n: 'The London session high was taken and rejected.' },
-  { id: 'lqLdnL',     group: 'liquidity', bias: 'bull',    t: 'London low swept',         n: 'The London session low was taken and rejected.' },
-  { id: 'lqEQH',      group: 'liquidity', bias: 'neutral', t: 'Equal-high liquidity',     n: 'Two or more highs at one price — a magnet above.' },
-  { id: 'lqEQL',      group: 'liquidity', bias: 'neutral', t: 'Equal-low liquidity',      n: 'Two or more lows at one price — a magnet below.' },
-  { id: 'lqBSL',      group: 'liquidity', bias: 'neutral', t: 'Buy-side liquidity mapped',  n: 'You know what sits above price.' },
-  { id: 'lqSSL',      group: 'liquidity', bias: 'neutral', t: 'Sell-side liquidity mapped', n: 'You know what sits below price.' },
-  { id: 'lqInternal', group: 'liquidity', bias: 'neutral', t: 'Internal liquidity noted', n: 'Pools inside the range — usually the first target.' },
-  { id: 'lqExternal', group: 'liquidity', bias: 'neutral', t: 'External liquidity noted', n: 'The range extremes — usually the last target.' },
-  { id: 'lqSweep',    group: 'liquidity', bias: 'neutral', t: 'Liquidity sweep / rejection', n: 'A level was taken and immediately given back.' },
-
-  { id: 'fvgBull',    group: 'zone', bias: 'bull',    t: 'Bullish FVG',                 n: 'Three-candle gap left by an up move.' },
-  { id: 'fvgBear',    group: 'zone', bias: 'bear',    t: 'Bearish FVG',                 n: 'Three-candle gap left by a down move.' },
-  { id: 'fvgHtf',     group: 'zone', bias: 'neutral', t: 'FVG on a higher timeframe',   n: 'H4 or H1 gap — a bigger area, and a slower one.' },
-  { id: 'fvgExec',    group: 'zone', bias: 'neutral', t: 'FVG on the execution timeframe', n: 'The gap you would actually enter from.' },
-  { id: 'fvgPartial', group: 'zone', bias: 'neutral', t: 'FVG partially filled',        n: 'Price has been back into it but not through it.' },
-  { id: 'fvgMitig',   group: 'zone', bias: 'neutral', t: 'FVG fully mitigated',         n: 'Filled. It is history, not a level.' },
-  { id: 'fvgFresh',   group: 'zone', bias: 'neutral', t: 'Fresh FVG',                   n: 'Untouched since it formed.' },
-  { id: 'fvgAligned', group: 'zone', bias: 'neutral', t: 'FVG aligned with the bias',   n: 'The gap points the same way as your trade.' },
-  { id: 'fvgPD',      group: 'zone', bias: 'neutral', t: 'FVG in premium / discount',   n: 'Buying gaps in discount, selling them in premium.' },
-
-  { id: 'obBull',     group: 'zone', bias: 'bull',    t: 'Bullish order block',     n: 'Last down candle before an up move that broke structure.' },
-  { id: 'obBear',     group: 'zone', bias: 'bear',    t: 'Bearish order block',     n: 'Last up candle before a down move that broke structure.' },
-  { id: 'obFresh',    group: 'zone', bias: 'neutral', t: 'Fresh order block',       n: 'Price has not been back to it yet.' },
-  { id: 'obMitig',    group: 'zone', bias: 'neutral', t: 'Mitigated order block',   n: 'Price closed through it. It failed.' },
-  { id: 'obBreaker',  group: 'zone', bias: 'neutral', t: 'Breaker block',           n: 'A failed block whose role has flipped.' },
-  { id: 'obHtf',      group: 'zone', bias: 'neutral', t: 'OB aligned with HTF bias', n: 'The block agrees with the bigger picture.' },
-  { id: 'obFvg',      group: 'zone', bias: 'neutral', t: 'OB overlapping an FVG',   n: 'Two reasons for the same area is better than one.' },
-  { id: 'obLiq',      group: 'zone', bias: 'neutral', t: 'OB sitting on liquidity', n: 'The block formed where stops were taken.' },
-
-  { id: 'cdBullEng',  group: 'entry', bias: 'bull',    t: 'Bullish engulfing',   n: 'Closed above the whole previous down body.' },
-  { id: 'cdBearEng',  group: 'entry', bias: 'bear',    t: 'Bearish engulfing',   n: 'Closed below the whole previous up body.' },
-  { id: 'cdHammer',   group: 'entry', bias: 'bull',    t: 'Hammer',              n: 'Long lower wick, small body, close near the top.' },
-  { id: 'cdStar',     group: 'entry', bias: 'bear',    t: 'Shooting star',       n: 'Long upper wick, small body, close near the bottom.' },
-  { id: 'cdPin',      group: 'entry', bias: 'neutral', t: 'Pin bar',             n: 'One dominant rejection tail.' },
-  { id: 'cdReject',   group: 'entry', bias: 'neutral', t: 'Strong rejection candle', n: 'Half the bar or more is wick.' },
-  { id: 'cdMaru',     group: 'entry', bias: 'neutral', t: 'Marubozu / displacement', n: 'Nearly all body.' },
-  { id: 'cdInside',   group: 'entry', bias: 'neutral', t: 'Inside bar',          n: 'Contained by the previous bar — a pause.' },
-  { id: 'cdBreak',    group: 'entry', bias: 'neutral', t: 'Breakout candle',     n: 'Closed beyond the recent range with a strong body.' },
-  { id: 'cdRetest',   group: 'entry', bias: 'neutral', t: 'Retest candle',       n: 'Came back to the level and closed away from it.' },
-  { id: 'cdClosed',   group: 'entry', bias: 'neutral', t: 'Confirmation candle has CLOSED', n: 'Not "is closing". Closed.' },
-
-  { id: 'srMajorS',   group: 'liquidity', bias: 'neutral', t: 'Major support marked',      n: 'A level that has held more than once.' },
-  { id: 'srMajorR',   group: 'liquidity', bias: 'neutral', t: 'Major resistance marked',   n: 'A level that has capped more than once.' },
-  { id: 'srIntraS',   group: 'liquidity', bias: 'neutral', t: 'Intraday support marked',   n: 'Today\'s working floor.' },
-  { id: 'srIntraR',   group: 'liquidity', bias: 'neutral', t: 'Intraday resistance marked', n: 'Today\'s working ceiling.' },
-  { id: 'srRange',    group: 'liquidity', bias: 'neutral', t: 'Consolidation boundaries marked', n: 'You know where the box is.' },
-  { id: 'srBreak',    group: 'liquidity', bias: 'neutral', t: 'Breakout level identified', n: 'The line that changes the story if it goes.' },
-  { id: 'srRetest',   group: 'liquidity', bias: 'neutral', t: 'Retest level identified',   n: 'Where you would want it to come back to.' },
-
-  { id: 'nwClear',    group: 'risk', bias: 'neutral', t: 'No major news approaching',      n: 'Checked on a live calendar, not assumed.' },
-  { id: 'nwReleased', group: 'risk', bias: 'neutral', t: 'Major news already released',    n: 'The event is behind you.' },
-  { id: 'nwSettled',  group: 'risk', bias: 'neutral', t: 'Volatility stabilised after news', n: 'Spreads back to normal, ranges back to normal.' },
-
-  { id: 'rkAccount',  group: 'risk', bias: 'neutral', t: 'Account size entered',            n: 'The real one, not the aspirational one.' },
-  { id: 'rkPct',      group: 'risk', bias: 'neutral', t: 'Risk percentage set',             n: 'Decided before the setup, not because of it.' },
-  { id: 'rkMaxLoss',  group: 'risk', bias: 'neutral', t: 'Maximum dollar risk calculated',  n: 'You can say the number out loud.' },
-  { id: 'rkStopJust', group: 'risk', bias: 'neutral', t: 'Stop is structurally justified',  n: 'It sits beyond something, not at a round distance.' },
-  { id: 'rkSize',     group: 'risk', bias: 'neutral', t: 'Position size calculated',        n: 'From the stop distance, never chosen first.' },
-  { id: 'rkRR',       group: 'risk', bias: 'neutral', t: 'Reward-to-risk acceptable',       n: 'Against your own minimum, not against hope.' },
-  { id: 'rkLeverage', group: 'risk', bias: 'neutral', t: 'No excessive leverage',           n: 'The size came from the risk, so this follows.' },
-  { id: 'rkRevenge',  group: 'risk', bias: 'neutral', t: 'Not a revenge trade',             n: 'You are not trying to win something back.' },
-  { id: 'rkFomo',     group: 'risk', bias: 'neutral', t: 'Not a FOMO entry',                n: 'You would take this if you had missed the last one.' },
-  { id: 'rkChase',    group: 'risk', bias: 'neutral', t: 'Not chasing price',               n: 'Price came to your level; you did not go to it.' },
-  { id: 'rkPlan',     group: 'risk', bias: 'neutral', t: 'Trade plan clearly defined',      n: 'Entry, stop, targets and the invalidation, written down.' },
-];
-
-const CHECK_IDS = CHECKLIST.map((c) => c.id);
-const checkById = (id) => CHECKLIST.find((c) => c.id === id) || null;
-
-function checklistByStep() {
-  return STEPS
-  .map((s) => ({ ...s, items: CHECKLIST.filter((c) => c.group === s.id) }))
-  .filter((s) => s.items.length);
-}
-
-const SECTIONS = [
-  { step: 'context',   id: 'ctx', label: 'Market context',       match: (c) => c.id.startsWith('ctx') },
-  { step: 'structure', id: 'st',  label: 'Market structure',     match: (c) => c.id.startsWith('st') },
-  { step: 'liquidity', id: 'lq',  label: 'Liquidity',            match: (c) => c.id.startsWith('lq') },
-  { step: 'liquidity', id: 'sr',  label: 'Support & resistance', match: (c) => c.id.startsWith('sr') },
-  { step: 'zone',      id: 'fvg', label: 'Fair value gaps',      match: (c) => c.id.startsWith('fvg') },
-  { step: 'zone',      id: 'ob',  label: 'Order blocks',         match: (c) => c.id.startsWith('ob') },
-  { step: 'entry',     id: 'cd',  label: 'Candle confirmation',  match: (c) => c.id.startsWith('cd') },
-  { step: 'risk',      id: 'nw',  label: 'News risk',            match: (c) => c.id.startsWith('nw') },
-  { step: 'risk',      id: 'rk',  label: 'Risk management',      match: (c) => c.id.startsWith('rk') },
-];
-
-function exclusiveSets() {
-  const sets = new Map();
-  for (const item of CHECKLIST) {
-  if (!item.exclusive) continue;
-  if (!sets.has(item.exclusive)) sets.set(item.exclusive, []);
-  sets.get(item.exclusive).push(item.id);
-  }
-  return sets;
-}
-
-function checklistBias(checks = {}) {
-  let bull = 0;
-  let bear = 0;
-  for (const item of CHECKLIST) {
-  if (!checks[item.id]) continue;
-  if (item.bias === 'bull') bull++;
-  else if (item.bias === 'bear') bear++;
-  }
-  const net = bull - bear;
-  return {
-  bull, bear,
-  dir: net >= 2 ? 'bullish' : net <= -2 ? 'bearish' : 'neutral',
-  strength: Math.abs(net),
-  };
-}
-
-function checklistProgress(checks = {}) {
-  const perStep = {};
-  for (const step of STEPS) {
-  const items = CHECKLIST.filter((c) => c.group === step.id);
-  if (!items.length) continue;
-  perStep[step.id] = {
-  done: items.filter((c) => checks[c.id]).length,
-  total: items.length,
-  };
-  }
-  const done = CHECK_IDS.filter((id) => checks[id]).length;
-  return { perStep, done, total: CHECK_IDS.length };
-}
-
-const REQUIRED_IDS = ['rkAccount', 'rkPct', 'rkStopJust', 'cdClosed'];
-
-function missingRequired(checks = {}) {
-  return REQUIRED_IDS.filter((id) => !checks[id]).map((id) => checkById(id));
-}
-
-Object.assign(__exports, { STEPS, CHECKLIST, CHECK_IDS, checkById, SECTIONS, REQUIRED_IDS, checklistByStep, exclusiveSets, checklistBias, checklistProgress, missingRequired });
-
-});
-
 __def("src/domain/xauexplain.js", function (__exports, __req) {
 
 const dp = (n, d = 2) => (Number.isFinite(n) ? n.toFixed(d) : '—');
@@ -19768,7 +19513,6 @@ async function logTradePlan(analysis) {
   const dir = analysis.decision === 'BUY' ? 'long' : 'short';
   const size = plan.size || {};
   const struct = analysis.structures ? analysis.structures[analysis.timeframe] : null;
-  const checks = state.xau && state.xau.checks ? state.xau.checks : {};
 
   const row = {
   id: uid('t'),
@@ -19817,7 +19561,6 @@ async function logTradePlan(analysis) {
   newsRisk: analysis.dataProblems.length ? 'data-issue' : 'checked',
   dataQuality: analysis.dataQuality,
   aiReasoning: analysis.reasons.join(' '),
-  userChecklist: Object.keys(checks).filter((k) => checks[k]).join(','),
   sizeAssumed: size.available ? !!size.assumed : null,
 
   outcome: 'open',
@@ -19878,6 +19621,7 @@ const CSV_COLUMNS = [
 
   'source', 'setupType', 'entryLow', 'entryHigh', 'tp3', 'rr1', 'rr2', 'rr3', 'invalidation',
   'confluenceScore', 'htfBias', 'liquiditySweep', 'fvg', 'orderBlock', 'bos', 'choch', 'mss',
+
   'trigger', 'dataQuality', 'sizeAssumed', 'userChecklist',
 ];
 
@@ -20000,7 +19744,7 @@ __exports.default = {
 
   <!-- ============ Market ============ -->
   <div class="card gold reveal">
-  <p class="eyebrow">Step 1 · Market</p>
+  <p class="eyebrow">Market</p>
   <h2>What are you trading?</h2>
   <div class="row">
   <!-- Not a picker. There is one market, and a dropdown holding a
@@ -20043,7 +19787,7 @@ __exports.default = {
 
   <!-- ============ Levels ============ -->
   <div class="card gold reveal">
-  <p class="eyebrow">Step 2 · Location</p>
+  <p class="eyebrow">Location</p>
   <h2>Buy zone / sell zone finder
   <span class="hint">Buy near support, sell near resistance, with the trend. This is decision logic from the levels you type in — not a live signal and not a prediction.</span>
   </h2>
@@ -20077,7 +19821,7 @@ __exports.default = {
 
   <!-- ============ Structure ============ -->
   <div class="card reveal">
-  <p class="eyebrow">Step 2b · Structure & conditions</p>
+  <p class="eyebrow">Structure & conditions</p>
   <h2>Institutional context <span class="hint">Smart-money confirmation. Answer from what you can actually see on the chart, not what you hope is there.</span></h2>
   <div class="row">
   <div class="field">
@@ -20119,7 +19863,7 @@ __exports.default = {
 
   <!-- ============ Account ============ -->
   <div class="card reveal">
-  <p class="eyebrow">Step 3 · Account</p>
+  <p class="eyebrow">Account</p>
   <h2>Capital &amp; risk</h2>
   <div class="tiers" id="tiers" role="group" aria-label="Account balance tier"></div>
   <div class="field" style="margin-top:var(--sp-4)">
@@ -20171,23 +19915,23 @@ __exports.default = {
   <div id="score-host"></div>
   </div>
 
-  <!-- ============ Confirmation checklist ============ -->
+  <!-- ============ What the factors came out as ============ -->
   <div class="card gold reveal">
-  <p class="eyebrow">Step 4 · Confirmation · check honestly</p>
-  <h2>Win-rate checklist
-  <span class="hint">Each ⚡ factor is a genuine intraday edge. Ticking a box you have not verified only fools you.</span>
+  <p class="eyebrow">Confirmation</p>
+  <h2>The ten factors
+  <span class="hint">Read from what you entered above and from the clock and calendar — there is nothing to tick. Each ⚡ factor is a genuine intraday edge.</span>
   </h2>
   <div id="checklist-host"></div>
   <div class="meter" style="margin:var(--sp-4) 0 var(--sp-2)"><i id="check-meter"></i></div>
   <div class="spread t-sm">
-  <span class="t-muted">Checklist</span>
+  <span class="t-muted">Factors met</span>
   <span class="mono" id="check-count">0 / ${FACTORS.length}</span>
   </div>
   </div>
 
   <!-- ============ Builder ============ -->
   <div class="card reveal">
-  <p class="eyebrow">Step 5 · Risk-first sizing</p>
+  <p class="eyebrow">Risk-first sizing</p>
   <h2>Trade builder
   <span class="hint">Set the stop first. Position size is derived so you risk exactly your chosen percentage — size is never something you pick.</span>
   </h2>
@@ -20322,18 +20066,6 @@ __exports.default = {
   if (input) input.value = capital;
   renderTiers(root);
   recompute(root);
-  });
-
-  on(root, 'click', '.check:not(.auto)', (e, node) => {
-  const id = node.dataset.id;
-  const next = !state.checks[id];
-  patch({ checks: { [id]: next } });
-  node.classList.toggle('on', next);
-  node.setAttribute('aria-checked', String(next));
-  recompute(root);
-  });
-  on(root, 'keydown', '.check:not(.auto)', (e, node) => {
-  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); node.click(); }
   });
 
   on(root, 'click', '#btn-use-dir', (e, btn) => {
@@ -20477,9 +20209,7 @@ __exports.default = {
   for (const factor of FACTORS) {
   const node = root.querySelector(`.check[data-id="${factor.id}"]`);
   if (!node) continue;
-  const on = !!analysis.checks[factor.id];
-  node.classList.toggle('on', on);
-  node.setAttribute('aria-checked', String(on));
+  node.classList.toggle('on', !!analysis.checks[factor.id]);
   }
   const passed = analysis.score.checklistPassed;
   const meter = byId('check-meter');
@@ -20581,16 +20311,14 @@ function updateModeFields(root) {
 function renderChecklist(root) {
   const host = byId('checklist-host');
   if (!host) return;
+
   host.innerHTML = FACTORS.map((f) => `
-  <div class="check ${state.checks[f.id] ? 'on' : ''} ${f.auto ? 'auto' : ''}"
-  data-id="${f.id}" role="checkbox" aria-checked="${!!state.checks[f.id]}"
-  ${f.auto ? '' : 'tabindex="0"'}>
+  <div class="check readonly" data-id="${f.id}">
   <div class="box">${icons.check}</div>
   <div class="txt">
   <b>${esc(f.t)}</b>
   ${f.edge ? '<span class="badge-edge">⚡ EDGE</span>' : ''}
   ${f.req ? '<span class="badge-req">mandatory</span>' : ''}
-  ${f.auto ? '<span class="badge-auto">AUTO</span>' : ''}
   ${tip(f.explain)}
   <div class="cnote">${esc(f.n)}</div>
   </div>
@@ -20677,7 +20405,7 @@ __exports.default = {
 
   <div class="col">
   <div class="card reveal">
-  <p class="eyebrow">Step 6 · Before you click</p>
+  <p class="eyebrow">Before you click</p>
   <h2>Answer honestly <span class="hint">Nobody sees these but you. A flattering answer only costs you money.</span></h2>
   <div id="q-host"></div>
 
@@ -23199,9 +22927,6 @@ const text = (x, y, s, { size = 9, fill = 'var(--muted)', anchor = 'start', weig
   `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" text-anchor="${anchor}"
   font-family="var(--font-mono)" font-weight="${weight}">${esc(s)}</text>`;
 
-const tick = (x, y, colour = 'var(--long)') =>
-  `<path d="M${x} ${y} l3 3 l6 -7" stroke="${colour}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-
 const figKey = () => SVG(`
   ${panel(20, 25, 280, 100, 12)}
   <circle cx="62" cy="75" r="17" fill="none" stroke="var(--gold)" stroke-width="3"/>
@@ -23260,16 +22985,19 @@ const figLoad = () => SVG(`
 
 const figChecklist = () => SVG(`
   ${panel(20, 14, 280, 122, 12)}
-  ${[['Higher-timeframe trend aligned', 1, 1], ['Inside a session window', 1, 1],
-  ['Price at a real level', 1, 0], ['News window clear', 1, 1],
-  ['Reward-to-risk ≥ 1.5', 1, 1], ['Momentum confirms', 0, 0]]
-  .map(([label, done, mand], i) => `
-  <rect x="34" y="${28 + i * 18}" width="11" height="11" rx="3"
-  fill="${done ? 'rgba(70,185,140,.16)' : 'transparent'}" stroke="${done ? 'var(--long)' : 'var(--line-3)'}"/>
-  ${done ? tick(37, 33 + i * 18) : ''}
-  ${text(53, 37 + i * 18, label, { size: 8.5, fill: done ? 'var(--ink-soft)' : 'var(--faint)' })}
-  ${mand ? text(288, 37 + i * 18, '⚡', { size: 9, anchor: 'end', fill: 'var(--gold)' }) : ''}`).join('')}
-`, { label: 'The ten-factor checklist with mandatory factors marked' });
+  ${[['Market structure', 18, 20], ['Liquidity', 15, 15], ['Fair value gap', 15, 15],
+  ['Order block', 9, 10], ['HTF alignment', 7, 10], ['Premium / discount', 0, 5]]
+  .map(([label, earned, weight], i) => {
+  const y = 30 + i * 18;
+  const full = (earned / weight) * 92;
+  const tone = earned / weight >= 0.75 ? 'var(--long)' : earned / weight >= 0.35 ? 'var(--gold)' : 'var(--line-3)';
+  return `
+  ${text(34, y + 4, label, { size: 8.5, fill: 'var(--ink-soft)' })}
+  <rect x="176" y="${y - 3}" width="92" height="7" rx="3.5" fill="var(--line-2)"/>
+  <rect x="176" y="${y - 3}" width="${full.toFixed(1)}" height="7" rx="3.5" fill="${tone}"/>
+  ${text(288, y + 4, String(earned), { size: 8.5, anchor: 'end', fill: 'var(--ink)' })}`;
+  }).join('')}
+`, { label: 'The ten weighted components, each showing what it scored out of what it could' });
 
 const figVerdict = () => SVG(`
   ${panel(18, 16, 284, 118, 12)}
@@ -23392,7 +23120,7 @@ const STEPS = [
   lead: 'The XAU/USD screen does the structural reading itself — swings, liquidity, gaps, order blocks — and answers buy, sell, or no trade.',
   fig: figEngine,
   body: [
-  'Work the <b>pre-trade checklist</b> down the left. Tick only what you can genuinely see; the engine shows what it detected beside each box and will never tick one for you.',
+  'Read <b>the reading</b> down the left: ten weighted components, each with what it scored out of what it could. Nothing to fill in — it is all measured from closed candles.',
   'Press <b>Analyze XAU/USD</b>. Structure, liquidity, imbalance, location, momentum and reward-to-risk are weighed into one score out of a hundred, with the case against stated as plainly as the case for.',
   'If it is a trade, you get an <b>entry zone, a structural stop, up to three targets</b> and the lot size — every level taken from something on the chart, and drawn on it.',
   'If it is not, it says why: no placeable stop, reward-to-risk below your minimum, price already run past its own entry, the desk shut on a limit. Those override the score entirely.',
@@ -23419,26 +23147,26 @@ const STEPS = [
   body: [
   '<b>Load the highlighted setup</b> fills in direction, entry, stop and target for the style you picked.',
   '<b>Use the live price</b> drops the current price into the analyser so you can build around it yourself.',
-  'Either way the setup now has to earn its way through the same checklist. Nothing is pre-approved because a machine suggested it.',
+  'Either way the setup now has to earn the same score as any other. Nothing is pre-approved because a machine suggested it.',
   ],
   },
   {
-  n: 7, title: 'Work the checklist honestly',
-  lead: 'Ten factors. Four are mandatory and marked ⚡ — miss one and the verdict cannot go green, whatever the score says.',
+  n: 7, title: 'Read what it found — there is nothing to tick',
+  lead: 'The desk shows its working: ten weighted components, what each one earned, and the sentences for and against.',
   fig: figChecklist,
   body: [
-  'Four factors tick themselves from live state: the session window, your reward-to-risk, the daily limit and the spread read.',
-  'The rest are yours. Tick them only if you have actually looked.',
-  'Then answer the <b>Psychology</b> questions. Revenge trading, exhaustion or extreme stress block the trade outright.',
+  'There used to be a checklist here — eighty-five boxes on the gold desk and ten more in the analyser. They are gone, and nothing was lost with them: the engine already measured every one of those things from closed candles, so the boxes asked you to re-enter what the program had just told you.',
+  'What replaced them is the evidence itself. Each row is a component with its score out of its weight, so the number at the top is arithmetic you can check rather than a verdict you have to trust.',
+  'Then answer the <b>Psychology</b> questions. Those are still asked, because they are the one thing here no amount of candle data can answer — revenge trading, exhaustion or extreme stress block the trade outright.',
   ],
-  warn: 'Ticking a box you have not verified only fools you. The app cannot see your chart — the checklist is exactly as honest as you are.',
+  warn: 'Disagreeing with the reading is the point of showing it. The app cannot see what you can see; if a level on your chart contradicts what it found, that is worth more than the score.',
   },
   {
   n: 8, title: 'Read the verdict',
   lead: 'One of four answers, the reasons behind it, and the exact position size — which you never chose, because it falls out of your stop.',
   fig: figVerdict,
   body: [
-  '🟢 <b>High probability</b> — everything mandatory confirmed and the score has earned it.',
+  '🟢 <b>High probability</b> — nothing is blocking it and the score has earned it.',
   '🟡 <b>Wait</b> — the idea is sound, something is missing. 🟠 <b>Reduce risk</b> — take it smaller, or not at all.',
   '🔴 <b>Avoid</b> — a hard stop applies: the desk is shut, it is the weekend, news is imminent, or your psychology says no.',
   ],
