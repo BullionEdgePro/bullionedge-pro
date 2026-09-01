@@ -1545,6 +1545,14 @@ kbd {
   margin-top: var(--sp-3); padding: var(--sp-3);
   border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--panel-2);
 }
+
+.xlayerhead {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--sp-3); margin-bottom: var(--sp-1);
+}
+.xlayerhead .eyebrow { margin: 0; }
+.xlayerhead .xind-link[hidden] { display: none; }
+
 .xlayergrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--sp-3); }
 .xlayergroup { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
 .xlgt {
@@ -12905,7 +12913,11 @@ __exports.default = {
   <div class="xindbar" id="xau-indbar"></div>
 
   <div class="xlayers" id="xau-layers" hidden>
+  ${ ''}
+  <div class="xlayerhead">
   <p class="eyebrow">Chart elements</p>
+  <button type="button" class="xind-link" id="xlayer-clear" hidden>Clear all</button>
+  </div>
   <div class="xlayergrid">
   ${layerToggles(layers)}
   </div>
@@ -13275,6 +13287,28 @@ __exports.default = {
   };
 
   byId('xc-layers').onclick = () => openLayers();
+
+  on(root, 'click', '#xlayer-clear', () => {
+  const before = { ...DEFAULT_LAYERS, ...(state.xau.layers || {}) };
+  const on = activeIndicators(before);
+  if (!on.length) return;
+
+  const layers = { ...before };
+  for (const key of on) layers[key] = false;
+
+  patch({ xau: { layers } });
+  if (chart) chart.setLayers(layers);
+  syncChartHeight(layers);
+  paintIndicatorBar(layers);
+
+  root.querySelectorAll('#xau-layers [data-layer]').forEach((b) => {
+  const state_ = !!layers[b.dataset.layer];
+  b.classList.toggle('on', state_);
+  b.setAttribute('aria-pressed', String(state_));
+  });
+
+  toast(`Cleared ${on.length} ${on.length === 1 ? 'element' : 'elements'}. Candles only.`, 'ok');
+  });
 
   on(root, 'click', '[data-open-layers]', () => openLayers(true));
 
@@ -14719,6 +14753,10 @@ function paintIndicatorBar(layers) {
   if (!host) return;
 
   const active = activeIndicators(layers);
+
+  const clear = byId('xlayer-clear');
+  if (clear) clear.hidden = active.length === 0;
+
   const count = byId('xind-count');
   if (count) {
   count.textContent = String(active.length);
