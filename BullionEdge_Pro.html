@@ -3129,10 +3129,12 @@ kbd {
 }
 
 .lp-trialpop {
-  position: fixed; z-index: 60; right: var(--sp-5); bottom: var(--sp-5);
+
+  position: fixed; z-index: 210; right: var(--sp-5); bottom: var(--sp-5);
   width: min(370px, calc(100vw - var(--sp-5) * 2));
   padding: var(--sp-5);
-  background: var(--panel-2); border: 1px solid rgba(224,166,60,.35);
+
+  background: var(--bg); border: 1px solid rgba(224,166,60,.35);
   border-radius: var(--r-lg); box-shadow: 0 24px 60px rgba(0,0,0,.6);
 
   max-height: calc(100vh - var(--sp-5) * 2);
@@ -6807,6 +6809,9 @@ function hideLanding() {
   const host = byId('landing');
   if (host) host.style.display = 'none';
   closeSubscribe();
+
+  byId('lp-trialpop')?.remove();
+  byId('lp-trialbar')?.remove();
 }
 
 const TRIAL_SEEN = 'be.trial.seen';
@@ -6930,6 +6935,8 @@ const offerRequested = () => {
 
 function paintTrialPopup() {
   if (byId('lp-trialpop')) return;
+
+  if (byId('app')?.classList.contains('ready')) return;
 
   const cheapest = PLANS.reduce((a, b) => (a.price <= b.price ? a : b));
   const price = Number.isFinite(cheapest.price) ? cheapest.price : null;
@@ -12879,7 +12886,7 @@ __exports.default = {
   <div class="viewhead">
   <h1>XAU/USD pre-trade analysis</h1>
   <p class="viewsub">
-  Read the chart, tick what you can genuinely see, and let the engine weigh it. It produces a buy candidate,
+  It reads the chart and weighs what it finds — nothing to fill in. It produces a buy candidate,
   a sell candidate, or no trade — and no trade is the answer it is most useful for. Nothing here places an order.
   </p>
   </div>
