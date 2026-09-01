@@ -1312,6 +1312,23 @@ kbd {
 }
 .brokersteps b { color: var(--gold); font-weight: 600; }
 
+@media (pointer: coarse) {
+
+  input[type="range"] { height: 34px; background: none; }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px; border-radius: var(--r-pill); background: rgba(255,255,255,.1);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 6px; border-radius: var(--r-pill); background: rgba(255,255,255,.1);
+  }
+  input[type="range"]::-webkit-slider-thumb { width: 26px; height: 26px; margin-top: -10px; }
+  input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; }
+
+  .switch { height: 32px; width: 54px; }
+  .switch::after { top: 4px; left: 4px; width: 24px; height: 24px; }
+  .switch[aria-checked="true"]::after { left: 26px; }
+}
+
 /* assets/css/market.css */
 .pricehead {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -1490,6 +1507,10 @@ kbd {
 
   .pricehead { flex-direction: column; gap: var(--sp-2); }
   .pricehead > div:last-child { text-align: left !important; }
+}
+
+@media (pointer: coarse) {
+  .tfrow button { min-height: 38px; }
 }
 
 /* assets/css/xau.css */
@@ -2081,6 +2102,13 @@ kbd {
 .xsrc { flex: none; }
 
 .xsrc button { font-size: var(--fs-2xs); padding: 8px 12px; min-height: 30px; }
+
+@media (pointer: coarse) {
+
+  .seg button { min-height: 38px; }
+
+  .xwrow input { min-height: 38px; }
+}
 
 /* assets/css/guide.css */
 .gflow {
