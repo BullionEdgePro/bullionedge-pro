@@ -2549,6 +2549,7 @@ kbd {
 }
 
 .lp-pin .tip {
+  display: block; width: auto; height: auto; line-height: 1.3; flex: none;
   position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%) translateY(4px);
   white-space: nowrap; pointer-events: none;
   font-family: var(--font-body); font-size: var(--fs-xs); color: var(--ink);
@@ -3555,6 +3556,163 @@ kbd {
   .lp-final { border-radius: var(--r-lg); margin-inline: calc(var(--sp-5) * -.5); padding-inline: var(--sp-3); }
   .lp-finalinner { padding: var(--sp-5) var(--sp-4); }
   .lp-plan .amt-n { font-size: 44px; }
+}
+
+/* assets/css/tray-fx.css */
+.lp-tray { perspective: 1600px; }
+
+.lp-trayscene { position: relative; }
+.lp-traytag,
+.lp-trayshade,
+.lp-traylamp,
+.lp-trayscan,
+.lp-trayreticle { display: none; }
+
+.lp-tray.armed .lp-trayimg {
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  will-change: transform;
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, .9), 0 0 0 1px rgba(224, 166, 60, .12), var(--sh-3);
+}
+.lp-tray.armed .lp-trayscene {
+  transform: translate3d(0, var(--py, 0%), 0) scale(1.04);
+  will-change: transform;
+}
+
+.lp-tray.armed .lp-traytag,
+.lp-tray.armed .lp-trayshade,
+.lp-tray.armed .lp-traylamp,
+.lp-tray.armed .lp-trayscan,
+.lp-tray.armed .lp-trayreticle { display: block; }
+
+.lp-trayshade {
+  position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  background: rgba(3, 7, 8, .78);
+  transition: background 1.2s var(--ease-out);
+}
+.lp-tray.armed.scanning .lp-trayshade { background: rgba(3, 7, 8, .5); }
+.lp-tray.armed.lit .lp-trayshade {
+  background: radial-gradient(ellipse 34% 58% at var(--lx, 50%) var(--ly, 50%),
+              transparent 0%, transparent 38%, rgba(3, 7, 8, .5) 100%);
+}
+.lp-tray.armed.lit.hover .lp-trayshade {
+  background: radial-gradient(ellipse 26% 46% at var(--lx, 50%) var(--ly, 50%),
+              transparent 0%, transparent 34%, rgba(3, 7, 8, .66) 100%);
+}
+
+.lp-traylamp {
+  position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  mix-blend-mode: screen; opacity: 0;
+  background:
+    radial-gradient(circle at var(--lx, 50%) var(--ly, 50%),
+      rgba(255, 214, 140, .30) 0, rgba(255, 196, 100, .10) 9%, transparent 20%);
+  transition: opacity .8s var(--ease-out);
+}
+.lp-tray.armed.lit .lp-traylamp { opacity: 1; }
+
+.lp-trayscan {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 18%; pointer-events: none; z-index: 4;
+  transform: translateX(-120%); opacity: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 217, 131, .06) 60%,
+              rgba(255, 217, 131, .45) 97%, #FFE7A8 99.4%, transparent 100%);
+  mix-blend-mode: screen;
+}
+.lp-tray.armed.scanning .lp-trayscan { animation: traySweep 1.8s cubic-bezier(.45, .05, .35, 1) both; }
+@keyframes traySweep {
+  0%   { transform: translateX(-100%); opacity: 1; }
+  92%  { opacity: 1; }
+  100% { transform: translateX(560%); opacity: 0; }
+}
+
+.lp-trayreticle {
+  position: absolute; left: var(--lx, 50%); top: var(--ly, 50%); z-index: 5;
+  width: 76px; height: 76px; margin: -38px 0 0 -38px; pointer-events: none;
+  border-radius: 50%; border: 1px solid rgba(255, 217, 131, .55);
+  box-shadow: 0 0 0 5px rgba(255, 217, 131, .06), inset 0 0 18px rgba(255, 217, 131, .12);
+  opacity: 0; transform: scale(.6);
+  transition: opacity .3s, transform .4s var(--ease-out);
+  background:
+    linear-gradient(rgba(255, 217, 131, .7), rgba(255, 217, 131, .7)) 50% 0 / 1px 10px no-repeat,
+    linear-gradient(rgba(255, 217, 131, .7), rgba(255, 217, 131, .7)) 50% 100% / 1px 10px no-repeat,
+    linear-gradient(rgba(255, 217, 131, .7), rgba(255, 217, 131, .7)) 0 50% / 10px 1px no-repeat,
+    linear-gradient(rgba(255, 217, 131, .7), rgba(255, 217, 131, .7)) 100% 50% / 10px 1px no-repeat;
+}
+.lp-tray.armed.lit.hover .lp-trayreticle { opacity: 1; transform: scale(1); }
+.lp-tray.armed.lit.hover .lp-trayimg,
+.lp-tray.armed.lit.hover .lp-pin { cursor: none; }
+
+.lp-traytag {
+  position: absolute; left: 16px; top: 14px; margin: 0; pointer-events: none; line-height: 1; z-index: 5;
+  font-family: var(--font-stamp); font-size: 9.5px; letter-spacing: .24em; text-transform: uppercase;
+  color: rgba(255, 217, 131, .7);
+  padding: 6px 10px; border: 1px solid rgba(255, 217, 131, .25); border-radius: 3px;
+  background: rgba(3, 7, 8, .55);
+}
+
+.lp-tray.armed .lp-pin { z-index: 6; }
+.lp-pin .ping {
+  position: absolute; width: 13px; height: 13px; border-radius: 50%;
+  border: 1px solid var(--molten); opacity: 0; pointer-events: none;
+}
+.lp-tray.armed:not(.lit):not(.scanning) .lp-pin .dot { opacity: 0; transform: scale(.3); }
+.lp-tray.armed.scanning .lp-pin .dot { animation: pinIgnite .55s calc(var(--x) * 17ms) both; }
+@keyframes pinIgnite {
+  0%   { opacity: 0; transform: scale(.3); box-shadow: 0 0 0 0 rgba(255, 217, 131, 0); }
+  45%  { opacity: 1; transform: scale(1.8); box-shadow: 0 0 22px 6px rgba(255, 217, 131, .8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.lp-tray.armed .lp-pin .dot { transition: transform .35s var(--ease-spring), opacity .35s, box-shadow .35s, background .35s; }
+.lp-tray.armed.has-on .lp-pin:not(.on) .dot { opacity: .5; transform: scale(.78); }
+.lp-tray.armed .lp-pin.on .dot {
+  background: var(--molten); transform: scale(1.4);
+  box-shadow: 0 0 0 6px rgba(255, 217, 131, .2), 0 0 24px 4px rgba(255, 200, 100, .65);
+}
+.lp-tray.armed .lp-pin.on .ping { animation: pinPing 1.6s ease-out infinite; }
+@keyframes pinPing {
+  0%   { opacity: .9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(4.2); }
+}
+
+@media (min-width: 721px) {
+  .lp-tray.armed .lp-pin.on .tip {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+    border-color: rgba(255, 217, 131, .45);
+  }
+  .lp-tray.armed .lp-pin.on[style*="left:88"] .tip,
+  .lp-tray.armed .lp-pin.on[style*="left:89"] .tip { transform: translateY(0); }
+}
+
+.lp-tray figcaption {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px;
+  text-align: left; margin-top: var(--sp-4);
+}
+.lp-trayread { display: inline-flex; align-items: baseline; gap: 10px; min-width: 0; }
+.lp-trayread b, .lp-trayread i, .lp-trayread .n { display: inline-block; }
+.lp-trayread .n {
+  font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1;
+  background: var(--metal); -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.lp-trayread .of { font-family: var(--font-mono); font-size: 12px; color: var(--faint); margin-left: -6px; }
+.lp-trayread b { font-family: var(--font-display); font-weight: 600; font-size: 17px; color: var(--ink); }
+.lp-trayread i { font-style: normal; font-size: var(--fs-xs); color: var(--faint); }
+.lp-trayread.flip b, .lp-trayread.flip i, .lp-trayread.flip .n { animation: readFlip .45s var(--ease-out); }
+@keyframes readFlip { from { opacity: 0; transform: translateY(6px); } }
+.lp-trayhint { font-size: var(--fs-xs); }
+.lp-tray:not(.armed):not(.still) .lp-trayread { display: none; }
+
+@media (max-width: 720px) {
+  .lp-tray.armed .lp-pin { display: grid; pointer-events: none; padding: 0; }
+  .lp-tray.armed .lp-pin .dot,
+  .lp-tray.armed .lp-pin .ping { width: 8px; height: 8px; }
+  .lp-tray.armed .lp-pin .tip { display: none; }
+  .lp-tray.armed figcaption, .lp-tray.still figcaption { display: flex; }
+  .lp-trayhint { display: none; }
+  .lp-trayread { flex-wrap: wrap; row-gap: 2px; }
+  .lp-trayread .n { font-size: 26px; }
+  .lp-trayread b { font-size: 15px; }
+
+  .lp-tray.armed .lp-traytag { display: none; }
 }
 
 </style>
@@ -7154,6 +7312,7 @@ const { byId, esc, on } = __req("src/core/dom.js");
 const { PLANS, REVIEWS, CLAIMS, TRUST, SOCIAL, publishableReviews, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, DISCOUNT, OFFER, DEVICES } = __req("src/domain/licensing.js");
 const { mountAssay } = __req("src/ui/assay.js");
 const { initLandingMotion, stopLandingMotion } = __req("src/ui/landing-motion.js");
+const { mountTray } = __req("src/ui/tray-motion.js");
 const { prefersReducedMotion } = __req("src/ui/motion.js");
 
 const { buildPlan, breakevenWinRate, expectancyR } = __req("src/domain/sizing.js");
@@ -7171,11 +7330,13 @@ function initLanding(enterCallback) {
   host.style.display = 'block';
 
   stopAssay = mountAssay(byId('lp-assay'));
+  stopTray = mountTray(byId('lp-tray'), TRAY);
   initLandingMotion(host);
   lazyFilm(host);
 }
 
 let stopAssay = null;
+let stopTray = null;
 
 function lazyFilm(host) {
   const video = host.querySelector('.lp-finalfilm video');
@@ -7198,6 +7359,7 @@ function hideLanding() {
   byId('lp-trialbar')?.remove();
 
   if (stopAssay) { stopAssay(); stopAssay = null; }
+  if (stopTray) { stopTray(); stopTray = null; }
   stopLandingMotion();
   byId('landing')?.querySelector('.lp-finalfilm video')?.pause();
 }
@@ -7503,20 +7665,36 @@ function markup() {
   <h2>Everything the decision needs, on one screen.</h2>
   <p class="lp-lead">Every tool feeds the same verdict, so nothing you check gets forgotten by the time you click.</p>
 
-  <figure class="lp-tray">
+  <!-- The tray is lit by ui/tray-motion.js: a scan turns the lights on, a
+  desk lamp follows the pointer, and scrolling walks it through the
+  tools in order. The image and markers sit in one scene layer so they
+  move together and a marker never drifts off its object. -->
+  <figure class="lp-tray" id="lp-tray">
   <div class="lp-trayimg">
+  <div class="lp-trayscene">
   <img src="gallery/web/toolkit.webp" alt="The thirteen tools laid out as instruments on a dark tray"
   width="1376" height="768" loading="lazy" decoding="async"
   onerror="this.closest('.lp-tray').classList.add('noart')">
-  ${TRAY.map((t) => `
-  <button type="button" class="lp-pin" style="left:${t.x}%;top:${t.y}%"
-  aria-label="${esc(t.tool)}">
+  ${TRAY.map((t, i) => `
+  <button type="button" class="lp-pin" style="left:${t.x}%;top:${t.y}%;--x:${t.x}"
+  data-i="${i}" aria-label="${esc(t.tool)}">
+  <span class="ping" aria-hidden="true"></span>
   <span class="dot" aria-hidden="true"></span>
   <span class="tip">${esc(t.tool)}</span>
   </button>`).join('')}
   </div>
+  <div class="lp-trayshade" aria-hidden="true"></div>
+  <div class="lp-traylamp" aria-hidden="true"></div>
+  <div class="lp-trayscan" aria-hidden="true"></div>
+  <div class="lp-trayreticle" aria-hidden="true"></div>
+  <p class="lp-traytag" aria-hidden="true">Instrument tray · ${TRAY.length} tools</p>
+  </div>
   <figcaption>
-  Every tool, laid out. <span class="t-faint">Hover or tap a marker to name it.</span>
+  <span class="lp-trayread" aria-hidden="true">
+  <span class="n">01</span><span class="of">/${TRAY.length}</span>
+  <b>${esc(TRAY[0].tool)}</b><i>${esc(TRAY[0].object)}</i>
+  </span>
+  <span class="lp-trayhint t-faint">Move across the tray to light each tool — or keep scrolling.</span>
   </figcaption>
   <!-- The markers are a pointing device away from useless on a phone, and
   a screen reader gets nothing from a dot. The same thirteen names are
@@ -9337,6 +9515,215 @@ function stopLandingMotion() {
 }
 
 Object.assign(__exports, { initLandingMotion, stopLandingMotion });
+
+});
+
+__def("src/ui/tray-motion.js", function (__exports, __req) {
+
+const { prefersReducedMotion } = __req("src/ui/motion.js");
+
+const TILT_MAX = 5;
+const NEAR = 11;
+const EASE = 0.14;
+
+function mountTray(fig, items) {
+  if (!fig || !items?.length) return () => {};
+  const frame = fig.querySelector('.lp-trayimg');
+  const pins = [...fig.querySelectorAll('.lp-pin')];
+  const read = fig.querySelector('.lp-trayread');
+  if (!frame || pins.length !== items.length) return () => {};
+
+  const pad = (n) => String(n + 1).padStart(2, '0');
+  let active = -1;
+
+  function light(i) {
+  if (i === active) return;
+  if (active >= 0) pins[active].classList.remove('on');
+  active = i;
+  if (i < 0) { fig.classList.remove('has-on'); return; }
+  pins[i].classList.add('on');
+  fig.classList.add('has-on');
+  if (read) {
+  read.querySelector('.n').textContent = pad(i);
+  read.querySelector('b').textContent = items[i].tool;
+  read.querySelector('i').textContent = items[i].object;
+  read.classList.remove('flip');
+  void read.offsetWidth;
+  read.classList.add('flip');
+  }
+  }
+
+  const nearest = (x, y) => {
+
+  let best = -1;
+  let bestD = Infinity;
+  items.forEach((t, i) => {
+  const d = Math.hypot(t.x - x, (t.y - y) * 0.5625);
+  if (d < bestD) { bestD = d; best = i; }
+  });
+  return bestD <= NEAR ? best : -1;
+  };
+
+  if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') {
+  fig.classList.add('lit', 'still');
+  const onFocus = (e) => { const p = e.target.closest('.lp-pin'); if (p) light(Number(p.dataset.i)); };
+  fig.addEventListener('focusin', onFocus);
+  fig.addEventListener('pointerover', onFocus);
+  light(0);
+  return () => { fig.removeEventListener('focusin', onFocus); fig.removeEventListener('pointerover', onFocus); };
+  }
+
+  fig.classList.add('armed');
+
+  const lamp = { x: items[0].x, y: items[0].y };
+  const target = { x: items[0].x, y: items[0].y };
+  const tilt = { x: 0, y: 0 };
+  const tiltTarget = { x: 0, y: 0 };
+  let pointerInside = false;
+  let onScreen = false;
+  let raf = 0;
+  let scrollP = 0;
+
+  let litOnce = false;
+  function lightsOn() {
+  if (litOnce) return;
+  litOnce = true;
+  fig.classList.add('scanning');
+
+  setTimeout(() => { fig.classList.add('lit'); fig.classList.remove('scanning'); }, 1900);
+  }
+
+  const fine = window.matchMedia?.('(pointer: fine)').matches ?? true;
+
+  function onMove(e) {
+  if (!fine || e.pointerType === 'touch') return;
+  const r = frame.getBoundingClientRect();
+  const x = ((e.clientX - r.left) / r.width) * 100;
+  const y = ((e.clientY - r.top) / r.height) * 100;
+  pointerInside = true;
+  fig.classList.add('hover');
+  target.x = x;
+  target.y = y;
+  tiltTarget.y = ((x - 50) / 50) * TILT_MAX;
+  tiltTarget.x = -((y - 50) / 50) * TILT_MAX * 0.7;
+  kick();
+  }
+  function onLeave() {
+  pointerInside = false;
+  fig.classList.remove('hover');
+  tiltTarget.x = 0;
+  tiltTarget.y = 0;
+  tour();
+  kick();
+  }
+  function onFocus(e) {
+  const p = e.target.closest('.lp-pin');
+  if (!p) return;
+  const t = items[Number(p.dataset.i)];
+  target.x = t.x;
+  target.y = t.y;
+  light(Number(p.dataset.i));
+  kick();
+  }
+
+  let tourT = 0;
+  function measure() {
+
+  const r = frame.getBoundingClientRect();
+  const vh = window.innerHeight || 1;
+
+  scrollP = Math.min(1, Math.max(0, (vh - r.top) / (vh + r.height)));
+
+  const c = r.top + r.height / 2;
+  tourT = Math.min(1, Math.max(0, (vh * 0.85 - c) / (vh * 0.7)));
+  }
+  function tour() {
+  if (pointerInside) return;
+
+  const t = tourT;
+  const i = Math.min(items.length - 1, Math.floor(t * items.length));
+  target.x = items[i].x;
+  target.y = items[i].y;
+  }
+  function onScroll() {
+  if (!onScreen) return;
+  measure();
+  tour();
+  kick();
+  }
+
+  let idle = 0;
+  function frameLoop(now) {
+  raf = 0;
+  const dx = target.x - lamp.x;
+  const dy = target.y - lamp.y;
+  lamp.x += dx * EASE;
+  lamp.y += dy * EASE;
+  tilt.x += (tiltTarget.x - tilt.x) * 0.1;
+  tilt.y += (tiltTarget.y - tilt.y) * 0.1;
+
+  const drift = pointerInside ? 0 : Math.sin(now / 1400) * 0.6;
+
+  frame.style.setProperty('--lx', `${(lamp.x + drift).toFixed(2)}%`);
+  frame.style.setProperty('--ly', `${(lamp.y - drift * 0.5).toFixed(2)}%`);
+  frame.style.setProperty('--rx', `${tilt.x.toFixed(2)}deg`);
+  frame.style.setProperty('--ry', `${tilt.y.toFixed(2)}deg`);
+
+  frame.style.setProperty('--py', `${((0.5 - scrollP) * 3).toFixed(2)}%`);
+
+  if (fig.classList.contains('lit')) light(nearest(lamp.x, lamp.y));
+
+  const settled = Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05
+  && Math.abs(tiltTarget.x - tilt.x) < 0.02 && Math.abs(tiltTarget.y - tilt.y) < 0.02;
+
+  idle = settled ? idle + 1 : 0;
+  if (onScreen && !document.hidden) {
+  if (idle > 30 && !pointerInside) {
+  setTimeout(kick, 120);
+  } else {
+  kick();
+  }
+  }
+  }
+  function kick() {
+  if (!raf && onScreen) raf = requestAnimationFrame(frameLoop);
+  }
+
+  const io = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+  onScreen = e.isIntersecting;
+  if (onScreen) {
+  if (e.intersectionRatio > 0.25 || e.boundingClientRect.top < window.innerHeight * 0.6) lightsOn();
+  measure();
+  tour();
+  kick();
+  }
+  }
+  }, { threshold: [0, 0.25, 0.5] });
+  io.observe(fig);
+
+  frame.addEventListener('pointermove', onMove, { passive: true });
+  frame.addEventListener('pointerleave', onLeave);
+  fig.addEventListener('focusin', onFocus);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+
+  const fallback = setTimeout(() => { if (!litOnce) { fig.classList.add('lit'); light(0); } }, 6000);
+
+  return function stop() {
+  io.disconnect();
+  clearTimeout(fallback);
+  if (raf) cancelAnimationFrame(raf);
+  onScreen = false;
+  frame.removeEventListener('pointermove', onMove);
+  frame.removeEventListener('pointerleave', onLeave);
+  fig.removeEventListener('focusin', onFocus);
+  window.removeEventListener('scroll', onScroll);
+  window.removeEventListener('resize', onScroll);
+  };
+}
+
+Object.assign(__exports, { mountTray });
 
 });
 
