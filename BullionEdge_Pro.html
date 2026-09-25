@@ -123,7 +123,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&display=swap" rel="stylesheet">
 
 <!-- Both chart libraries are optional and both have real fallbacks:
      ui/charts.js draws its own canvas if Chart.js is missing, and ui/chart.js
@@ -175,9 +175,15 @@
   --glow-long:      rgba(70, 185, 140, 0.20);
   --glow-short:     rgba(224, 112, 74, 0.20);
 
-  --font-display:   'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
-  --font-body:      'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-display:   'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  --font-body:      'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
   --font-mono:      'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+  --font-stamp:     'Michroma', 'Chakra Petch', 'Segoe UI', sans-serif;
+
+  --molten:         #FFD983;
+  --gold-deep:      #8C5B14;
+  --metal: linear-gradient(176deg, #FFE7A8 0%, #FFCB63 22%, #E0A63C 48%, #B07722 70%, #FFD27A 100%);
+  --hud:            rgba(224, 166, 60, 0.22);
 
   --fs-2xs:  11.5px;
   --fs-xs:   12.5px;
@@ -2275,39 +2281,6 @@ kbd {
 }
 .lp-heroinner { position: relative; z-index: 2; max-width: 940px; margin: 0 auto; text-align: center; }
 
-.lp-herofilm {
-  position: relative; z-index: 2;
-
-  width: min(100%, 1040px, 92vh);
-  margin: 0 auto clamp(22px, 3vw, 38px);
-  border-radius: var(--r-xl); overflow: hidden;
-  border: 1px solid var(--line-2);
-  box-shadow: var(--sh-3), 0 0 90px -30px var(--glow-gold);
-  background: var(--bg-void);
-  line-height: 0;
-}
-
-.lp-herofilm video {
-  display: block;
-  width: 100%; height: auto;
-  pointer-events: none;
-}
-
-.lp-herofilm::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  border-radius: inherit;
-  box-shadow: inset 0 1px 0 rgba(224, 166, 60, .22);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lp-herofilm video { display: none; }
-  .lp-herofilm {
-    aspect-ratio: 1280 / 720;
-    background-image: url('../../gallery/web/hero-poster.webp');
-    background-size: contain; background-repeat: no-repeat; background-position: center;
-  }
-}
-
 .lp-eyebrow {
   font-family: var(--font-mono); font-size: var(--fs-xs);
   text-transform: uppercase; letter-spacing: .18em;
@@ -2319,7 +2292,9 @@ kbd {
   font-size: clamp(34px, 7vw, 68px); line-height: 1.04;
   letter-spacing: -.03em; margin: 0 0 var(--sp-5); color: var(--ink);
 }
-.lp-h1 span {
+
+.lp-h1 em {
+  font-style: normal;
   background: linear-gradient(120deg, var(--gold-bright), var(--gold), var(--gold-dim));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
@@ -3199,6 +3174,389 @@ kbd {
   color: var(--gold); letter-spacing: .06em;
 }
 
+/* assets/css/landing-fx.css */
+.lp-eyebrow {
+  font-family: var(--font-stamp); font-size: 10.5px; letter-spacing: .22em;
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--gold);
+}
+.lp-sec h2, .lp-final h2 { font-family: var(--font-display); font-weight: 600; letter-spacing: -.01em; }
+
+.lp-hero::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60% 55% at 72% 42%, rgba(224, 166, 60, .14), transparent 70%),
+    linear-gradient(rgba(224, 166, 60, .05) 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(90deg, rgba(224, 166, 60, .05) 1px, transparent 1px) 0 0 / 44px 44px;
+  -webkit-mask-image: radial-gradient(75% 80% at 60% 45%, #000 30%, transparent 85%);
+          mask-image: radial-gradient(75% 80% at 60% 45%, #000 30%, transparent 85%);
+}
+
+.lp-hero { padding-top: clamp(28px, 5vw, 64px); padding-bottom: clamp(36px, 6vw, 72px); }
+
+.lp-herogrid {
+  position: relative; z-index: 2;
+  max-width: var(--max-w); margin: 0 auto;
+  display: grid; gap: clamp(28px, 4vw, 56px); align-items: center;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+}
+.lp-herogrid .lp-heroinner { max-width: 640px; margin: 0; text-align: left; }
+.lp-herogrid .lp-sub { margin-left: 0; margin-right: 0; }
+.lp-herogrid .lp-cta { justify-content: flex-start; }
+
+.lp-h1 {
+  font-size: clamp(38px, 5.6vw, 76px); line-height: 1.02;
+  letter-spacing: -.02em; text-transform: none;
+}
+
+.lp-h1 .ln { display: block; overflow: hidden; padding-bottom: .06em; }
+.lp-h1 .ln > span { display: inline-block; }
+.lp-h1 em {
+  background: var(--metal); background-size: 100% 220%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-family: var(--font-stamp); font-weight: 400; font-size: .86em; letter-spacing: .04em;
+}
+
+.lp-livedot {
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
+  background: var(--long); box-shadow: 0 0 0 0 rgba(70, 185, 140, .6);
+}
+
+.lp-heromicro {
+  list-style: none; padding: 0; margin: var(--sp-5) 0 0;
+  display: flex; flex-wrap: wrap; gap: 8px 18px;
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--faint);
+}
+.lp-heromicro li { display: inline-flex; align-items: center; gap: 8px; }
+.lp-heromicro li::before { content: ''; width: 5px; height: 5px; transform: rotate(45deg); background: var(--gold-dim); }
+
+.lp-go {
+  position: relative; overflow: hidden;
+  background: var(--metal) !important; color: var(--gold-ink) !important;
+  border: 1px solid rgba(255, 231, 168, .55) !important;
+  box-shadow: 0 10px 30px -10px rgba(224, 166, 60, .65), inset 0 1px 0 rgba(255, 255, 255, .45);
+  font-weight: 700;
+}
+.lp-go::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .55) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+
+.lp-assay {
+  position: relative; margin: 0; justify-self: center;
+  width: min(100%, 500px); aspect-ratio: 1; container-type: inline-size;
+}
+.assay-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+.lp-assay .bz { fill: none; stroke: var(--hud); stroke-width: 1; }
+.lp-assay .bz-out { stroke: rgba(224, 166, 60, .38); stroke-dasharray: 2 6; }
+
+.lp-assay .tk { stroke: rgba(224, 166, 60, .32); stroke-width: 1; }
+.lp-assay .tk-hr { stroke: rgba(224, 166, 60, .6); stroke-width: 1.4; }
+.lp-assay .tk-maj { stroke: var(--molten); stroke-width: 2.4; }
+.lp-assay .tk-lbl {
+  font-family: var(--font-stamp); font-size: 10px; fill: rgba(255, 217, 131, .7);
+  text-anchor: middle; letter-spacing: .08em;
+}
+
+.lp-assay .sx { fill: none; stroke-width: 11; stroke-linecap: butt; stroke-dasharray: 1; stroke-dashoffset: 0; opacity: .5; }
+.lp-assay .sx-asian   { stroke: #3F7F8C; }
+.lp-assay .sx-london  { stroke: #C98A2E; }
+.lp-assay .sx-overlap { stroke: var(--molten); stroke-width: 13; }
+.lp-assay .sx.live { opacity: 1; filter: drop-shadow(0 0 7px rgba(255, 217, 131, .7)); }
+
+.lp-assay .face { fill: url(#assay-face); stroke: rgba(224, 166, 60, .35); stroke-width: 1; }
+.lp-assay .ringtxt {
+  font-family: var(--font-stamp); font-size: 8.4px; letter-spacing: .26em;
+  fill: rgba(224, 166, 60, .42);
+}
+
+.lp-assay .trace {
+  fill: none; stroke: url(#assay-trace); stroke-width: 1.8;
+  stroke-linejoin: round; stroke-linecap: round; opacity: 0;
+}
+.lp-assay.has-trace .trace { opacity: 1; }
+
+.lp-assay .needle {
+  transform-origin: 220px 220px; transform-box: view-box;
+  transition: transform 1.2s var(--ease-out);
+}
+.lp-assay .needle line { stroke: #F3F6F6; stroke-width: 2; stroke-linecap: round; }
+.lp-assay .needle circle { fill: var(--bg-void); stroke: #F3F6F6; stroke-width: 2; }
+
+.assay-core {
+  position: absolute; inset: 0; display: grid; place-content: center; justify-items: center;
+  text-align: center; pointer-events: none; padding-bottom: 12cqi;
+}
+.assay-core p { margin: 0; }
+.assay-k {
+  font-family: var(--font-stamp); font-size: max(9px, 2.3cqi); letter-spacing: .24em;
+  color: var(--muted); text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+}
+.assay-k i { width: 16px; height: 1px; background: var(--gold-dim); }
+.assay-px {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: max(26px, 9.4cqi); line-height: 1.15; letter-spacing: -.01em;
+  color: var(--ink); font-variant-numeric: tabular-nums; margin-top: 4px !important;
+  transition: color .6s, filter .6s;
+}
+
+.assay-px[data-state="live"] { color: #FFF3D6; filter: drop-shadow(0 0 14px rgba(255, 200, 100, .3)); }
+.assay-px[data-state="off"] { font-size: max(18px, 5cqi); color: var(--faint); }
+.assay-px[data-state="loading"] .odo { opacity: .35; }
+.assay-px.tick-up { animation: tickUp 1.4s var(--ease-out); }
+.assay-px.tick-dn { animation: tickDn 1.4s var(--ease-out); }
+@keyframes tickUp { 12% { color: #7EE0B6; filter: drop-shadow(0 0 12px rgba(70, 185, 140, .6)); } }
+@keyframes tickDn { 12% { color: #F2A184; filter: drop-shadow(0 0 12px rgba(224, 112, 74, .6)); } }
+
+.odo { display: inline-flex; align-items: baseline; }
+.od { display: inline-block; height: 1.15em; overflow: hidden; vertical-align: bottom; }
+.oc {
+  display: block; line-height: 1.15em;
+  transform: translateY(calc(var(--v, 0) * -1.15em));
+  transition: transform 1.1s cubic-bezier(.2, .9, .25, 1);
+}
+.os { display: inline-block; }
+
+.assay-chg { font-family: var(--font-mono); font-size: max(11px, 2.9cqi); color: var(--muted); margin-top: 6px !important; }
+.assay-chg.up b { color: var(--long); }
+.assay-chg.dn b { color: var(--short); }
+.assay-chg span { color: var(--faint); }
+.assay-px[data-state="off"] + .assay-chg { max-width: 52cqi; font-family: var(--font-body); font-size: max(11px, 2.6cqi); line-height: 1.45; }
+
+.assay-st {
+  margin-top: 10px !important; padding: 4px 10px; border-radius: 999px;
+  font-family: var(--font-mono); font-size: max(10px, 2.5cqi); color: var(--faint);
+  border: 1px solid var(--line-2);
+}
+.assay-st.open { color: var(--molten); border-color: rgba(255, 217, 131, .4); background: rgba(224, 166, 60, .08); }
+
+.assay-legend {
+  list-style: none; margin: 0; padding: 0;
+  position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%);
+  display: flex; gap: 6px 16px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: 100%;
+  font-family: var(--font-mono); font-size: 11px; color: var(--faint);
+}
+.assay-legend li { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.assay-legend li::before { content: ''; width: 14px; height: 4px; border-radius: 1px; }
+.assay-legend b { color: var(--ink-soft); font-weight: 500; }
+.assay-legend .lg-overlap::before { background: var(--molten); }
+.assay-legend .lg-london::before  { background: #C98A2E; }
+.assay-legend .lg-asian::before   { background: #3F7F8C; }
+
+.lp-tape {
+  position: relative; overflow: hidden;
+  border-block: 1px solid var(--line-2);
+  background: linear-gradient(90deg, rgba(224, 166, 60, .06), rgba(224, 166, 60, .02) 50%, rgba(224, 166, 60, .06));
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.lp-tape-track { display: flex; width: max-content; }
+.lp-tape-run { display: flex; flex: none; }
+.lp-tape-run span {
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  padding: 13px 26px; font-size: 13px; color: var(--muted);
+}
+.lp-tape-run i { font-style: normal; font-size: 8px; color: var(--gold-dim); }
+.lp-tape-run b { font-family: var(--font-display); font-weight: 600; color: var(--ink); letter-spacing: .01em; }
+
+.lp-plan, .lp-hc, .lp-finalinner {
+  --bk: rgba(255, 217, 131, .55);
+  background-image:
+    linear-gradient(var(--bk), var(--bk)), linear-gradient(var(--bk), var(--bk)),
+    linear-gradient(var(--bk), var(--bk)), linear-gradient(var(--bk), var(--bk)),
+    linear-gradient(var(--bk), var(--bk)), linear-gradient(var(--bk), var(--bk)),
+    linear-gradient(var(--bk), var(--bk)), linear-gradient(var(--bk), var(--bk));
+  background-repeat: no-repeat;
+  background-size: 14px 1px, 1px 14px, 14px 1px, 1px 14px, 14px 1px, 1px 14px, 14px 1px, 1px 14px;
+  background-position:
+    8px 8px, 8px 8px, calc(100% - 8px) 8px, calc(100% - 8px) 8px,
+    8px calc(100% - 8px), 8px calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) calc(100% - 8px);
+  background-color: var(--glass-bg);
+}
+.lp-hc { background-color: var(--panel); }
+
+.lp-sec > h2, .lp-final h2 { position: relative; padding-bottom: 14px; }
+.lp-sec > h2::after, .lp-final h2::after {
+  content: ''; position: absolute; left: 0; bottom: 0;
+  width: 72px; height: 2px; border-radius: 2px;
+  background: var(--metal); box-shadow: 0 0 12px rgba(224, 166, 60, .5);
+  transform-origin: left;
+}
+.lp-final h2::after { left: 50%; margin-left: -36px; }
+
+.lp-price { gap: clamp(14px, 1.6vw, 22px); align-items: stretch; }
+.lp-plan { display: flex; flex-direction: column; padding-top: var(--sp-6); overflow: hidden; isolation: isolate; }
+.lp-plan > .btn { margin-top: auto; }
+
+.lp-plantag {
+  margin: 0 0 var(--sp-3); align-self: flex-start;
+  font-family: var(--font-stamp); font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--muted); padding: 5px 10px; border: 1px solid var(--line); border-radius: 3px;
+}
+.lp-plan h3 { font-family: var(--font-stamp); font-weight: 400; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; }
+
+.lp-plan .amt { display: flex; align-items: baseline; gap: 10px; }
+.lp-plan .amt-n {
+  font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 4vw, 52px); letter-spacing: -.02em;
+  background: var(--metal); -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.lp-plan .amt small { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .12em; font-size: 11px; }
+.lp-plan li::before { content: ''; top: .55em; width: 8px; height: 8px; transform: rotate(45deg); background: var(--gold-dim); border-radius: 1px; }
+
+.lp-plan.pop { border-color: rgba(255, 217, 131, .55); box-shadow: 0 24px 60px -28px rgba(224, 166, 60, .55), var(--sh-glow); }
+.lp-plan.pop .lp-plantag { color: var(--gold-ink); background: var(--metal); border-color: transparent; font-weight: 700; }
+
+.lp-plan.forever { border-color: transparent; }
+.lp-plan.forever::before {
+  content: ''; position: absolute; inset: -60%; z-index: -2;
+  background: conic-gradient(from var(--spin, 0deg), transparent 0 64%, rgba(255, 217, 131, .95) 76%, transparent 84% 100%);
+}
+.lp-plan.forever::after {
+  content: ''; position: absolute; inset: 1px; z-index: -1; border-radius: calc(var(--r-lg) - 1px);
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(224, 166, 60, .16), transparent 60%),
+    var(--bg);
+}
+.lp-plan.forever .lp-plantag { color: var(--molten); border-color: rgba(255, 217, 131, .45); }
+.lp-plan.forever .per { color: var(--molten); }
+
+.lp-save { font-family: var(--font-mono); letter-spacing: .04em; }
+
+.lp-passfacts {
+  list-style: none; margin: var(--sp-5) 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: var(--sp-3);
+}
+.lp-passfacts li {
+  padding: var(--sp-4); border-radius: var(--r-md, 10px);
+  border: 1px dashed rgba(224, 166, 60, .28); background: rgba(224, 166, 60, .03);
+  font-size: var(--fs-sm); color: var(--muted); line-height: 1.6;
+}
+.lp-passfacts b { display: block; margin-bottom: 4px; font-family: var(--font-display); font-weight: 600; color: var(--ink); letter-spacing: .01em; }
+
+.lp-final {
+  position: relative; isolation: isolate; overflow: hidden;
+  border-radius: var(--r-xl); margin: clamp(28px, 5vw, 56px) 0;
+  padding: clamp(56px, 10vw, 128px) var(--sp-5);
+  border: 1px solid var(--line-2);
+}
+.lp-finalfilm { position: absolute; inset: 0; z-index: -1; margin: 0; }
+.lp-finalfilm video { width: 100%; height: 100%; object-fit: cover; opacity: .42; }
+.lp-finalfilm::after {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(70% 90% at 50% 50%, rgba(6, 11, 12, .45), rgba(6, 11, 12, .92)),
+    linear-gradient(transparent 50%, rgba(0, 0, 0, .22) 50%) 0 0 / 100% 3px;
+}
+.lp-finalinner {
+  position: relative; max-width: 720px; margin: 0 auto; padding: clamp(24px, 4vw, 44px);
+  border-radius: var(--r-lg); border: 1px solid rgba(224, 166, 60, .22);
+  background-color: rgba(6, 11, 12, .55);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.lp-finalinner .lp-lead { margin-left: auto; margin-right: auto; }
+
+.fx-armed .lp-sec > *,
+.fx-armed .lp-final .lp-finalinner > * {
+  opacity: 0; transform: translateY(18px); filter: blur(6px);
+  transition: opacity .7s var(--ease-out), transform .8s var(--ease-out), filter .7s var(--ease-out);
+}
+.fx-armed .lp-sec.fx-in > *,
+.fx-armed .lp-final.fx-in .lp-finalinner > * { opacity: 1; transform: none; filter: none; }
+
+.fx-armed .lp-sec.fx-in > :nth-child(2) { transition-delay: 80ms; }
+.fx-armed .lp-sec.fx-in > :nth-child(3) { transition-delay: 160ms; }
+.fx-armed .lp-sec.fx-in > :nth-child(4) { transition-delay: 240ms; }
+.fx-armed .lp-sec.fx-in > :nth-child(n+5) { transition-delay: 320ms; }
+.fx-armed .lp-final.fx-in .lp-finalinner > :nth-child(2) { transition-delay: 90ms; }
+.fx-armed .lp-final.fx-in .lp-finalinner > :nth-child(3) { transition-delay: 180ms; }
+.fx-armed .lp-final.fx-in .lp-finalinner > :nth-child(n+4) { transition-delay: 270ms; }
+
+.fx-armed .lp-sec > h2::after, .fx-armed .lp-final h2::after { transform: scaleX(0); transition: transform .9s .35s var(--ease-out); }
+.fx-armed .lp-sec.fx-in > h2::after, .fx-armed .lp-final.fx-in h2::after { transform: scaleX(1); }
+
+@property --spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+
+@media (prefers-reduced-motion: no-preference) {
+
+  .lp-h1 .ln > span { animation: lnRise .95s var(--ease-out) both; }
+  .lp-h1 .ln:nth-child(2) > span { animation-delay: .12s; }
+  .lp-herogrid .lp-eyebrow,
+  .lp-herogrid .lp-sub,
+  .lp-herogrid .lp-cta,
+  .lp-herogrid .lp-heromicro { animation: fadeUp .8s var(--ease-out) both; }
+  .lp-herogrid .lp-sub { animation-delay: .22s; }
+  .lp-herogrid .lp-cta { animation-delay: .32s; }
+  .lp-herogrid .lp-heromicro { animation-delay: .42s; }
+  .lp-h1 em { animation: metalShift 6s ease-in-out infinite alternate; }
+
+  .lp-livedot { animation: livePulse 2s ease-out infinite; }
+  .lp-go::after { animation: sheen 5.5s 1.4s ease-in-out infinite; }
+
+  .lp-assay:not(.still) .tk { opacity: 0; }
+  .lp-assay.on:not(.still) .tk { animation: tkIn .5s var(--ease-out) forwards; animation-delay: calc(var(--i) * 9ms); }
+  .lp-assay:not(.still) .sx { stroke-dashoffset: 1; }
+  .lp-assay.on:not(.still) .sx { transition: stroke-dashoffset 1.3s .5s var(--ease-out); stroke-dashoffset: 0; }
+  .lp-assay.on:not(.still) .sx.live { animation: arcGlow 2.8s 1.8s ease-in-out infinite; }
+  .lp-assay:not(.still) .bz-out { animation: bezel 90s linear infinite; transform-origin: 220px 220px; transform-box: view-box; }
+  .lp-assay:not(.still) .ringtxt { animation: ringSpin 120s linear infinite; transform-origin: 220px 220px; transform-box: view-box; }
+  .lp-assay.has-trace:not(.still) .trace { stroke-dasharray: var(--len); animation: traceDraw 2.2s .3s var(--ease-out) both; }
+  .lp-assay:not(.still):not(.on) .needle { transform: rotate(0deg) !important; }
+
+  .lp-tape-track { animation: tape 58s linear infinite; }
+  .lp-tape:hover .lp-tape-track { animation-play-state: paused; }
+
+  .lp-plan.forever::before { animation: orbit 7s linear infinite; }
+  .lp-plan.pop { animation: popGlow 4.5s ease-in-out infinite; }
+}
+
+@keyframes lnRise { from { transform: translateY(105%); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } }
+@keyframes metalShift { to { background-position: 0 100%; } }
+@keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(70, 185, 140, .55); } 80%, 100% { box-shadow: 0 0 0 9px rgba(70, 185, 140, 0); } }
+@keyframes sheen { 0%, 70% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@keyframes tkIn { to { opacity: 1; } }
+@keyframes arcGlow { 50% { filter: drop-shadow(0 0 14px rgba(255, 217, 131, .95)); } }
+@keyframes bezel { to { transform: rotate(360deg); } }
+@keyframes ringSpin { to { transform: rotate(-360deg); } }
+@keyframes traceDraw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+@keyframes tape { to { transform: translateX(-50%); } }
+@keyframes orbit { to { --spin: 360deg; } }
+@keyframes popGlow { 50% { box-shadow: 0 28px 70px -24px rgba(224, 166, 60, .75), var(--sh-glow); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-tape { -webkit-mask-image: none; mask-image: none; }
+  .lp-tape-track { width: auto; }
+  .lp-tape-run { flex-wrap: wrap; justify-content: center; flex: 1; }
+  .lp-tape-run[aria-hidden="true"] { display: none; }
+  .lp-tape-run span { padding: 8px 14px; }
+  .oc { transition: none; }
+}
+
+.lp-go:focus-visible, .lp-plan .btn:focus-visible { outline: 2px solid var(--molten); outline-offset: 3px; }
+
+@media (max-width: 960px) {
+  .lp-herogrid { grid-template-columns: minmax(0, 1fr); }
+  .lp-herogrid .lp-heroinner { max-width: 680px; margin: 0 auto; text-align: center; }
+  .lp-herogrid .lp-sub { margin-left: auto; margin-right: auto; }
+  .lp-herogrid .lp-cta, .lp-heromicro { justify-content: center; }
+  .lp-herogrid .lp-eyebrow { justify-content: center; }
+  .lp-assay { width: min(100%, 420px); margin-bottom: 34px; }
+}
+
+@media (max-width: 620px) {
+  .lp-h1 { font-size: clamp(34px, 10vw, 46px); }
+  .lp-eyebrow { font-size: 9.5px; letter-spacing: .18em; }
+  .lp-assay { width: min(100%, 360px); margin-bottom: 48px; }
+  .assay-legend { font-size: 10.5px; gap: 4px 12px; bottom: -40px; }
+  .lp-tape-run span { padding: 11px 18px; font-size: 12px; }
+  .lp-final { border-radius: var(--r-lg); margin-inline: calc(var(--sp-5) * -.5); padding-inline: var(--sp-3); }
+  .lp-finalinner { padding: var(--sp-5) var(--sp-4); }
+  .lp-plan .amt-n { font-size: 44px; }
+}
+
 </style>
 </head>
 <body>
@@ -3255,7 +3613,7 @@ kbd {
     <img class="brandmark" src="assets/icons/brand-mark.png" alt="" aria-hidden="true" width="112" height="112" onerror="this.remove()">
     <div class="wordmark"><span class="b">Bullion</span>Edge<span class="prochip">PRO</span></div>
     <div class="atag">AI-guided pre-trade analysis for high-probability setups.</div>
-    <p class="asub">Members only. Log in with your User ID, or activate the licence key from your subscription email.</p>
+    <p class="asub">Members only. Log in with your User ID, or activate the licence key from your purchase email.</p>
 
     <div class="authtabs" role="tablist">
       <button id="tab-login" class="on" role="tab">Log in</button>
@@ -3300,18 +3658,19 @@ kbd {
       <button class="btn block magnetic" id="create-btn">Activate &amp; enter</button>
       <p class="authhint">
         Your licence key is in the email from your purchase. Activating binds it to this device and creates your
-        profile, so you log straight in next time. Your subscription is confirmed with the payment provider now and
-        again about once a week — in between, the desk works with no connection at all.
+        profile, so you log straight in next time. One key opens the desk on up to 2 devices; signing out on one frees
+        its place. Your pass is confirmed with the payment provider now and again about once a week — in between, the
+        desk works with no connection at all.
       </p>
     </div>
 
     <button class="linkbtn" id="auth-back">← Back to the site</button>
 
     <p class="authnote">
-      <b>Your profile is local; your subscription is not.</b> The User ID, passkey, settings and journal live in this
-      browser on this device — nothing syncs, and clearing site data deletes them, so use the backup export. Whether
-      your subscription is paid for is checked with the payment provider, which is why cancelling closes the desk and
-      renewing reopens it with your journal intact. Never reuse a real banking or broker password here.
+      <b>Your profile is local; your pass is not.</b> The User ID, passkey, settings and journal live in this
+      browser on this device — clearing site data deletes them, so keep a backup (export a file, or switch on the
+      encrypted backup in Settings). Whether your pass is current is checked with the payment provider, which is why
+      a timed pass ending closes the desk and a new pass reopens it with your journal intact. Never reuse a real banking or broker password here.
       <button class="linkbtn inline" id="admin-link">Owner sign-in</button>
     </p>
   </div>
@@ -6313,7 +6672,7 @@ const { emit, EV } = __req("src/core/bus.js");
 const { initLanding, hideLanding } = __req("src/ui/landing.js");
 const { resetRouter } = __req("src/ui/router.js");
 const { activate, login, startSession, endSession, resumeSession, ensureOwner, revalidate } = __req("src/ui/accounts.js");
-const { planLabel } = __req("src/domain/licensing.js");
+const { planLabel, isUnlimited } = __req("src/domain/licensing.js");
 const { displayNameFor, initials } = __req("src/domain/profile.js");
 const { readEntitlement, shouldRevalidate, STATE } = __req("src/domain/entitlement.js");
 const { OWNER_ACCESS } = __req("src/ui/owner-access.js");
@@ -6548,10 +6907,14 @@ function paintPlanBadge() {
   const e = readEntitlement(current);
 
   if (e.daysLeft == null) {
-  const label = current.planName || planLabel(current.days || 30);
-  badge.textContent = e.state === STATE.STALE ? `${label} · confirming…` : `${label} · renews`;
+  const forever = isUnlimited(current);
+  const label = current.planName || planLabel(forever ? null : (current.days || 30));
+  const tail = e.state === STATE.STALE ? 'confirming…' : forever ? 'yours for good' : 'renews';
+  badge.textContent = `${label} · ${tail}`;
   badge.classList.toggle('warn', e.state === STATE.STALE);
-  badge.title = e.message || 'Your subscription renews automatically. Cancel any time.';
+  badge.title = e.message || (forever
+  ? 'Unlimited: paid once, no renewals, no expiry.'
+  : 'Your subscription renews automatically. Cancel any time.');
   return;
   }
 
@@ -6788,7 +7151,10 @@ Object.assign(__exports, { toast, modal, close, confirm, initTooltips });
 __def("src/ui/landing.js", function (__exports, __req) {
 
 const { byId, esc, on } = __req("src/core/dom.js");
-const { PLANS, REVIEWS, CLAIMS, TRUST, SOCIAL, publishableReviews, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, TRIAL, DISCOUNT } = __req("src/domain/licensing.js");
+const { PLANS, REVIEWS, CLAIMS, TRUST, SOCIAL, publishableReviews, PAY, planById, TELEGRAM, BROKER, PROMO, CHECKOUT, checkoutUrl, DISCOUNT, OFFER, DEVICES } = __req("src/domain/licensing.js");
+const { mountAssay } = __req("src/ui/assay.js");
+const { initLandingMotion, stopLandingMotion } = __req("src/ui/landing-motion.js");
+const { prefersReducedMotion } = __req("src/ui/motion.js");
 
 const { buildPlan, breakevenWinRate, expectancyR } = __req("src/domain/sizing.js");
 
@@ -6803,6 +7169,24 @@ function initLanding(enterCallback) {
   host.innerHTML = markup();
   wire(host);
   host.style.display = 'block';
+
+  stopAssay = mountAssay(byId('lp-assay'));
+  initLandingMotion(host);
+  lazyFilm(host);
+}
+
+let stopAssay = null;
+
+function lazyFilm(host) {
+  const video = host.querySelector('.lp-finalfilm video');
+  if (!video) return;
+  if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return;
+  const io = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+  if (e.isIntersecting) { video.play().catch(() => {}); } else { video.pause(); }
+  }
+  }, { threshold: 0.25 });
+  io.observe(video);
 }
 
 function hideLanding() {
@@ -6812,6 +7196,10 @@ function hideLanding() {
 
   byId('lp-trialpop')?.remove();
   byId('lp-trialbar')?.remove();
+
+  if (stopAssay) { stopAssay(); stopAssay = null; }
+  stopLandingMotion();
+  byId('landing')?.querySelector('.lp-finalfilm video')?.pause();
 }
 
 const TRIAL_SEEN = 'be.trial.seen';
@@ -6938,36 +7326,36 @@ function paintTrialPopup() {
 
   if (byId('app')?.classList.contains('ready')) return;
 
-  const cheapest = PLANS.reduce((a, b) => (a.price <= b.price ? a : b));
-  const price = Number.isFinite(cheapest.price) ? cheapest.price : null;
+  const plan = OFFER.plan;
+  if (!plan) return;
+  const price = `$${plan.price.toFixed(2)}`;
   const node = document.createElement('div');
   node.className = 'lp-trialpop';
   node.id = 'lp-trialpop';
   node.setAttribute('role', 'dialog');
-  node.setAttribute('aria-label', `${TRIAL.days}-day free trial`);
+  node.setAttribute('aria-label', `Try the desk for ${price}`);
   node.innerHTML = `
   <button class="lp-tp-x" data-trial-dismiss aria-label="Close">×</button>
   <p class="lp-tp-eyebrow">Try it first</p>
-  <h3>${TRIAL.days} days free.${price ? `<br>Or ${DISCOUNT.percent}% off.` : ''}</h3>
+  <h3>The whole desk.<br>${plan.days} days. <em>${price}</em></h3>
   <p class="lp-tp-body">
-  Two ways in. Start the ${TRIAL.plan ? esc(TRIAL.plan.name) : 'Starter'} plan free for ${TRIAL.days} days — the
-  whole desk, nothing charged until day ${TRIAL.days + 1}. Or skip the trial and take ${DISCOUNT.percent}% off any
-  plan, from $${price || '9.99'} up.
+  One payment for ${plan.days} days of everything — the live chart, the verdict, the position size and the
+  journal. It does not renew: when the week is up it simply ends, and your journal stays on your device.
   </p>
   <ul class="lp-tp-list">
-  <li>Card details taken at signup, <b>$0 charged today</b></li>
-  <li>Cancel in one click before day ${TRIAL.days + 1} and pay nothing</li>
-  <li>Your journal and settings stay on your device either way</li>
+  <li>One payment — <b>nothing renews</b>, nothing to cancel</li>
+  <li>One account on <b>${DEVICES} devices</b></li>
+  <li>Your journal and settings stay on your device</li>
   </ul>
   ${DISCOUNT.enabled ? `
   <div class="lp-tp-code">
-  <span class="lp-tp-codelabel">${DISCOUNT.percent}% off any plan</span>
+  <span class="lp-tp-codelabel">${DISCOUNT.percent}% off any pass</span>
   <button type="button" class="lp-tp-copy" data-copy-code="${esc(DISCOUNT.code)}">
   <b>${esc(DISCOUNT.code)}</b><span class="lp-tp-copyhint">copy</span>
   </button>
   <span class="lp-tp-codenote">${esc(DISCOUNT.note)}</span>
   </div>` : ''}
-  <button class="btn block magnetic" data-trial>Start ${TRIAL.days} days free</button>
+  <button class="btn block magnetic" data-trial>Try it — ${price}</button>
   <p class="lp-tp-fine">Not financial advice. Trading gold is high-risk and you can lose money.</p>`;
 
   node.querySelector('[data-trial-dismiss]').addEventListener('click', () => dismissTrial('dismissed'));
@@ -6991,13 +7379,55 @@ function paintTrialPopup() {
 
   node.querySelector('[data-trial]').addEventListener('click', () => {
   dismissTrial('taken');
-  startSubscribe(TRIAL.planId);
+  startSubscribe(OFFER.planId);
   });
 
   document.body.appendChild(node);
 
   requestAnimationFrame(() => node.classList.add('on'));
   setTimeout(() => node.classList.add('on'), 80);
+}
+
+function offerBar() {
+  const plan = OFFER.plan;
+  if (!OFFER.enabled || !plan) return '';
+  const price = `$${plan.price.toFixed(2)}`;
+  return `
+  <div class="lp-trialbar" id="lp-trialbar" role="region" aria-label="Try the desk for ${price}">
+  <span class="lp-tb-dot" aria-hidden="true"></span>
+  <p>
+  <b>The whole desk for ${plan.days} days — ${price}.</b> One payment, nothing renews, one account on
+  ${DEVICES} devices.${DISCOUNT.enabled ? ` Take <b>${DISCOUNT.percent}% off</b> any pass with <code>${esc(DISCOUNT.code)}</code>.` : ''}
+  </p>
+  <button class="btn sm magnetic" data-trial>Try it — ${price}</button>
+  <button class="lp-tb-x" data-trial-dismiss aria-label="Dismiss this offer">×</button>
+  <button class="lp-tb-reopen" data-trial-open>
+  <b>${plan.days} days · ${price}</b>${DISCOUNT.enabled ? ` · ${DISCOUNT.percent}% off with <code>${esc(DISCOUNT.code)}</code>` : ''}
+  <span class="lp-tb-see">See offer</span>
+  </button>
+  </div>`;
+}
+
+const TAPE = [
+  ['XAU/USD only', 'one market, mastered'],
+  ['Sized from your stop', 'never guessed'],
+  [`1 account · ${DEVICES} devices`, 'sign out to move'],
+  ['One payment', 'nothing renews'],
+  ['Your local session times', 'worldwide'],
+  ['Every style', 'scalp · day · swing · position'],
+  ['Works offline', 'once installed'],
+  ['No trade', 'is a real answer'],
+];
+
+function tape() {
+  const items = TAPE.map(([b, t]) => `<span><i aria-hidden="true">◆</i><b>${esc(b)}</b> ${esc(t)}</span>`).join('');
+  return `
+  <div class="lp-tape" role="region" aria-label="What the desk is">
+  <div class="lp-tape-track">
+  <div class="lp-tape-run">${items}</div>
+  <div class="lp-tape-run" aria-hidden="true">${items}</div>
+  </div>
+  </div>`;
 }
 
 function markup() {
@@ -7024,75 +7454,48 @@ function markup() {
   <button class="btn sm magnetic lp-navlogin" data-enter>Member login</button>
   </div>
 
-  ${TRIAL.enabled ? `
-  <div class="lp-trialbar" id="lp-trialbar" role="region" aria-label="Free trial offer">
-  <span class="lp-tb-dot" aria-hidden="true"></span>
-  <p>
-  <b>${TRIAL.days} days free</b> on the ${esc(TRIAL.plan ? TRIAL.plan.name : 'Starter')} plan — the whole desk,
-  nothing held back. Not charged until day ${TRIAL.days + 1}, cancel before then and it costs nothing.${
-  DISCOUNT.enabled ? ` Or take <b>${DISCOUNT.percent}% off any plan</b> with <code>${esc(DISCOUNT.code)}</code>.` : ''}
-  </p>
-  <button class="btn sm magnetic" data-trial>Start ${TRIAL.days} days free</button>
-  <button class="lp-tb-x" data-trial-dismiss aria-label="Dismiss this offer">×</button>
-  <!-- Shown only once the bar has been dismissed, in place of everything
-  above: the offer stays on the page as one compact, tappable line
-  instead of disappearing from the site entirely. -->
-  <button class="lp-tb-reopen" data-trial-open>
-  <b>${TRIAL.days} days free</b>${DISCOUNT.enabled ? ` · ${DISCOUNT.percent}% off with <code>${esc(DISCOUNT.code)}</code>` : ''}
-  <span class="lp-tb-see">See offer</span>
-  </button>
-  </div>` : ''}
+  ${offerBar()}
 
   <header class="lp-hero">
-  <!-- The film plays WHOLE: its own 16:9, width 100%, height auto, no cover
-  fit and nothing laid over it. Every frame that was generated is a frame
-  the visitor sees. The headline sits underneath rather than on top,
-  which is what lets the footage stay uncropped and unveiled.
-  Autoplay needs muted; playsinline stops iOS taking it fullscreen. The
-  poster is the film's own first frame — which is also its loop point —
-  so the header is never empty and there is no jump when playback starts.
-  WebM first (about half the size), mp4 as the fallback. -->
-  <figure class="lp-herofilm">
-  <video autoplay muted loop playsinline preload="metadata"
-  poster="gallery/web/hero-poster.webp"
-  width="1280" height="720" aria-hidden="true" tabindex="-1">
-  <source src="gallery/web/hero.webm" type="video/webm">
-  <source src="gallery/web/hero.mp4" type="video/mp4">
-  </video>
-  </figure>
-
+  <div class="lp-herogrid">
   <div class="lp-heroinner">
-  <p class="lp-eyebrow">XAU/USD trading desk · built for discipline</p>
-  <h1 class="lp-h1">Trade gold like a <span>PRO</span>,<br>not a gambler.</h1>
+  <p class="lp-eyebrow"><span class="lp-livedot" aria-hidden="true"></span>Live XAU/USD desk</p>
+  <h1 class="lp-h1">
+  <span class="ln"><span>Trade gold like a <em>PRO</em>,</span></span>
+  <span class="ln"><span>not a gambler.</span></span>
+  </h1>
   <p class="lp-sub">
-  BullionEdge Pro turns XAU/USD into a repeatable process. Plan your own trades, or start from a fresh
-  rules-based setup every two hours — for scalping, day, swing or position trading. Live price and interactive
-  chart, risk-first sizing, a psychology check, and a score that has to be earned before you get a green light.
+  One desk that reads the gold chart, sizes the trade from your own stop, and tells you — most of the
+  time — to stay out. It never places an order, and it never promises a profit.
   </p>
   <div class="lp-cta">
-  <button class="btn magnetic" data-enter>Get started</button>
-  <button class="btn ghost" data-to="lp-pricing">See plans &amp; pricing</button>
+  <button class="btn magnetic lp-go" data-trial>Try it — ${OFFER.plan ? `${OFFER.plan.days} days for $${OFFER.plan.price.toFixed(2)}` : 'see passes'}</button>
+  <button class="btn ghost" data-to="lp-pricing">See all passes</button>
   <!-- Hidden until ui/install.js sets data-install-offer on <html>, so it
-  never advertises something the visitor's browser cannot do. Both
-  labels ship in the markup and CSS picks the true one — the button
-  is rendered before we know which applies, and may be re-rendered
-  afterwards. -->
+  never advertises something the visitor's browser cannot do. -->
   <button class="btn ghost lp-install" data-install>
   <span aria-hidden="true">⬇</span>
   <span class="lp-i-prompt">Install the app</span>
   <span class="lp-i-ios">Add to Home Screen</span>
   </button>
   </div>
-  <p class="lp-micro">Built to improve your odds · not financial advice · you can lose money trading gold</p>
+  <ul class="lp-heromicro">
+  <li>One payment · nothing renews</li>
+  <li>1 account · ${DEVICES} devices</li>
+  <li>Not financial advice · you can lose money</li>
+  </ul>
+  </div>
+
+  <!-- The live dial: real XAU/USD spot on a clock of the visitor's own day,
+  with the desk's three trading windows drawn in their timezone.
+  Built by ui/assay.js; see the header there for why every mark on it
+  is data rather than decoration. -->
+  <figure class="lp-assay" id="lp-assay" role="img"
+  aria-label="Live XAU/USD spot price on a clock of the gold trading day, in your local time"></figure>
   </div>
   </header>
 
-  <div class="lp-strip">
-  <span>◈ <b>XAU/USD only</b> — one market, mastered</span>
-  <span>◈ <b>Works worldwide</b> — your local session times</span>
-  <span>◈ <b>Every style</b> — scalp · day · swing · position</span>
-  <span>◈ <b>Risk-first</b> — sized to protect capital</span>
-  </div>
+  ${tape()}
 
   <div class="lp-wrap">
 
@@ -7175,7 +7578,7 @@ function markup() {
   <h2>How it works.</h2>
   <p class="lp-lead">Every trade takes the same route. That is the entire point — the process does not change because you feel confident.</p>
   <div class="lp-flowline">
-  ${['Market', 'AI analysis', 'Risk', 'Confirmation', 'Psychology', 'Score', 'Verdict']
+  ${['Market', 'AI analysis', 'Risk', 'Psychology', 'Score', 'Verdict']
   .map((s, i, a) => `<span class="lp-step">${s}</span>${i < a.length - 1 ? '<span class="lp-arrow" aria-hidden="true">→</span>' : ''}`).join('')}
   </div>
   <div class="lp-two">
@@ -7183,7 +7586,7 @@ function markup() {
   <h3>Plan your own trade</h3>
   <ol>
   <li>Set your capital, your risk percentage and your timezone once.</li>
-  <li>Enter the pair, direction, entry, stop and target — in pips or in price.</li>
+  <li>Enter your direction, entry, stop and target — in pips or in price.</li>
   <li>Read the ten factors, worked out from what you entered and from the clock and calendar.</li>
   <li>Answer the psychology check honestly.</li>
   <li>Read the verdict, the reasons behind it, and the exact position size.</li>
@@ -7207,9 +7610,17 @@ function markup() {
   </section>
 
   <section class="lp-sec" id="lp-pricing">
-  <h2>Plans &amp; pricing.</h2>
-  <p class="lp-lead">One desk, one market, no tiers of feature-withholding. Every plan unlocks exactly the same software — the only difference is how long you keep it, and every longer term costs less per day. The daily rate is printed on each card so you can check the maths yourself.</p>
+  <p class="lp-eyebrow">Three passes · one desk</p>
+  <h2>Pick how long. That is the only choice.</h2>
+  <p class="lp-lead">Every pass opens exactly the same software — nothing is held back for a higher tier. Each is a
+  single payment: nothing renews, there is nothing to cancel, and the daily rate is printed on each card so you
+  can check the maths yourself.</p>
   <div class="lp-price" id="plan-cards"></div>
+  <ul class="lp-passfacts">
+  <li><b>1 account · ${DEVICES} devices</b>A laptop and a phone, say. Signing out on one frees its place.</li>
+  <li><b>One payment</b>Nothing renews and nothing needs cancelling. A timed pass simply ends.</li>
+  ${DISCOUNT.enabled ? `<li><b>${esc(DISCOUNT.code)}</b>Takes ${DISCOUNT.percent}% off any pass at checkout.</li>` : ''}
+  </ul>
   <p class="lp-note" id="pricing-note"></p>
   </section>
 
@@ -7325,12 +7736,12 @@ function markup() {
   <p class="lp-firsttag">Open slot</p>
   <h3>The first review here has not been written yet.</h3>
   <p>
-  Start the ${TRIAL.days}-day trial, use it for a fortnight, and tell us the truth — including if it
-  annoyed you. Real name, real platform, linked to the original. Four stars is a better advert for this
-  product than five, and we would rather print the honest one.
+  Take a ${OFFER.plan ? OFFER.plan.days : 7}-day pass, use it properly, and tell us the truth — including
+  if it annoyed you. Real name, real platform, linked to the original. Four stars is a better advert for
+  this product than five, and we would rather print the honest one.
   </p>
   </div>
-  <button class="btn magnetic" data-trial>Start ${TRIAL.days} days free</button>
+  <button class="btn magnetic" data-trial>Try it — $${OFFER.plan ? OFFER.plan.price.toFixed(2) : ''}</button>
   </aside>
 
   <p class="lp-trustfoot">
@@ -7360,19 +7771,35 @@ function markup() {
   'In your browser, on your device. Nothing syncs by default and there is no account to sign into. That makes it private, and it also means clearing site data deletes it — so either export a file backup, or switch on the encrypted off-device copy in Settings, which encrypts your account in your browser before it sends anything and leaves the server holding bytes it has no key for.')}
   ${faq('How do I pay and get access?',
   CHECKOUT.enabled
-  ? 'Choose a plan and pay at the checkout — card, PayPal or Apple/Google Pay. Your licence key is emailed the moment payment clears, and you activate it on the login screen. Nobody has to be awake for this; it works at 3am.'
+  ? 'Pick a pass and pay at the checkout — card, PayPal or Apple/Google Pay. Your licence key is emailed the moment payment clears, and you activate it on the login screen. Nobody has to be awake for this; it works at 3am.'
   : 'Choose a plan, pay by PayPal or crypto, then email your receipt. You will receive a licence key to activate on the login screen.')}
-  ${faq('Can I cancel, and what happens if I do?',
-  'Cancel in one click from your account page, any time. It stops the next payment and you keep access to the end of the period you have already paid for. Your journal, settings and history stay on your device either way — resubscribe later and they are still there.')}
+  ${faq('Does anything renew? Is there anything to cancel?',
+  'No. Every pass is one payment. A 7-Day or 30-Day Pass simply ends when its time is up, and Unlimited never ends. There is no subscription behind any of them, so nothing will ever be charged again and there is nothing to cancel. Your journal, settings and history stay on your device either way — pick up another pass later and they are all still there.')}
+  ${faq('How many devices can I use?',
+  `One account on ${DEVICES} devices — a laptop and a phone, say. Signing out on a device frees its place straight away, so moving to a new one is never a support ticket. A third device at the same time is refused until you sign out of one of the others.`)}
   </div>
   </section>
 
   <section class="lp-final">
+  <!-- The vault film, moved here from the hero. preload="none": nothing is
+  fetched until this scrolls into view (see lazyFilm). -->
+  <figure class="lp-finalfilm" aria-hidden="true">
+  <video muted loop playsinline preload="none" poster="gallery/web/hero-poster.webp"
+  width="1280" height="720" tabindex="-1">
+  <source src="gallery/web/hero.webm" type="video/webm">
+  <source src="gallery/web/hero.mp4" type="video/mp4">
+  </video>
+  </figure>
+  <div class="lp-finalinner">
+  <p class="lp-eyebrow">One market · one process</p>
   <h2>Bring discipline to your gold trading.</h2>
-  <p class="lp-lead">Start today, or read the plans first.</p>
-  <div class="lp-cta" style="justify-content:center">
-  <button class="btn magnetic" data-enter>Get started</button>
-  <button class="btn ghost" data-to="lp-pricing">See pricing</button>
+  <p class="lp-lead">A week of the whole desk costs less than a coffee. If it is not for you, it simply ends —
+  nothing renews and nothing needs cancelling.</p>
+  <div class="lp-cta">
+  <button class="btn magnetic lp-go" data-trial>Try it — $${OFFER.plan ? OFFER.plan.price.toFixed(2) : ''}</button>
+  <button class="btn ghost" data-to="lp-pricing">See all passes</button>
+  <button class="btn ghost" data-enter>I have a key</button>
+  </div>
   </div>
   </section>
 
@@ -7401,10 +7828,11 @@ function markup() {
   rules-based ideas for your own analysis, not personal recommendations to buy or sell, and no profit, income or
   specific win rate is promised or implied. Hypothetical, simulated or past performance never guarantees future
   results. You are solely responsible for your own trading decisions and for complying with the laws and broker
-  regulations in your country, where access to leveraged trading may be restricted. A subscription grants access
+  regulations in your country, where access to leveraged trading may be restricted. A pass grants access
   to the software only — it is not a managed account and confers no right to any return.</p>
-  <p><b>About the access system.</b> Access keys are verified inside your browser, not on a server. This deters
-  casual sharing; it is not a licensing system and should not be relied on to protect revenue at scale.</p>
+  <p><b>About access.</b> Each pass is a licence key issued and checked by Lemon Squeezy, and one account can be
+  open on at most ${DEVICES} devices at once. The desk itself runs in your browser: your trades and settings are
+  stored on your device, not on our servers.</p>
   </footer>
   </div>
 
@@ -7479,7 +7907,7 @@ const FEATURES = [
   { shot: 'chart', group: 'The engine', icon: '◈', title: 'Nineteen overlays, none of them forced',
   body: 'Order blocks, fair value gaps, liquidity pools, BOS/CHoCH, engulfing bars, Fibonacci, premium/discount, session shading, four EMAs, VWAP, RSI, MACD. Every one is off until you switch it on, each is drawn in a colour the chip beside the chart matches, and one tap takes it back off.' },
 
-  { shot: 'checklist', group: 'The engine', icon: '✓', title: 'It shows its working',
+  { shot: 'reading', group: 'The engine', icon: '✓', title: 'It shows its working',
   body: 'Ten weighted components, each with what it earned out of what it could — so the score at the top is arithmetic you can check rather than a verdict you have to take on trust. Nothing to tick: every line was measured from closed candles.' },
 
   { shot: 'plan', group: 'The engine', icon: '△', title: 'Entry, stop, targets, lot size',
@@ -7522,7 +7950,7 @@ const FEATURES = [
   body: 'Four steps to your first answer, then the long version underneath for when you want it — with live examples from your own settings. Beginner mode explains every number; Pro mode gets out of the way.' },
 
   { shot: 'settings', group: 'The platform', icon: '▨', title: 'Offline, private, yours',
-  body: 'Install it and everything but the price feed works with no connection. Your trades and settings live in your browser — there is no account server to upload them to, so export them if the history matters.' },
+  body: 'Install it and everything but the price feed works with no connection. Your trades and settings live in your browser, and if you want a copy that survives losing the device, an optional backup keeps one encrypted before it leaves — so nobody but you can read it.' },
 ];
 
 const pct = (n, dp = 1) => `${(n * 100).toFixed(dp)}%`;
@@ -7708,14 +8136,14 @@ function wire(host) {
 
   on(host, 'click', '[data-trial]', () => {
   dismissTrial('taken');
-  startSubscribe(TRIAL.planId);
+  startSubscribe(OFFER.planId);
   });
 
   on(host, 'click', '[data-trial-dismiss]', () => dismissTrial('dismissed'));
 
   on(host, 'click', '[data-trial-open]', () => openTrialOffer());
 
-  if (TRIAL.enabled) {
+  if (OFFER.enabled && OFFER.plan) {
 
   if (offerRequested()) openTrialOffer();
   else offerTrial();
@@ -7766,28 +8194,28 @@ function selectText(node) {
 
 function renderPlans() {
   const live = CHECKOUT.enabled;
+  const cta = { week: 'Get the 7-Day Pass', month: 'Get the 30-Day Pass', unlimited: 'Get Unlimited' };
 
   byId('plan-cards').innerHTML = PLANS.map((p) => `
-  <article class="lp-plan ${p.pop ? 'pop' : ''}">
-  ${p.pop ? '<span class="lp-badge">Most popular</span>' : ''}
-  ${TRIAL.appliesTo(p.id) ? `<span class="lp-trialflag">${TRIAL.days} days free first</span>` : ''}
-  ${p.save ? `<span class="lp-save">${esc(p.save)}</span>` : ''}
+  <article class="lp-plan ${p.pop ? 'pop' : ''} ${p.days == null ? 'forever' : ''}">
+  <p class="lp-plantag">${esc(p.tag || '')}</p>
   <h3>${esc(p.name)}</h3>
-  <p class="amt">$${p.price}<small> / ${p.days} days</small></p>
+  <p class="amt"><span class="amt-n" data-count>$${p.price.toFixed(2)}</span><small>${p.days ? `${p.days} days` : 'once'}</small></p>
   <p class="per">${esc(p.per)}</p>
+  ${p.save ? `<p class="lp-save">${esc(p.save)}</p>` : ''}
   ${p.saved ? `<p class="saved">${esc(p.saved)}</p>` : ''}
   <ul>${p.feats.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
   <button class="btn block magnetic" data-plan="${p.id}">
-  Subscribe${live && checkoutUrl(p.id) ? '' : ' — pay manually'}
+  ${esc(cta[p.id] || `Get ${p.name}`)}${live && checkoutUrl(p.id) ? '' : ' — pay manually'}
   </button>
   </article>`).join('');
 
   byId('pricing-note').innerHTML = live
   ? `Checkout is handled by <b>Lemon Squeezy</b>, our authorised reseller — card, PayPal and Apple/Google Pay, with
   any local tax calculated at checkout. Your licence key is emailed the moment payment clears; activate it on the
-  login screen. <b>It renews automatically at the same price</b> until you cancel, which you can do in one click
-  from <a href="${esc(CHECKOUT.portal)}" target="_blank" rel="noopener">your account page</a> at any time.
-  Cancelling stops the next payment and leaves you access to the end of the period you have paid for.`
+  login screen. <b>Every pass is a single payment.</b> It does not renew, and when a timed pass ends the desk
+  closes until you pick up another — your journal stays on your device. Receipts live on
+  <a href="${esc(CHECKOUT.portal)}" target="_blank" rel="noopener">your orders page</a>.`
   : `Pay by PayPal or crypto, email your receipt to <b>${esc(PAY.email)}</b>, and once payment is confirmed we send
   your licence key. Activate it on the login screen to start your access period — the clock starts at activation,
   not at purchase. Digital-access fees are generally non-refundable once credentials are issued.`;
@@ -7878,8 +8306,8 @@ function openSubscribe(id) {
   const plan = planById(id);
   if (!plan) return;
 
-  byId('sub-name').textContent = `${plan.name} plan`;
-  byId('sub-price').textContent = `$${plan.price} · ${plan.days} days access`;
+  byId('sub-name').textContent = plan.name;
+  byId('sub-price').textContent = `$${plan.price.toFixed(2)} · ${plan.days ? `${plan.days} days access` : 'Unlimited — yours for good'}`;
 
   byId('pay-paypal').textContent = PAY.paypal;
   byId('pay-btc').textContent = PAY.btc;
@@ -7889,14 +8317,14 @@ function openSubscribe(id) {
   byId('sub-note').innerHTML = `
   <b>1.</b> Pay $${plan.price} by PayPal or crypto above — tap an address to copy it.<br>
   <b>2.</b> Email your receipt to <b class="t-gold">${esc(PAY.email)}</b>.<br>
-  <b>3.</b> Once payment is confirmed we send your access key for the ${esc(plan.name)} plan. Activate it on the
-  login screen to start your ${plan.days} days.
-  <span class="lp-mwarn">Your access period begins when you activate the key, not when you pay.</span>`;
+  <b>3.</b> Once payment is confirmed we send your access key for the ${esc(plan.name)}. Activate it on the
+  login screen${plan.days ? ` to start your ${plan.days} days` : ''}.
+  ${plan.days ? '<span class="lp-mwarn">Your access period begins when you activate the key, not when you pay.</span>' : ''}`;
 
   byId('sub-email').onclick = () => {
-  const subject = encodeURIComponent(`BullionEdge Pro — ${plan.name} subscription`);
+  const subject = encodeURIComponent(`BullionEdge Pro — ${plan.name}`);
   const body = encodeURIComponent(
-  `I would like to subscribe to the ${plan.name} plan ($${plan.price} / ${plan.days} days). ` +
+  `I would like the ${plan.name} ($${plan.price.toFixed(2)}${plan.days ? ` / ${plan.days} days` : ', unlimited'}). ` +
   `My payment receipt is attached.`);
   location.href = `mailto:${PAY.email}?subject=${subject}&body=${body}`;
   };
@@ -7919,6 +8347,8 @@ const DAY_MS = 86400000;
 
 const LS_CHECKOUT = 'https://bullionedgepro1.lemonsqueezy.com/checkout/buy/9651f021-389a-4a22-84b6-d82b5230e0f4';
 
+const DEVICES = 2;
+
 const CHECKOUT = {
 
   storeId: '448900',
@@ -7926,10 +8356,15 @@ const CHECKOUT = {
   portal: 'https://app.lemonsqueezy.com/my-orders',
 
   plans: [
-  { id: 'week',    name: 'Week Pass', days: 7,   variantId: '2018014', url: LS_CHECKOUT },
-  { id: 'starter', name: 'Starter',   days: 30,  variantId: '2017997', url: LS_CHECKOUT },
-  { id: 'pro',     name: 'Pro',       days: 90,  variantId: '2018018', url: LS_CHECKOUT },
-  { id: 'elite',   name: 'Elite',     days: 180, variantId: '2018033', url: LS_CHECKOUT },
+
+  { id: 'week',      name: '7-Day Pass',  days: 7,    variantId: '2018089', url: LS_CHECKOUT },
+  { id: 'month',     name: '30-Day Pass', days: 30,   variantId: '2168250', url: LS_CHECKOUT },
+  { id: 'unlimited', name: 'Unlimited',   days: null, variantId: '2168253', url: LS_CHECKOUT },
+
+  { id: 'week-sub', name: 'Week Pass', days: 7,   variantId: '2018014', url: LS_CHECKOUT, legacy: true },
+  { id: 'starter',  name: 'Starter',   days: 30,  variantId: '2017997', url: LS_CHECKOUT, legacy: true },
+  { id: 'pro',      name: 'Pro',       days: 90,  variantId: '2018018', url: LS_CHECKOUT, legacy: true },
+  { id: 'elite',    name: 'Elite',     days: 180, variantId: '2018033', url: LS_CHECKOUT, legacy: true },
   ],
 
   get enabled() { return Boolean(this.storeId); },
@@ -7937,12 +8372,12 @@ const CHECKOUT = {
 
 const TRIAL = {
 
-  enabled: true,
+  enabled: false,
   days: 7,
 
   allPlans: false,
 
-  planId: 'starter',
+  planId: 'week',
 
   get plan() { return CHECKOUT.plans.find((p) => p.id === this.planId) || null; },
 
@@ -7951,12 +8386,18 @@ const TRIAL = {
   },
 };
 
+const OFFER = {
+  enabled: true,
+  planId: 'week',
+  get plan() { return PLANS.find((p) => p.id === this.planId) || null; },
+};
+
 const DISCOUNT = {
   enabled: true,
   code: 'GOLD10',
   percent: 10,
 
-  note: 'Works on any plan, including after a trial ends.',
+  note: 'Works on any pass, Unlimited included.',
 };
 
 const checkoutUrl = (planId) =>
@@ -7964,12 +8405,14 @@ const checkoutUrl = (planId) =>
 
 const TERM_NAMES = { 7: 'Weekly', 30: 'Monthly', 90: 'Quarterly', 180: 'Half-year', 365: 'Annual' };
 
-const planLabel = (days) => TERM_NAMES[days] || `${days}-day`;
+const planLabel = (days) => (days == null ? 'Unlimited' : TERM_NAMES[days] || `${days}-day`);
 
 const daysLeft = (account) =>
   Math.max(0, Math.ceil((account.expiresAt - Date.now()) / DAY_MS));
 
 const isExpired = (account) => Date.now() >= account.expiresAt;
+
+const isUnlimited = (account) => !!account && account.plan === 'unlimited';
 
 const PAY = {
   paypal: 'https://paypal.me/ralphivansimeon123',
@@ -7999,10 +8442,10 @@ const PROMO = {
   'Open an XM account through the link on this page — it has to be that link, or the referral is not attributed to us and we cannot see it.',
   'Fund it with $100 or more.',
   'Email your account number and a deposit screenshot to {email}.',
-  'We check it by hand and send a code that makes your first week free at checkout, usually within a day.',
+  'We check it by hand and send a code that makes the 7-Day Pass free at checkout, usually within a day.',
   ],
   terms: [
-  'After the free week it becomes a paid Starter subscription unless you cancel first. Cancel in one click from your account page, any time during the week, and you are charged nothing.',
+  'The code covers one 7-Day Pass in full. It is a single payment of nothing: there is no subscription behind it, nothing renews, and there is nothing to cancel.',
   'Your deposit is not a payment to us. It stays in your own brokerage account, and it is at risk the moment you trade it.',
   'One key per person, for new XM accounts only.',
   'The 7 days start when you redeem the code, not when you deposit.',
@@ -8011,45 +8454,59 @@ const PROMO = {
   ],
 };
 
+const round2 = (n) => Math.round(n * 100) / 100;
+const perDay = (price, days) => `$${(price / days).toFixed(2)} / day`;
+
+const WEEK = { price: 2.99, days: 7 };
+const MONTH = { price: 9.99, days: 30 };
+const monthByWeeks = round2((WEEK.price / WEEK.days) * MONTH.days);
+
+const breakEvenMonths = (unlimitedPrice, monthPrice) => ({
+  monthsItCosts: Math.round(unlimitedPrice / monthPrice),
+  aheadFrom: Math.ceil(unlimitedPrice / monthPrice - 1e-9),
+});
+
+const UNLIMITED_PRICE = 69.99;
+const BREAK_EVEN = breakEvenMonths(UNLIMITED_PRICE, MONTH.price);
+
 const PLANS = [
   {
-  id: 'week', name: 'Week Pass', price: 9.99, days: 7, per: '$1.43 / day',
-  save: '', saved: '', pop: false,
+  id: 'week', name: '7-Day Pass', price: WEEK.price, days: WEEK.days,
+  per: perDay(WEEK.price, WEEK.days),
+  tag: 'Try the whole desk', save: '', saved: '', pop: false,
   feats: [
-  'Full BullionEdge Pro desk',
-  'Live XAU/USD price & interactive chart',
-  'Auto setups every 2h — all 4 styles',
-  'Try the whole process on one week of trades',
+  'The full desk — nothing held back',
+  'Live XAU/USD chart, verdict and position size',
+  'Journal, risk limits and psychology check',
+  `One account on ${DEVICES} devices`,
   ],
   },
   {
-  id: 'starter', name: 'Starter', price: 31.99, days: 30, per: '$1.07 / day',
-  save: 'Save 25%', saved: 'You save $10.82 vs the weekly rate', pop: true,
+  id: 'month', name: '30-Day Pass', price: MONTH.price, days: MONTH.days,
+  per: perDay(MONTH.price, MONTH.days),
+  tag: 'Most chosen',
+  save: `Save ${Math.round((1 - MONTH.price / monthByWeeks) * 100)}%`,
+  saved: `You save $${round2(monthByWeeks - MONTH.price).toFixed(2)} vs the weekly rate`,
+  pop: true,
   feats: [
-  'Everything in the Week Pass',
-  'A full month of access',
-  'Risk-first sizing, journal & psychology coach',
-  'Long enough to build a real journal',
+  'Everything in the 7-Day Pass',
+  'A full month — long enough to build a real journal',
+  'Enough closed trades to see your own patterns',
+  `One account on ${DEVICES} devices`,
   ],
   },
   {
-  id: 'pro', name: 'Pro', price: 89.99, days: 90, per: '$1.00 / day',
-  save: 'Save 6%', saved: 'You save $5.98 vs the monthly rate', pop: false,
+  id: 'unlimited', name: 'Unlimited', price: UNLIMITED_PRICE, days: null,
+  per: 'Pay once, keep it',
+  tag: 'Best value',
+  save: `Free from month ${BREAK_EVEN.aheadFrom}`,
+  saved: `About the price of ${BREAK_EVEN.monthsItCosts} monthly passes — every month after that costs nothing`,
+  pop: false,
   feats: [
-  'Everything in Starter',
-  '90 days uninterrupted access',
-  'Setup history & HTF-agreement flags',
-  'Enough closed trades to calibrate your score',
-  ],
-  },
-  {
-  id: 'elite', name: 'Elite', price: 159.99, days: 180, per: '$0.89 / day',
-  save: 'Save 17%', saved: 'You save $31.95 vs the monthly rate', pop: false,
-  feats: [
-  'Everything in Pro',
-  'Six months of access',
-  'Lowest daily cost — best value',
-  'Price locked for the whole term',
+  'Everything, for good — no renewals, no expiry',
+  'Every future update to the desk included',
+  'Your journal keeps growing with you',
+  `One account on ${DEVICES} devices`,
   ],
   },
 ];
@@ -8165,7 +8622,721 @@ const TRUST = [
   },
 ];
 
-Object.assign(__exports, { DAY_MS, CHECKOUT, TRIAL, DISCOUNT, checkoutUrl, planLabel, daysLeft, isExpired, PAY, TELEGRAM, BROKER, PROMO, PLANS, planById, REVIEWS, REVIEW_PLATFORMS, publishableReviews, CLAIMS, SOCIAL, TRUST, reviewProblems });
+Object.assign(__exports, { DAY_MS, DEVICES, CHECKOUT, TRIAL, OFFER, DISCOUNT, checkoutUrl, planLabel, daysLeft, isExpired, isUnlimited, PAY, TELEGRAM, BROKER, PROMO, breakEvenMonths, PLANS, planById, REVIEWS, REVIEW_PLATFORMS, publishableReviews, CLAIMS, SOCIAL, TRUST, reviewProblems });
+
+});
+
+__def("src/ui/assay.js", function (__exports, __req) {
+
+const { windows, readSession } = __req("src/domain/sessions.js");
+const { FEED } = __req("src/domain/market.js");
+const { prefersReducedMotion } = __req("src/ui/motion.js");
+
+const SIZE = 440;
+const C = SIZE / 2;
+
+const SPOT_EVERY = 30_000;
+const CHANGE_EVERY = 60_000;
+const TRACE_EVERY = 5 * 60_000;
+const CLOCK_EVERY = 20_000;
+
+const polar = (r, hours) => {
+  const a = ((hours / 24) * 360 - 90) * (Math.PI / 180);
+  return [C + r * Math.cos(a), C + r * Math.sin(a)];
+};
+
+function arc(r, from, to) {
+  let end = to;
+  if (end <= from) end += 24;
+  const [x1, y1] = polar(r, from);
+  const [x2, y2] = polar(r, end);
+  const large = end - from > 12 ? 1 : 0;
+  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+
+const fmtHour = (h) => String(Math.floor(((h % 24) + 24) % 24)).padStart(2, '0') + ':00';
+const fmtSpan = (w) => `${fmtHour(w.start)}–${fmtHour(w.end)}`;
+
+function ticks() {
+  let out = '';
+  for (let q = 0; q < 96; q++) {
+  const h = q / 4;
+  const major = q % 24 === 0;
+  const hour = q % 4 === 0;
+  const [x1, y1] = polar(major ? 190 : hour ? 196 : 201, h);
+  const [x2, y2] = polar(207, h);
+  out += `<line class="${major ? 'tk tk-maj' : hour ? 'tk tk-hr' : 'tk'}" style="--i:${q}"
+  x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+  }
+  for (const h of [0, 6, 12, 18]) {
+  const [x, y] = polar(166, h);
+  out += `<text class="tk-lbl" x="${x.toFixed(1)}" y="${(y + 3.5).toFixed(1)}">${String(h).padStart(2, '0')}</text>`;
+  }
+  return out;
+}
+
+function markup(tz) {
+  const w = windows(tz);
+  const ring = `XAU/USD SPOT · THE GOLD DAY IN YOUR TIME · ${String(tz).replace(/_/g, ' ').toUpperCase()} · `;
+  return `
+  <svg class="assay-svg" viewBox="0 0 ${SIZE} ${SIZE}" aria-hidden="true" focusable="false">
+  <defs>
+  <radialGradient id="assay-face" cx="50%" cy="42%" r="62%">
+  <stop offset="0%" stop-color="#132428"/>
+  <stop offset="70%" stop-color="#081113"/>
+  <stop offset="100%" stop-color="#05090B"/>
+  </radialGradient>
+  <linearGradient id="assay-trace" x1="0" x2="1">
+  <stop offset="0%" stop-color="#E0A63C" stop-opacity="0"/>
+  <stop offset="30%" stop-color="#E0A63C" stop-opacity=".75"/>
+  <stop offset="100%" stop-color="#FFD983" stop-opacity="1"/>
+  </linearGradient>
+  <path id="assay-ringpath" d="M ${C} ${C - 150} a 150 150 0 1 1 -0.01 0"/>
+  </defs>
+
+  <circle class="bz bz-out" cx="${C}" cy="${C}" r="214"/>
+  <circle class="bz" cx="${C}" cy="${C}" r="208"/>
+  <g class="tks">${ticks()}</g>
+
+  <path class="sx sx-asian" pathLength="1"   data-win="asian"   d="${arc(184, w.c.start, w.c.end)}"/>
+  <path class="sx sx-london" pathLength="1"  data-win="london"  d="${arc(184, w.a.start, w.a.end)}"/>
+  <path class="sx sx-overlap" pathLength="1" data-win="overlap" d="${arc(184, w.b.start, w.b.end)}"/>
+
+  <circle class="face" cx="${C}" cy="${C}" r="140"/>
+  <text class="ringtxt"><textPath href="#assay-ringpath" startOffset="0">${ring}${ring}</textPath></text>
+
+  <path class="trace" d=""/>
+
+  <g class="needle">
+  <line x1="${C}" y1="${C - 212}" x2="${C}" y2="${C - 172}"/>
+  <circle cx="${C}" cy="${C - 184}" r="5.5"/>
+  </g>
+  </svg>
+
+  <div class="assay-core">
+  <p class="assay-k">XAU/USD <i></i> spot</p>
+  <p class="assay-px" data-state="loading"><span class="odo">––––.––</span></p>
+  <p class="assay-chg"></p>
+  <p class="assay-st"></p>
+  </div>
+
+  <ul class="assay-legend" aria-label="The desk's trading windows, in your local time">
+  <li class="lg-overlap"><b>US overlap</b> ${fmtSpan(w.b)}</li>
+  <li class="lg-london"><b>London</b> ${fmtSpan(w.a)}</li>
+  <li class="lg-asian"><b>Asia</b> ${fmtSpan(w.c)}</li>
+  </ul>`;
+}
+
+const COLUMN = '0123456789'.split('').join('<br>');
+
+function odo(el, text) {
+  const cur = el.dataset.shape;
+  const shape = text.replace(/\d/g, '9');
+  if (cur !== shape) {
+  el.innerHTML = [...text].map((ch) => (/\d/.test(ch)
+  ? `<span class="od"><span class="oc" style="--v:0">${COLUMN}</span></span>`
+  : `<span class="os">${ch}</span>`)).join('');
+  el.dataset.shape = shape;
+
+  void el.offsetWidth;
+  }
+  const digits = [...text].filter((ch) => /\d/.test(ch));
+  el.querySelectorAll('.oc').forEach((col, i) => col.style.setProperty('--v', digits[i]));
+}
+
+async function getJSON(url) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), FEED.timeoutMs || 8000);
+  try {
+  const res = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+  if (!res.ok) throw new Error(String(res.status));
+  return await res.json();
+  } finally {
+  clearTimeout(t);
+  }
+}
+
+const money = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function mountAssay(host) {
+  if (!host) return () => {};
+  const tz = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; }
+  })();
+
+  host.innerHTML = markup(tz);
+  const still = prefersReducedMotion();
+  host.classList.toggle('still', still);
+
+  const px = host.querySelector('.assay-px');
+  const odoEl = host.querySelector('.odo');
+  const chg = host.querySelector('.assay-chg');
+  const st = host.querySelector('.assay-st');
+  const needle = host.querySelector('.needle');
+  const trace = host.querySelector('.trace');
+
+  let last = null;
+  let alive = true;
+  const timers = [];
+
+  function clock() {
+  const s = readSession(tz);
+  needle.style.transform = `rotate(${(s.dec / 24) * 360}deg)`;
+  host.querySelectorAll('.sx').forEach((p) => p.classList.toggle('live', !!s.active && p.dataset.win === s.active.id));
+
+  let text;
+  if (s.weekend) text = 'Market closed for the weekend';
+  else if (s.active) text = `${s.active.id === 'overlap' ? 'US overlap' : s.active.id === 'london' ? 'London' : 'Asia'} window · open now`;
+  else if (s.next) {
+  const h = Math.floor(s.nextInHours);
+  const m = Math.round((s.nextInHours - h) * 60);
+  text = `Between windows · next in ${h ? `${h}h ` : ''}${m}m`;
+  }
+  st.textContent = text || '';
+  st.classList.toggle('open', !!s.active && !s.weekend);
+  return s;
+  }
+
+  async function spot() {
+  try {
+  const j = await getJSON(FEED.spot);
+  const p = Number(j && j.price);
+  if (!Number.isFinite(p) || p <= 0) throw new Error('no price');
+  if (!alive) return;
+  const dir = last == null ? '' : p > last ? 'up' : p < last ? 'dn' : '';
+  odo(odoEl, money(p));
+  px.dataset.state = 'live';
+  if (dir && !still) {
+  px.classList.remove('tick-up', 'tick-dn');
+  void px.offsetWidth;
+  px.classList.add(dir === 'up' ? 'tick-up' : 'tick-dn');
+  }
+  last = p;
+  host.setAttribute('aria-label', `XAU/USD spot ${money(p)}. ${st.textContent}.`);
+  } catch {
+  if (!alive || last != null) return;
+  px.dataset.state = 'off';
+  odoEl.textContent = 'offline';
+  chg.textContent = 'Live price returns when you are connected — the desk itself works offline.';
+  chg.className = 'assay-chg';
+  }
+  }
+
+  async function change() {
+  try {
+  const j = await getJSON(`${FEED.klines}/ticker/24hr?symbol=${FEED.symbol}`);
+  const pctv = Number(j && j.priceChangePercent);
+  if (!Number.isFinite(pctv) || !alive) return;
+  const up = pctv >= 0;
+  chg.innerHTML = `<b>${up ? '▲' : '▼'} ${Math.abs(pctv).toFixed(2)}%</b> <span>24h</span>`;
+  chg.className = `assay-chg ${up ? 'up' : 'dn'}`;
+  } catch {   }
+  }
+
+  async function shape() {
+  try {
+  const rows = await getJSON(`${FEED.klines}/klines?symbol=${FEED.symbol}&interval=15m&limit=96`);
+  if (!Array.isArray(rows) || rows.length < 8 || !alive) return;
+  const closes = rows.map((r) => Number(r[4])).filter(Number.isFinite);
+  const lo = Math.min(...closes);
+  const hi = Math.max(...closes);
+  const span = hi - lo || 1;
+  const x0 = 138;
+  const x1 = 302;
+  const y0 = 336;
+  const y1 = 298;
+  const d = closes.map((v, i) => {
+  const x = x0 + (i / (closes.length - 1)) * (x1 - x0);
+  const y = y0 - ((v - lo) / span) * (y0 - y1);
+  return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(' ');
+  trace.setAttribute('d', d);
+  const len = trace.getTotalLength ? trace.getTotalLength() : 600;
+  trace.style.setProperty('--len', len.toFixed(0));
+  host.classList.add('has-trace');
+  } catch {   }
+  }
+
+  const every = (fn, ms) => {
+  const id = setInterval(() => { if (!document.hidden) fn(); }, ms);
+  timers.push(id);
+  };
+
+  clock();
+  spot();
+  change();
+  shape();
+  every(clock, CLOCK_EVERY);
+  every(spot, SPOT_EVERY);
+  every(change, CHANGE_EVERY);
+  every(shape, TRACE_EVERY);
+
+  requestAnimationFrame(() => host.classList.add('on'));
+  setTimeout(() => host.classList.add('on'), 60);
+
+  return function stop() {
+  alive = false;
+  timers.forEach(clearInterval);
+  };
+}
+
+Object.assign(__exports, { mountAssay });
+
+});
+
+__def("src/domain/market.js", function (__exports, __req) {
+
+const { dropClosedBars, closedBarCount } = __req("src/domain/hours.js");
+
+const FEED = {
+  klines: 'https://api.binance.com/api/v3',
+  symbol: 'PAXGUSDT',
+  spot: 'https://api.gold-api.com/price/XAU',
+  timeoutMs: 8000,
+};
+
+const TF_LIST = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'];
+
+const STYLES = [
+  { id: 'scalp', name: 'Scalping',        tfs: ['1m', '5m'],    prim: '5m',
+  ex: 'In and out within minutes — many small trades, tight stops, needs constant screen time.' },
+  { id: 'day',   name: 'Day trading',     tfs: ['15m', '30m'],  prim: '15m',
+  ex: 'Open and close the same day — no overnight risk, aims to catch the session move.' },
+  { id: 'swing', name: 'Swing trading',   tfs: ['1h', '4h'],    prim: '1h',
+  ex: 'Hold hours to days for a bigger swing — fewer trades, wider stops, less screen time.' },
+  { id: 'pos',   name: 'Position trading',tfs: ['1d', '1w'],    prim: '1d',
+  ex: 'Hold days to weeks on the main trend — widest stops, biggest targets, most patience.' },
+];
+
+const styleById = (id) => STYLES.find((s) => s.id === id) || STYLES[2];
+const styleForTf = (tf) => STYLES.find((s) => s.tfs.includes(tf)) || null;
+
+const STALE_MS = 25000;
+
+const market = {
+
+  outOfHours: 0,
+  spot: NaN,
+  chg24: NaN,
+  offset: 0,
+  source: '',
+  ok: false,
+  ts: 0,
+  candles: [],
+  tf: '',
+  htfBull: null,
+  setups: {},
+  error: '',
+};
+
+const isFresh = (now = Date.now()) => market.ok && now - market.ts < STALE_MS;
+
+async function getJSON(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FEED.timeoutMs);
+  try {
+  const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+  } finally {
+  clearTimeout(timer);
+  }
+}
+
+async function refreshSpot() {
+  try {
+  const data = await getJSON(FEED.spot);
+  const price = Number(data?.price);
+  if (Number.isFinite(price) && price > 0) {
+  Object.assign(market, { spot: price, source: 'spot', ok: true, ts: Date.now(), error: '' });
+  return market;
+  }
+  throw new Error('spot feed returned no usable price');
+  } catch (spotErr) {
+  try {
+  const data = await getJSON(`${FEED.klines}/ticker/price?symbol=${FEED.symbol}`);
+  const price = parseFloat(data?.price);
+  if (!Number.isFinite(price)) throw new Error('proxy feed returned no usable price');
+  Object.assign(market, { spot: price, source: 'proxy', ok: true, ts: Date.now(), error: '' });
+  } catch (proxyErr) {
+  market.ok = false;
+  market.error = `Price feed unreachable (${spotErr.message}; ${proxyErr.message}).`;
+  }
+  }
+  return market;
+}
+
+async function refreshDaily() {
+  try {
+  const data = await getJSON(`${FEED.klines}/ticker/24hr?symbol=${FEED.symbol}`);
+  const chg = parseFloat(data?.priceChangePercent);
+  if (Number.isFinite(chg)) market.chg24 = chg;
+  } catch {   }
+  return market.chg24;
+}
+
+async function fetchKlines(tf, limit = 300) {
+  const rows = await getJSON(`${FEED.klines}/klines?symbol=${FEED.symbol}&interval=${tf}&limit=${limit}`);
+  if (!Array.isArray(rows) || !rows.length) throw new Error('no candles returned');
+
+  const parsed = rows.map((c) => ({
+  time: Math.floor(c[0] / 1000),
+  open: +c[1], high: +c[2], low: +c[3], close: +c[4],
+  volume: Number.isFinite(+c[5]) ? +c[5] : NaN,
+  }));
+
+  market.outOfHours = closedBarCount(parsed);
+  const open = dropClosedBars(parsed);
+  if (!open.length) throw new Error('no open-market candles returned');
+  return open;
+}
+
+let candleRequest = 0;
+
+async function refreshCandles(tf) {
+  const token = ++candleRequest;
+  try {
+  const raw = await fetchKlines(tf, 300);
+  if (token !== candleRequest) return market.candles;
+
+  const lastClose = raw[raw.length - 1].close;
+  const offset = Number.isFinite(market.spot) && market.spot > 0 ? market.spot - lastClose : 0;
+
+  market.offset = offset;
+  market.tf = tf;
+  market.candles = raw.map((c) => ({
+  time: c.time,
+  open: c.open + offset,
+  high: c.high + offset,
+  low: c.low + offset,
+  close: c.close + offset,
+  }));
+  market.error = '';
+  return market.candles;
+  } catch (err) {
+  if (token !== candleRequest) return market.candles;
+  market.error = `Candles unavailable (${err.message}).`;
+  return market.candles;
+  }
+}
+
+function ema(values, period) {
+  if (!values.length) return NaN;
+  const k = 2 / (period + 1);
+  let e = values[0];
+  for (let i = 1; i < values.length; i++) e = values[i] * k + e * (1 - k);
+  return e;
+}
+
+function emaSeries(candles, period) {
+  const k = 2 / (period + 1);
+  const out = [];
+  let e = 0;
+  for (let i = 0; i < candles.length; i++) {
+  e = i ? candles[i].close * k + e * (1 - k) : candles[i].close;
+  out.push({ time: candles[i].time, value: e });
+  }
+  return out;
+}
+
+function atr14(candles) {
+  if (candles.length < 2) return NaN;
+  let sum = 0, n = 0;
+  for (let i = Math.max(1, candles.length - 14); i < candles.length; i++) {
+  const tr = Math.max(
+  candles[i].high - candles[i].low,
+  Math.abs(candles[i].high - candles[i - 1].close),
+  Math.abs(candles[i].low - candles[i - 1].close),
+  );
+  sum += tr; n++;
+  }
+  return n ? sum / n : NaN;
+}
+
+function pivots(bar) {
+  const { high: H, low: L, close: C } = bar;
+  const P = (H + L + C) / 3;
+  return { p: P, r1: 2 * P - L, s1: 2 * P - H, r2: P + (H - L), s2: P - (H - L) };
+}
+
+const BLOCK_MS = 2 * 60 * 60 * 1000;
+const blockOf = (ts = Date.now()) => Math.floor(ts / BLOCK_MS);
+const msToNextBlock = (ts = Date.now()) => (blockOf(ts) + 1) * BLOCK_MS - ts;
+
+async function refreshHtfBias() {
+  try {
+  const daily = await fetchKlines('1d', 40);
+  const closes = daily.map((c) => c.close);
+  market.htfBull = closes[closes.length - 1] >= ema(closes, 20);
+  } catch {   }
+  return market.htfBull;
+}
+
+function deriveSetup(candles, { spot, htfBull, block }) {
+  const atr = atr14(candles);
+  if (!Number.isFinite(atr) || atr <= 0) return null;
+
+  const last = candles[candles.length - 1].close;
+  const offset = Number.isFinite(spot) && spot > 0 ? spot - last : 0;
+  const price = last + offset;
+  const e20 = ema(candles.map((c) => c.close), 20) + offset;
+
+  const bull = price >= e20;
+  const sign = bull ? 1 : -1;
+
+  return {
+  bias: bull ? 'buy' : 'sell',
+  entry: price,
+  sl: price - sign * atr,
+  tp1: price + sign * atr * 1.5,
+  tp2: price + sign * atr * 2.5,
+  atr,
+  aligned: htfBull === null || htfBull === undefined ? null : bull === htfBull,
+  block,
+  ts: Date.now(),
+  };
+}
+
+async function refreshSetups() {
+  const block = blockOf();
+  const changed = [];
+
+  const stale = STYLES.filter((s) => market.setups[s.id]?.block !== block);
+  if (!stale.length) return changed;
+
+  await refreshHtfBias();
+
+  for (const style of stale) {
+  try {
+  const candles = await fetchKlines(style.prim, 60);
+  const setup = deriveSetup(candles, { spot: market.spot, htfBull: market.htfBull, block });
+  if (setup) {
+  market.setups[style.id] = { ...setup, tf: style.prim, styleId: style.id, styleName: style.name };
+  changed.push(style.id);
+  }
+  } catch {   }
+  }
+  return changed;
+}
+
+function appendHistory(history = [], block = blockOf()) {
+
+  const already = new Set(
+  history.filter((h) => h.block === block).map((h) => h.style),
+  );
+
+  const rows = STYLES
+  .map((s) => market.setups[s.id])
+  .filter((s) => s && s.block === block && !already.has(s.styleName))
+  .map((s) => ({
+  block, ts: s.ts, style: s.styleName, bias: s.bias,
+  entry: s.entry, sl: s.sl, tp2: s.tp2, aligned: s.aligned,
+  }));
+
+  if (!rows.length) return history;
+  return [...rows, ...history].slice(0, 24);
+}
+
+Object.assign(__exports, { FEED, TF_LIST, STYLES, styleById, styleForTf, STALE_MS, market, isFresh, BLOCK_MS, blockOf, msToNextBlock, refreshSpot, refreshDaily, fetchKlines, refreshCandles, ema, emaSeries, atr14, pivots, refreshHtfBias, deriveSetup, refreshSetups, appendHistory });
+
+});
+
+__def("src/domain/hours.js", function (__exports, __req) {
+
+const OPEN_DAY = 0;
+const OPEN_HOUR = 17;
+const CLOSE_DAY = 5;
+const CLOSE_HOUR = 17;
+
+const DAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+const nyFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  hour12: false,
+  weekday: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+function newYorkParts(ms) {
+  const parts = Object.fromEntries(
+  nyFormat.formatToParts(new Date(ms)).map((p) => [p.type, p.value]),
+  );
+  return {
+  day: DAY_INDEX[parts.weekday],
+  hour: Number(parts.hour) % 24,
+  minute: Number(parts.minute),
+  };
+}
+
+function isMarketClosed(ms) {
+  const { day, hour } = newYorkParts(ms);
+  if (day === 6) return true;
+  if (day === OPEN_DAY) return hour < OPEN_HOUR;
+  if (day === CLOSE_DAY) return hour >= CLOSE_HOUR;
+  return false;
+}
+
+const isMarketOpen = (ms) => !isMarketClosed(ms);
+
+function dropClosedBars(candles = []) {
+  if (!Array.isArray(candles)) return [];
+  return candles.filter((c) => c && Number.isFinite(c.time) && isMarketOpen(c.time * 1000));
+}
+
+function closedBarCount(candles = []) {
+  if (!Array.isArray(candles)) return 0;
+  return candles.length - dropClosedBars(candles).length;
+}
+
+Object.assign(__exports, { OPEN_DAY, OPEN_HOUR, CLOSE_DAY, CLOSE_HOUR, isMarketOpen, newYorkParts, isMarketClosed, dropClosedBars, closedBarCount });
+
+});
+
+__def("src/ui/motion.js", function (__exports, __req) {
+
+const { state } = __req("src/core/state.js");
+
+function prefersReducedMotion() {
+  if (state.ui && state.ui.reduceMotion) return true;
+  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  catch { return false; }
+}
+
+function countTo(node, to, { duration = 620, decimals = 0, prefix = '', suffix = '' } = {}) {
+  if (!node) return;
+  const from = Number(String(node.dataset.value ?? node.textContent).replace(/[^\d.-]/g, '')) || 0;
+  node.dataset.value = String(to);
+
+  node.textContent = prefix + (Number.isFinite(to) ? to.toFixed(decimals) : '—') + suffix;
+  if (prefersReducedMotion() || !Number.isFinite(to) || from === to) return;
+
+  const start = performance.now();
+  const step = (now) => {
+  const t = Math.min(1, (now - start) / duration);
+  const eased = 1 - Math.pow(1 - t, 3);
+  node.textContent = prefix + (from + (to - from) * eased).toFixed(decimals) + suffix;
+  if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function revealAll(root = document, stepMs = 45) {
+  const nodes = Array.from(root.querySelectorAll('.reveal:not(.in)'));
+  if (prefersReducedMotion()) { nodes.forEach((n) => n.classList.add('in')); return; }
+  nodes.forEach((node, i) => setTimeout(() => node.classList.add('in'), i * stepMs));
+}
+
+function initMagnetics() {
+  document.addEventListener('pointermove', (e) => {
+  if (prefersReducedMotion()) return;
+  const btn = e.target.closest('.btn.magnetic');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  btn.style.setProperty('--mx', `${((e.clientX - rect.left) / rect.width) * 100}%`);
+  btn.style.setProperty('--my', `${((e.clientY - rect.top) / rect.height) * 100}%`);
+  }, { passive: true });
+}
+
+function scan(node, ms = 420) {
+  if (!node || prefersReducedMotion()) return Promise.resolve();
+  node.classList.add('scanning');
+  return new Promise((resolve) => setTimeout(() => { node.classList.remove('scanning'); resolve(); }, ms));
+}
+
+async function swapView(container, render) {
+  if (!container) return container;
+  if (prefersReducedMotion()) return render() || container;
+
+  container.classList.add('swapping');
+  await new Promise((r) => setTimeout(r, 130));
+
+  const next = render() || container;
+  next.classList.add('swapping');
+  next.scrollTop = 0;
+
+  const reveal = () => next.classList.remove('swapping');
+  requestAnimationFrame(reveal);
+  setTimeout(reveal, 60);
+
+  return next;
+}
+
+function flash(node, color = 'var(--gold)') {
+  if (!node || prefersReducedMotion()) return;
+  node.animate(
+  [
+  { boxShadow: `0 0 0 0 ${color}` },
+  { boxShadow: `0 0 0 8px transparent` },
+  ],
+  { duration: 620, easing: 'cubic-bezier(.22,1,.36,1)' },
+  );
+}
+
+Object.assign(__exports, { prefersReducedMotion, countTo, revealAll, initMagnetics, scan, swapView, flash });
+
+});
+
+__def("src/ui/landing-motion.js", function (__exports, __req) {
+
+const { prefersReducedMotion, countTo } = __req("src/ui/motion.js");
+
+let io = null;
+
+function initLandingMotion(root) {
+  if (!root) return;
+  const still = prefersReducedMotion() || typeof IntersectionObserver === 'undefined';
+
+  const targets = [
+  ...root.querySelectorAll('[data-fx]'),
+  ...root.querySelectorAll('.lp-sec, .lp-final'),
+  ];
+
+  if (still) {
+  targets.forEach((el) => el.classList.add('fx-in'));
+  return;
+  }
+
+  root.classList.add('fx-armed');
+
+  io = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+  if (!e.isIntersecting) continue;
+  const el = e.target;
+  el.classList.add('fx-in');
+  io.unobserve(el);
+  el.querySelectorAll('[data-count]').forEach(countOnce);
+  if (el.hasAttribute('data-count')) countOnce(el);
+  }
+  }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
+
+  targets.forEach((el) => io.observe(el));
+
+  setTimeout(() => targets.forEach((el) => el.classList.add('fx-in')), 4000);
+}
+
+function countOnce(el) {
+  if (el.dataset.counted) return;
+  el.dataset.counted = '1';
+  const m = /^([^\d-]*)(-?[\d,]*\.?\d+)(.*)$/.exec(el.textContent.trim());
+  if (!m) return;
+
+  if (m[2].includes(',')) return;
+  const raw = m[2];
+  const to = Number(raw);
+  if (!Number.isFinite(to)) return;
+  const decimals = raw.includes('.') ? raw.split('.')[1].length : 0;
+
+  el.dataset.value = '0';
+  countTo(el, to, { duration: 900, decimals, prefix: m[1], suffix: m[3] });
+}
+
+function stopLandingMotion() {
+  if (io) io.disconnect();
+  io = null;
+}
+
+Object.assign(__exports, { initLandingMotion, stopLandingMotion });
 
 });
 
@@ -8402,90 +9573,6 @@ function initNavSheet() {
 }
 
 Object.assign(__exports, { updatingView, listViews, currentView, MOBILE_PRIMARY, secondaryViews, navSheetOpen, toggleNavSheet, registerView, initRouter, navigate, resetRouter, renderNav, renderNavSheet, closeNavSheet, openNavSheet, initNavSheet });
-
-});
-
-__def("src/ui/motion.js", function (__exports, __req) {
-
-const { state } = __req("src/core/state.js");
-
-function prefersReducedMotion() {
-  if (state.ui && state.ui.reduceMotion) return true;
-  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
-  catch { return false; }
-}
-
-function countTo(node, to, { duration = 620, decimals = 0, prefix = '', suffix = '' } = {}) {
-  if (!node) return;
-  const from = Number(String(node.dataset.value ?? node.textContent).replace(/[^\d.-]/g, '')) || 0;
-  node.dataset.value = String(to);
-
-  node.textContent = prefix + (Number.isFinite(to) ? to.toFixed(decimals) : '—') + suffix;
-  if (prefersReducedMotion() || !Number.isFinite(to) || from === to) return;
-
-  const start = performance.now();
-  const step = (now) => {
-  const t = Math.min(1, (now - start) / duration);
-  const eased = 1 - Math.pow(1 - t, 3);
-  node.textContent = prefix + (from + (to - from) * eased).toFixed(decimals) + suffix;
-  if (t < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-
-function revealAll(root = document, stepMs = 45) {
-  const nodes = Array.from(root.querySelectorAll('.reveal:not(.in)'));
-  if (prefersReducedMotion()) { nodes.forEach((n) => n.classList.add('in')); return; }
-  nodes.forEach((node, i) => setTimeout(() => node.classList.add('in'), i * stepMs));
-}
-
-function initMagnetics() {
-  document.addEventListener('pointermove', (e) => {
-  if (prefersReducedMotion()) return;
-  const btn = e.target.closest('.btn.magnetic');
-  if (!btn) return;
-  const rect = btn.getBoundingClientRect();
-  btn.style.setProperty('--mx', `${((e.clientX - rect.left) / rect.width) * 100}%`);
-  btn.style.setProperty('--my', `${((e.clientY - rect.top) / rect.height) * 100}%`);
-  }, { passive: true });
-}
-
-function scan(node, ms = 420) {
-  if (!node || prefersReducedMotion()) return Promise.resolve();
-  node.classList.add('scanning');
-  return new Promise((resolve) => setTimeout(() => { node.classList.remove('scanning'); resolve(); }, ms));
-}
-
-async function swapView(container, render) {
-  if (!container) return container;
-  if (prefersReducedMotion()) return render() || container;
-
-  container.classList.add('swapping');
-  await new Promise((r) => setTimeout(r, 130));
-
-  const next = render() || container;
-  next.classList.add('swapping');
-  next.scrollTop = 0;
-
-  const reveal = () => next.classList.remove('swapping');
-  requestAnimationFrame(reveal);
-  setTimeout(reveal, 60);
-
-  return next;
-}
-
-function flash(node, color = 'var(--gold)') {
-  if (!node || prefersReducedMotion()) return;
-  node.animate(
-  [
-  { boxShadow: `0 0 0 0 ${color}` },
-  { boxShadow: `0 0 0 8px transparent` },
-  ],
-  { duration: 620, easing: 'cubic-bezier(.22,1,.36,1)' },
-  );
-}
-
-Object.assign(__exports, { prefersReducedMotion, countTo, revealAll, initMagnetics, scan, swapView, flash });
 
 });
 
@@ -9097,20 +10184,20 @@ const opens = (state) => OPEN.has(state);
 const days = (ms) => Math.max(0, Math.ceil(ms / DAY_MS));
 
 function readEntitlement(record, now = Date.now()) {
-  if (!record) return out(STATE.NONE, 'No active subscription on this device.');
+  if (!record) return out(STATE.NONE, 'No active pass on this device.');
 
   if (record.owner) return out(STATE.ACTIVE, '');
 
   if (record.status === 'cancelled' || record.status === 'disabled') {
   return out(STATE.CANCELLED,
-  'Your subscription was cancelled, so the desk is closed. Resubscribe to pick up where you left off — '
-  + 'your journal and settings are still here on this device.');
+  'This licence is no longer active, so the desk is closed. Pick up a pass on the pricing page to carry '
+  + 'on where you left off — your journal and settings are still here on this device.');
   }
 
   if (Number.isFinite(record.expiresAt) && now >= record.expiresAt) {
   return out(STATE.EXPIRED,
-  `Your access ended on ${new Date(record.expiresAt).toLocaleDateString()}. Renew to reopen the desk — `
-  + 'nothing you have saved is lost.');
+  `Your access ended on ${new Date(record.expiresAt).toLocaleDateString()}. Pick up another pass to reopen `
+  + 'the desk — nothing you have saved is lost.');
   }
 
   const left = Number.isFinite(record.expiresAt) ? days(record.expiresAt - now) : null;
@@ -9124,13 +10211,13 @@ function readEntitlement(record, now = Date.now()) {
   if (since < RECHECK_MS + GRACE_MS) {
   const graceLeft = days(RECHECK_MS + GRACE_MS - since);
   return out(STATE.STALE,
-  `Could not reach the subscription service to confirm your access. The desk keeps working for another `
+  `Could not reach the licence service to confirm your access. The desk keeps working for another `
   + `${graceLeft} ${graceLeft === 1 ? 'day' : 'days'}; connect to the internet once before then.`,
   { recheckDue: true, daysLeft: left, graceDaysLeft: graceLeft });
   }
 
   return out(STATE.BLOCKED,
-  'Your subscription has not been confirmed for three weeks. Connect to the internet and sign in again to '
+  'Your licence has not been confirmed for three weeks. Connect to the internet and sign in again to '
   + 'reopen the desk — this is a check, not a cancellation, and nothing you have saved is lost.',
   { recheckDue: true, daysLeft: left, graceDaysLeft: 0 });
 }
@@ -9251,7 +10338,7 @@ Object.assign(__exports, { LIMITS, PHOTO_PX, PHOTO_MAX_BYTES, EMPTY, normalisePr
 
 __def("src/integrations/lemonsqueezy.js", function (__exports, __req) {
 
-const { CHECKOUT } = __req("src/domain/licensing.js");
+const { CHECKOUT, DEVICES, DAY_MS } = __req("src/domain/licensing.js");
 
 const API = 'https://api.lemonsqueezy.com/v1/licenses';
 
@@ -9273,7 +10360,7 @@ async function post(path, body) {
   try { json = await res.json(); } catch { json = null; }
 
   if (!json) {
-  return { ok: false, reachable: false, error: 'The subscription service returned an unreadable response.' };
+  return { ok: false, reachable: false, error: 'The licence service returned an unreadable response.' };
   }
   return { ok: res.ok, reachable: true, json };
   } catch (err) {
@@ -9282,8 +10369,8 @@ async function post(path, body) {
   ok: false,
   reachable: false,
   error: timedOut
-  ? 'The subscription service did not respond in time.'
-  : 'Could not reach the subscription service. Check your connection.',
+  ? 'The licence service did not respond in time.'
+  : 'Could not reach the licence service. Check your connection.',
   };
   } finally {
   clearTimeout(timer);
@@ -9302,8 +10389,26 @@ const expiryOf = (json) => {
 
 function planOf(json) {
   const variantId = String(json?.meta?.variant_id ?? '');
-  const match = CHECKOUT.plans.find((p) => String(p.variantId) === variantId);
-  return match ? { plan: match.id, planName: match.name, days: match.days } : {};
+  const exact = variantId && CHECKOUT.plans.find((p) => p.variantId && String(p.variantId) === variantId);
+  if (exact) return { plan: exact.id, planName: exact.name, days: exact.days };
+
+  const onSale = CHECKOUT.plans.filter((p) => !p.legacy);
+  const expires = expiryOf(json);
+  if (expires == null) {
+  const forever = onSale.find((p) => p.days == null);
+  return forever ? { plan: forever.id, planName: forever.name, days: null } : {};
+  }
+
+  const issued = Date.parse(json?.license_key?.created_at || '');
+  if (!Number.isFinite(issued)) return {};
+  const term = (expires - issued) / DAY_MS;
+  const timed = onSale.filter((p) => Number.isFinite(p.days));
+  if (!timed.length) return {};
+
+  const best = timed.reduce((a, p) => (Math.abs(p.days - term) < Math.abs(a.days - term) ? p : a));
+  return Math.abs(best.days - term) <= 1.5
+  ? { plan: best.id, planName: best.name, days: best.days }
+  : {};
 }
 
 function wrongStore(json) {
@@ -9320,15 +10425,16 @@ function refusal(json) {
   return 'That licence key was not recognised. Copy it straight from your purchase email — it is easy to miss a character.';
   }
   if (raw.includes('activation limit')) {
-  return 'This key is already in use on the maximum number of devices. Sign out on another device first, or contact support to reset it.';
+  return `This pass is already open on ${DEVICES} devices, which is the limit for one account. `
+  + 'Sign out on one of them to free it up — signing out releases the device straight away.';
   }
   if (raw.includes('disabled')) {
   return 'This key has been disabled. If you believe that is wrong, contact support with your order number.';
   }
   if (raw.includes('expired')) {
-  return 'This subscription has ended. Renew to reopen the desk.';
+  return 'This pass has run out. Pick up another on the pricing page to reopen the desk — your journal is still here.';
   }
-  return json?.error || 'The subscription service refused that key.';
+  return json?.error || 'The licence service refused that key.';
 }
 
 async function activateKey({ key, instanceName }) {
@@ -12499,315 +13605,6 @@ Object.assign(__exports, { usingFallback, drawChart, zoom, fit, destroyChart });
 
 });
 
-__def("src/domain/market.js", function (__exports, __req) {
-
-const { dropClosedBars, closedBarCount } = __req("src/domain/hours.js");
-
-const FEED = {
-  klines: 'https://api.binance.com/api/v3',
-  symbol: 'PAXGUSDT',
-  spot: 'https://api.gold-api.com/price/XAU',
-  timeoutMs: 8000,
-};
-
-const TF_LIST = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'];
-
-const STYLES = [
-  { id: 'scalp', name: 'Scalping',        tfs: ['1m', '5m'],    prim: '5m',
-  ex: 'In and out within minutes — many small trades, tight stops, needs constant screen time.' },
-  { id: 'day',   name: 'Day trading',     tfs: ['15m', '30m'],  prim: '15m',
-  ex: 'Open and close the same day — no overnight risk, aims to catch the session move.' },
-  { id: 'swing', name: 'Swing trading',   tfs: ['1h', '4h'],    prim: '1h',
-  ex: 'Hold hours to days for a bigger swing — fewer trades, wider stops, less screen time.' },
-  { id: 'pos',   name: 'Position trading',tfs: ['1d', '1w'],    prim: '1d',
-  ex: 'Hold days to weeks on the main trend — widest stops, biggest targets, most patience.' },
-];
-
-const styleById = (id) => STYLES.find((s) => s.id === id) || STYLES[2];
-const styleForTf = (tf) => STYLES.find((s) => s.tfs.includes(tf)) || null;
-
-const STALE_MS = 25000;
-
-const market = {
-
-  outOfHours: 0,
-  spot: NaN,
-  chg24: NaN,
-  offset: 0,
-  source: '',
-  ok: false,
-  ts: 0,
-  candles: [],
-  tf: '',
-  htfBull: null,
-  setups: {},
-  error: '',
-};
-
-const isFresh = (now = Date.now()) => market.ok && now - market.ts < STALE_MS;
-
-async function getJSON(url) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FEED.timeoutMs);
-  try {
-  const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return await res.json();
-  } finally {
-  clearTimeout(timer);
-  }
-}
-
-async function refreshSpot() {
-  try {
-  const data = await getJSON(FEED.spot);
-  const price = Number(data?.price);
-  if (Number.isFinite(price) && price > 0) {
-  Object.assign(market, { spot: price, source: 'spot', ok: true, ts: Date.now(), error: '' });
-  return market;
-  }
-  throw new Error('spot feed returned no usable price');
-  } catch (spotErr) {
-  try {
-  const data = await getJSON(`${FEED.klines}/ticker/price?symbol=${FEED.symbol}`);
-  const price = parseFloat(data?.price);
-  if (!Number.isFinite(price)) throw new Error('proxy feed returned no usable price');
-  Object.assign(market, { spot: price, source: 'proxy', ok: true, ts: Date.now(), error: '' });
-  } catch (proxyErr) {
-  market.ok = false;
-  market.error = `Price feed unreachable (${spotErr.message}; ${proxyErr.message}).`;
-  }
-  }
-  return market;
-}
-
-async function refreshDaily() {
-  try {
-  const data = await getJSON(`${FEED.klines}/ticker/24hr?symbol=${FEED.symbol}`);
-  const chg = parseFloat(data?.priceChangePercent);
-  if (Number.isFinite(chg)) market.chg24 = chg;
-  } catch {   }
-  return market.chg24;
-}
-
-async function fetchKlines(tf, limit = 300) {
-  const rows = await getJSON(`${FEED.klines}/klines?symbol=${FEED.symbol}&interval=${tf}&limit=${limit}`);
-  if (!Array.isArray(rows) || !rows.length) throw new Error('no candles returned');
-
-  const parsed = rows.map((c) => ({
-  time: Math.floor(c[0] / 1000),
-  open: +c[1], high: +c[2], low: +c[3], close: +c[4],
-  volume: Number.isFinite(+c[5]) ? +c[5] : NaN,
-  }));
-
-  market.outOfHours = closedBarCount(parsed);
-  const open = dropClosedBars(parsed);
-  if (!open.length) throw new Error('no open-market candles returned');
-  return open;
-}
-
-let candleRequest = 0;
-
-async function refreshCandles(tf) {
-  const token = ++candleRequest;
-  try {
-  const raw = await fetchKlines(tf, 300);
-  if (token !== candleRequest) return market.candles;
-
-  const lastClose = raw[raw.length - 1].close;
-  const offset = Number.isFinite(market.spot) && market.spot > 0 ? market.spot - lastClose : 0;
-
-  market.offset = offset;
-  market.tf = tf;
-  market.candles = raw.map((c) => ({
-  time: c.time,
-  open: c.open + offset,
-  high: c.high + offset,
-  low: c.low + offset,
-  close: c.close + offset,
-  }));
-  market.error = '';
-  return market.candles;
-  } catch (err) {
-  if (token !== candleRequest) return market.candles;
-  market.error = `Candles unavailable (${err.message}).`;
-  return market.candles;
-  }
-}
-
-function ema(values, period) {
-  if (!values.length) return NaN;
-  const k = 2 / (period + 1);
-  let e = values[0];
-  for (let i = 1; i < values.length; i++) e = values[i] * k + e * (1 - k);
-  return e;
-}
-
-function emaSeries(candles, period) {
-  const k = 2 / (period + 1);
-  const out = [];
-  let e = 0;
-  for (let i = 0; i < candles.length; i++) {
-  e = i ? candles[i].close * k + e * (1 - k) : candles[i].close;
-  out.push({ time: candles[i].time, value: e });
-  }
-  return out;
-}
-
-function atr14(candles) {
-  if (candles.length < 2) return NaN;
-  let sum = 0, n = 0;
-  for (let i = Math.max(1, candles.length - 14); i < candles.length; i++) {
-  const tr = Math.max(
-  candles[i].high - candles[i].low,
-  Math.abs(candles[i].high - candles[i - 1].close),
-  Math.abs(candles[i].low - candles[i - 1].close),
-  );
-  sum += tr; n++;
-  }
-  return n ? sum / n : NaN;
-}
-
-function pivots(bar) {
-  const { high: H, low: L, close: C } = bar;
-  const P = (H + L + C) / 3;
-  return { p: P, r1: 2 * P - L, s1: 2 * P - H, r2: P + (H - L), s2: P - (H - L) };
-}
-
-const BLOCK_MS = 2 * 60 * 60 * 1000;
-const blockOf = (ts = Date.now()) => Math.floor(ts / BLOCK_MS);
-const msToNextBlock = (ts = Date.now()) => (blockOf(ts) + 1) * BLOCK_MS - ts;
-
-async function refreshHtfBias() {
-  try {
-  const daily = await fetchKlines('1d', 40);
-  const closes = daily.map((c) => c.close);
-  market.htfBull = closes[closes.length - 1] >= ema(closes, 20);
-  } catch {   }
-  return market.htfBull;
-}
-
-function deriveSetup(candles, { spot, htfBull, block }) {
-  const atr = atr14(candles);
-  if (!Number.isFinite(atr) || atr <= 0) return null;
-
-  const last = candles[candles.length - 1].close;
-  const offset = Number.isFinite(spot) && spot > 0 ? spot - last : 0;
-  const price = last + offset;
-  const e20 = ema(candles.map((c) => c.close), 20) + offset;
-
-  const bull = price >= e20;
-  const sign = bull ? 1 : -1;
-
-  return {
-  bias: bull ? 'buy' : 'sell',
-  entry: price,
-  sl: price - sign * atr,
-  tp1: price + sign * atr * 1.5,
-  tp2: price + sign * atr * 2.5,
-  atr,
-  aligned: htfBull === null || htfBull === undefined ? null : bull === htfBull,
-  block,
-  ts: Date.now(),
-  };
-}
-
-async function refreshSetups() {
-  const block = blockOf();
-  const changed = [];
-
-  const stale = STYLES.filter((s) => market.setups[s.id]?.block !== block);
-  if (!stale.length) return changed;
-
-  await refreshHtfBias();
-
-  for (const style of stale) {
-  try {
-  const candles = await fetchKlines(style.prim, 60);
-  const setup = deriveSetup(candles, { spot: market.spot, htfBull: market.htfBull, block });
-  if (setup) {
-  market.setups[style.id] = { ...setup, tf: style.prim, styleId: style.id, styleName: style.name };
-  changed.push(style.id);
-  }
-  } catch {   }
-  }
-  return changed;
-}
-
-function appendHistory(history = [], block = blockOf()) {
-
-  const already = new Set(
-  history.filter((h) => h.block === block).map((h) => h.style),
-  );
-
-  const rows = STYLES
-  .map((s) => market.setups[s.id])
-  .filter((s) => s && s.block === block && !already.has(s.styleName))
-  .map((s) => ({
-  block, ts: s.ts, style: s.styleName, bias: s.bias,
-  entry: s.entry, sl: s.sl, tp2: s.tp2, aligned: s.aligned,
-  }));
-
-  if (!rows.length) return history;
-  return [...rows, ...history].slice(0, 24);
-}
-
-Object.assign(__exports, { FEED, TF_LIST, STYLES, styleById, styleForTf, STALE_MS, market, isFresh, BLOCK_MS, blockOf, msToNextBlock, refreshSpot, refreshDaily, fetchKlines, refreshCandles, ema, emaSeries, atr14, pivots, refreshHtfBias, deriveSetup, refreshSetups, appendHistory });
-
-});
-
-__def("src/domain/hours.js", function (__exports, __req) {
-
-const OPEN_DAY = 0;
-const OPEN_HOUR = 17;
-const CLOSE_DAY = 5;
-const CLOSE_HOUR = 17;
-
-const DAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-
-const nyFormat = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'America/New_York',
-  hour12: false,
-  weekday: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-});
-
-function newYorkParts(ms) {
-  const parts = Object.fromEntries(
-  nyFormat.formatToParts(new Date(ms)).map((p) => [p.type, p.value]),
-  );
-  return {
-  day: DAY_INDEX[parts.weekday],
-  hour: Number(parts.hour) % 24,
-  minute: Number(parts.minute),
-  };
-}
-
-function isMarketClosed(ms) {
-  const { day, hour } = newYorkParts(ms);
-  if (day === 6) return true;
-  if (day === OPEN_DAY) return hour < OPEN_HOUR;
-  if (day === CLOSE_DAY) return hour >= CLOSE_HOUR;
-  return false;
-}
-
-const isMarketOpen = (ms) => !isMarketClosed(ms);
-
-function dropClosedBars(candles = []) {
-  if (!Array.isArray(candles)) return [];
-  return candles.filter((c) => c && Number.isFinite(c.time) && isMarketOpen(c.time * 1000));
-}
-
-function closedBarCount(candles = []) {
-  if (!Array.isArray(candles)) return 0;
-  return candles.length - dropClosedBars(candles).length;
-}
-
-Object.assign(__exports, { OPEN_DAY, OPEN_HOUR, CLOSE_DAY, CLOSE_HOUR, isMarketOpen, newYorkParts, isMarketClosed, dropClosedBars, closedBarCount });
-
-});
-
 __def("src/ui/views/xau.js", function (__exports, __req) {
 
 const { esc, byId, on, debounce } = __req("src/core/dom.js");
@@ -12893,7 +13690,7 @@ __exports.default = {
 
   <div id="xau-datawarn"></div>
 
-  <div class="card xchart-card reveal">
+  <div class="card xchart-card reveal" id="xau-chart-card">
   <div class="xbar">
   <div class="xsym">
   <span class="xname">XAU/USD</span>
@@ -12966,7 +13763,7 @@ __exports.default = {
 
   <div class="cols split xcols">
   <div class="col">
-  <div class="card reveal">
+  <div class="card reveal" id="xau-reading-card">
   <div class="card-head">
   <div>
   <p class="eyebrow">What the desk found</p>
@@ -13788,6 +14585,8 @@ function runAnalysis() {
   paintReading();
   paintDebug();
   paintStamp();
+
+  paintIndicatorBar({ ...DEFAULT_LAYERS, ...state.xau.layers });
 }
 
 function paintNews(news) {
@@ -21858,7 +22657,7 @@ const { callout, tip } = __req("src/ui/components.js");
 const { storageState, storageEstimate, requestPersistence } = __req("src/core/persist.js");
 const { currentAccount, refreshAccount } = __req("src/ui/auth.js");
 const { saveProfile } = __req("src/ui/accounts.js");
-const { CHECKOUT, planLabel } = __req("src/domain/licensing.js");
+const { CHECKOUT, planLabel, isUnlimited, DEVICES } = __req("src/domain/licensing.js");
 const { readEntitlement, STATE } = __req("src/domain/entitlement.js");
 const { LIMITS, initials, displayNameFor } = __req("src/domain/profile.js");
 const { fileToSquareDataUrl, ACCEPT } = __req("src/ui/photo.js");
@@ -22048,8 +22847,8 @@ __exports.default = {
   </div>
 
   <div class="card reveal" id="sub-card">
-  <p class="eyebrow">Your subscription</p>
-  <h2>Plan &amp; billing <span class="hint">Cancelling here stops the next payment. Nothing on this device is deleted, so resubscribing picks up exactly where you left off.</span></h2>
+  <p class="eyebrow">Your plan</p>
+  <h2>Plan &amp; devices <span class="hint">One account on ${DEVICES} devices. Signing out on a device frees its place for another.</span></h2>
   <div id="sub-status"></div>
   </div>
 
@@ -22679,14 +23478,19 @@ function paintSubscription() {
   }
 
   const e = readEntitlement(account);
-  const term = account.planName || planLabel(account.days || 0);
-  const renews = e.daysLeft == null;
+  const forever = isUnlimited(account);
+  const term = account.planName || planLabel(forever ? null : (account.days || 0));
+
+  const legacySub = e.daysLeft == null && !forever;
 
   const line = e.state === STATE.STALE
   ? callout('gold', `<b>${esc(term)} — confirming.</b> ${esc(e.message)}`)
-  : renews
+  : forever
+  ? callout('long', `<b>${esc(term)} — yours for good.</b> Paid once. No renewals and no expiry.`)
+  : legacySub
   ? callout('long', `<b>${esc(term)} — active.</b> Renews automatically at the same price until you cancel.`)
-  : callout('long', `<b>${esc(term)} — active.</b> ${e.daysLeft} day${e.daysLeft === 1 ? '' : 's'} remaining.`);
+  : callout('long', `<b>${esc(term)} — active.</b> ${e.daysLeft} day${e.daysLeft === 1 ? '' : 's'} left. `
+  + 'It does not renew — pick up another pass whenever you want to carry on.');
 
   const checked = Number.isFinite(account.lastValidatedAt)
   ? new Date(account.lastValidatedAt).toLocaleDateString()
@@ -22696,13 +23500,14 @@ function paintSubscription() {
   ${line}
   <div class="row tight" style="margin-top:var(--sp-3)">
   <a class="btn ghost sm" href="${esc(CHECKOUT.portal)}" target="_blank" rel="noopener">
-  Manage or cancel subscription
+  ${legacySub ? 'Manage or cancel subscription' : 'Your orders &amp; receipts'}
   </a>
   </div>
   <p class="field-note" style="margin-top:var(--sp-3)">
   ${account.customerEmail ? `Billed to <b>${esc(account.customerEmail)}</b>. ` : ''}Last confirmed with the
-  payment provider on ${esc(checked)}. Cancelling stops the next payment and leaves you access to the end of the
-  period you have paid for; nothing on this device is deleted.
+  payment provider on ${esc(checked)}. ${legacySub
+  ? 'Cancelling stops the next payment and leaves you access to the end of the period you have paid for; '
+  : ''}Nothing on this device is deleted when a plan ends.
   </p>`);
 }
 
