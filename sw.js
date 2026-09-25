@@ -20,7 +20,10 @@
  * the app already handles a dead feed honestly and says so on screen.
  */
 
-const VERSION = 'be-v1';
+// Bumped whenever the caching rules change, so the old worker's caches are
+// cleared on activate. v2 (2026-09-25): the shell now revalidates past the
+// HTTP cache.
+const VERSION = 'be-v2';
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 
@@ -102,8 +105,18 @@ self.addEventListener('fetch', (event) => {
   }
 
   // App shell: fresh if we can reach the network, cached if we cannot.
+  //
+  // `cache: 'no-cache'` is what makes "fresh" true. A plain fetch() goes
+  // through the browser's HTTP cache, and GitHub Pages marks the page
+  // max-age=600 — so for ten minutes after any visit, "network first" quietly
+  // returned the browser's own stored copy, and a visitor who had looked
+  // shortly before a deploy kept seeing the old storefront. no-cache still
+  // uses that copy, but only after the server confirms it (a 304 costs a few
+  // hundred bytes).
   event.respondWith(
-    fetch(request)
+    // Passing the request itself (not its URL) keeps its redirect mode, so a
+    // redirected navigation still comes back in a form the browser accepts.
+    fetch(request, { cache: 'no-cache' })
       .then((res) => {
         if (res.ok) { const copy = res.clone(); caches.open(SHELL).then((c) => c.put(request, copy)); }
         return res;
