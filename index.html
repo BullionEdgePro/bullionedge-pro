@@ -2491,6 +2491,15 @@ kbd {
 .lp-table tr.good td { color: var(--long); }
 .lp-table tr.bad td  { color: var(--short); }
 
+@media (max-width: 620px) {
+  .lp-table { min-width: 0; }
+
+  .lp-table th { white-space: normal; letter-spacing: .06em; line-height: 1.35; vertical-align: bottom; }
+  .lp-table td { font-size: var(--fs-xs); }
+  .lp-table th, .lp-table td { padding-right: var(--sp-2); }
+  .lp-table th:last-child, .lp-table td:last-child { padding-right: 0; }
+}
+
 .lp-verdicts { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .lp-verdicts .v {
   font-size: var(--fs-xs); padding: 8px 14px; border-radius: var(--r-pill);
@@ -7393,6 +7402,10 @@ function initSectionSpy() {
   active = id;
   links.forEach((btn, key) => btn.classList.toggle('on', key === id));
 
+  if (id == null) {
+  if (strip.scrollLeft > 0) strip.scrollTo({ left: 0, behavior: 'smooth' });
+  return;
+  }
   const btn = links.get(id);
   if (!btn || strip.scrollWidth <= strip.clientWidth) return;
   const b = btn.getBoundingClientRect();
@@ -7406,7 +7419,10 @@ function initSectionSpy() {
   for (const e of entries) onScreen.set(e.target.id, e.isIntersecting);
 
   const current = inPageOrder.find((id) => onScreen.get(id));
-  if (current) setActive(current);
+  if (current) { setActive(current); return; }
+
+  const first = byId(inPageOrder[0]);
+  if (first && first.getBoundingClientRect().top > window.innerHeight * 0.5) setActive(null);
   }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
 
   for (const id of inPageOrder) io.observe(byId(id));
