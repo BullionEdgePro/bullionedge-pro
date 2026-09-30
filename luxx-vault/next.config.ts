@@ -18,7 +18,15 @@ const config: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // Brief §11: the camera opens only where identity is verified (ID photos and the selfie check),
+      // and on the hallmark reader, where the camera is how a stamp gets photographed.
+      {
+        source: "/(account/verification|tools/hallmark)(.*)",
+        headers: [{ key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=()" }],
+      },
+    ];
   },
 };
 

@@ -21,7 +21,8 @@
     "postinstall": "prisma generate",
     "vercel-build": "prisma migrate deploy && next build",
     "db:migrate": "prisma migrate dev",
-    "build:locations": "tsx scripts/build-locations.ts"
+    "build:locations": "tsx scripts/build-locations.ts",
+    "dev:users": "tsx scripts/dev-users.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -41,7 +42,6 @@
     "opentype.js": "^2.0.0",
     "playwright": "^1.56.0",
     "prisma": "^7.10.0",
-    "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
@@ -71,6 +71,7 @@
     "react-dom": "^19.3.0",
     "resend": "^6.31.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
     "tailwind-merge": "^3.7.0",
     "three": "^0.186.1",
     "three-stdlib": "^2.36.1",
