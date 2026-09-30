@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Lockup } from "@/components/brand/logo";
 import { LivingGram } from "@/components/hero/living-gram";
 import { EditorialProductCard } from "@/components/product/cards";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { phpPerGramAtKarat } from "@/lib/pricing";
 import { SAMPLE_START } from "@/lib/sample-price-data";
 
@@ -23,7 +22,6 @@ export default function HeroPrototypePage() {
           <Link href="/design-system" className="flex items-center gap-2.5 rounded-md">
             <Lockup className="text-base" emblemClassName="size-9" />
           </Link>
-          <ThemeToggle />
         </div>
       </header>
 

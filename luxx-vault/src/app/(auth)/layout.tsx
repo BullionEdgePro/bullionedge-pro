@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Emblem, Lockup } from "@/components/brand/logo";
 import { MockEmailBanner } from "@/components/site/mock-email-banner";
 import { RotatingLines } from "@/components/site/rotating-lines";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { brand } from "@/config/brand";
 import { LUXURY_LINES } from "@/content/lines";
 
@@ -34,7 +33,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="rounded-md lg:invisible">
               <Lockup className="text-base" emblemClassName="size-9" tagline={false} />
             </Link>
-            <ThemeToggle />
           </div>
           <div className="surface-velvet mx-5 mb-2 rounded-xl px-5 py-4 text-center lg:hidden">
             <RotatingLines lines={LUXURY_LINES} className="min-h-[1.6em] font-display text-base text-gold" />

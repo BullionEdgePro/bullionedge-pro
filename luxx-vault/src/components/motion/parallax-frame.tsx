@@ -32,9 +32,12 @@ export function ParallaxFrame({
   const y = useTransform(scrollYProgress, [0, 1], [depth, -depth]);
 
   return (
-    <div ref={ref} className={cn("relative isolate overflow-hidden", className)}>
+    <div ref={ref} className={cn("group/frame relative isolate overflow-hidden", className)}>
       <motion.div className="h-full w-full" style={reduce ? undefined : { y, scale: 1.12 }}>
-        {children}
+        {/* On hover the photo leans in, slowly, like a piece lifted toward the lamp. */}
+        <div className="h-full w-full transition-transform duration-[1400ms] ease-(--ease-vault) group-hover/frame:scale-[1.05]">
+          {children}
+        </div>
       </motion.div>
 
       {sheen && !reduce ? (
@@ -56,7 +59,12 @@ export function ParallaxFrame({
       {/* A thin inner gold edge, so every photo reads as framed rather than cropped. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-champagne/25"
+        className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-champagne/25 transition-[box-shadow] duration-700 group-hover/frame:ring-champagne/55"
+      />
+      {/* A mat line that appears on hover: the photo becomes a framed print. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-3 rounded-[calc(var(--radius-lg)-0.5rem)] border border-champagne/0 opacity-0 transition-[opacity,inset,border-color] duration-700 ease-(--ease-vault) group-hover/frame:inset-4 group-hover/frame:border-champagne/45 group-hover/frame:opacity-100"
       />
     </div>
   );

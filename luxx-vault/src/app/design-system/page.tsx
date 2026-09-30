@@ -5,7 +5,6 @@ import { Emblem, Lockup } from "@/components/brand/logo";
 import { Magnetic } from "@/components/motion/magnetic";
 import { CompactListingCard, EditorialProductCard } from "@/components/product/cards";
 import { PlaceholderPhoto } from "@/components/product/placeholder-photo";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge, ProductBadge, TIERS, TierBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
@@ -41,7 +40,7 @@ const TYPE_SCALE = [
   { cls: "text-7xl", px: 95.4, sample: "₱8,288", display: true },
   { cls: "text-6xl", px: 76.3, sample: "Legit gold", display: true },
   { cls: "text-5xl", px: 61.0, sample: "since 2019", display: true },
-  { cls: "text-4xl", px: 48.8, sample: "Tunay na ginto", display: true },
+  { cls: "text-4xl", px: 48.8, sample: "Real gold", display: true },
   { cls: "text-3xl", px: 39.1, sample: "Saudi rope chain", display: true },
   { cls: "text-2xl", px: 31.3, sample: "How verification works", display: true },
   { cls: "text-xl", px: 25, sample: "Section heading in the UI face", display: false },
@@ -93,7 +92,6 @@ export default function DesignSystemPage() {
               </a>
             ))}
           </nav>
-          <ThemeToggle />
         </div>
       </header>
 
@@ -102,8 +100,8 @@ export default function DesignSystemPage() {
           <p className="text-sm font-medium text-gold">Phase 1 · design board</p>
           <h1 className="mt-3 text-5xl sm:text-6xl">The Vault at Night</h1>
           <p className="measure mt-5 text-lg text-muted">
-            A private jeweller&rsquo;s vault after hours: aubergine-black velvet, warm champagne gold, and the cold white sparkle of diamonds. Product pages
-            sit on cool pearl so jewellery photographs true; market and hero pages sit on velvet. Toggle the theme above to review both.
+            A private jeweller&rsquo;s vault after hours: aubergine-black velvet, warm champagne gold, and the cold white sparkle of diamonds. Every page
+            sits on velvet: the site is dark only, so gold and stones carry the light.
           </p>
         </div>
 
@@ -198,9 +196,9 @@ export default function DesignSystemPage() {
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-semibold">Voice</p>
-                <p className="font-display text-2xl">Tunay na ginto. Verified na tao.</p>
+                <p className="font-display text-2xl">Real gold. Verified people.</p>
                 <p className="text-muted">
-                  Plain, warm, confident. English first, with natural Taglish in headlines and helper text. Sentence case everywhere; no all-caps labels and no arrows tacked onto
+                  Plain, warm, confident. English throughout, elegant and unhurried. Sentence case everywhere; no all-caps labels and no arrows tacked onto
                   every link.
                 </p>
               </div>

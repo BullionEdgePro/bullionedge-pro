@@ -35,7 +35,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                 <CheckCircle2 className="size-4" aria-hidden /> Email confirmed
               </p>
               <h1 className="mt-1 text-3xl">Welcome to Luxx4less, {user.name.split(" ")[0]}</h1>
-              <p className="mt-2 text-muted">Your account is ready. Tunay na ginto, verified na tao.</p>
+              <p className="mt-2 text-muted">Your account is ready. Real gold, verified people.</p>
             </div>
           </CardBody>
         </Card>

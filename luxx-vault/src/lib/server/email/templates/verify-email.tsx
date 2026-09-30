@@ -5,7 +5,7 @@ export function VerifyEmail({ name, url, baseUrl }: { name: string; url: string;
   return (
     <EmailLayout preview="Confirm your email to finish creating your Luxx4less account" baseUrl={baseUrl}>
       <Text style={s.h1}>Confirm your email</Text>
-      <Text style={s.p}>Hi {name}, salamat for joining Luxx4less. Tap the button to confirm this is your email address.</Text>
+      <Text style={s.p}>Hi {name}, thank you for joining Luxx4less. Tap the button to confirm this is your email address.</Text>
       <Button href={url} style={s.button}>
         Confirm my email
       </Button>

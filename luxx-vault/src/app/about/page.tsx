@@ -32,7 +32,7 @@ export default async function AboutPage() {
 
   return (
     <>
-      <SiteHeader signedIn={Boolean(session)} />
+      <SiteHeader signedIn={Boolean(session)} overlay />
 
       <main className="surface-velvet">
         {/* ---------------------------------------------------------- opening */}
@@ -53,7 +53,7 @@ export default async function AboutPage() {
             className="absolute inset-0 -z-10 bg-gradient-to-b from-velvet/85 via-velvet/70 to-velvet"
           />
 
-          <div className="mx-auto flex min-h-[88svh] max-w-6xl flex-col justify-end px-4 pb-20 pt-28 sm:px-6">
+          <div className="mx-auto flex min-h-[88svh] max-w-6xl flex-col justify-end px-4 pb-20 pt-40 sm:px-6">
             <Reveal>
               <Emblem className="size-14 text-champagne" />
             </Reveal>
@@ -72,7 +72,7 @@ export default async function AboutPage() {
               <p className="measure mt-6 text-lg text-pearl/80">{HOUSE_INTRO.body}</p>
             </Reveal>
             <Reveal delay={0.6}>
-              <p className="mt-6 font-display text-xl text-gold-metal animate-molten">{HOUSE_INTRO.filipino}</p>
+              <p className="mt-6 font-display text-xl text-gold-metal animate-molten">{HOUSE_INTRO.motto}</p>
             </Reveal>
           </div>
         </section>
@@ -134,7 +134,7 @@ export default async function AboutPage() {
               <p className="measure mx-auto mt-5 text-muted">{TEAM.body}</p>
             </Reveal>
             <Reveal delay={0.2}>
-              <p className="mt-4 font-display text-lg text-gold">{TEAM.filipino}</p>
+              <p className="mt-4 font-display text-lg text-gold">{TEAM.motto}</p>
             </Reveal>
 
             <TeamFan frames={TEAM.frames} />
@@ -190,7 +190,7 @@ export default async function AboutPage() {
         ) : null}
 
         {/* ------------------------------------------------------------ visit us */}
-        <section className="mx-auto max-w-6xl px-4 py-24 sm:px-6 lg:py-32">
+        <section id="visit" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-24 sm:px-6 lg:py-32">
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
             <div className="lg:col-span-5">
               <RisingWords text={HOUSE_OUTRO.headline} className="text-3xl text-fg sm:text-4xl" />

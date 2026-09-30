@@ -14,7 +14,7 @@ export const HOUSE_INTRO = {
     "Anyone can photograph a gold bar. Fewer will show you the hands that weighed it. " +
     "This is the house behind Luxx4less: one storefront in Antipolo, one in Ongpin, " +
     "and a team that has to look every customer in the eye the next morning.",
-  filipino: "Totoong tao. Totoong ginto.",
+  motto: "Real people. Real gold.",
 } as const;
 
 /** Section 2 — the founder. */
@@ -45,7 +45,7 @@ export const TEAM = {
   body:
     "Appraisers, sellers and the live-selling crew. They are the ones who open the case, " +
     "set the piece on the scale and read the number out loud.",
-  filipino: "Sila ang tumitimbang. Sila ang mananagot.",
+  motto: "They weigh it. They answer for it.",
   /** Each photo gets its own line, so the gallery reads as a story, not a grid. */
   frames: [
     {

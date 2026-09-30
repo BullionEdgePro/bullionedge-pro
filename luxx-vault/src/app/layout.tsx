@@ -45,15 +45,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#EEF0F3" },
-    { media: "(prefers-color-scheme: dark)", color: "#17101F" },
-  ],
+  themeColor: "#17101F",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-PH" className={`${cinzel.variable} ${peso.variable} ${jakarta.variable}`} suppressHydrationWarning>
+    <html lang="en-PH" className={`dark ${cinzel.variable} ${peso.variable} ${jakarta.variable}`} suppressHydrationWarning>
       <body>
         <ThemeProvider>{children}</ThemeProvider>
       </body>

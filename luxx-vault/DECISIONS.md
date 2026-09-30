@@ -142,3 +142,25 @@ DZAR) and leans on the brand lines in `src/content/lines.ts`.
 **Brand lines as a scroll-lit band** (`BrandLines`): each line catches the light in turn as the
 band passes, driven by scroll position rather than a timer, so it never moves faster than the
 reader. Under reduced motion every line is simply lit.
+
+## Dark only, English only, a grander header (30 Sep 2026)
+
+**Dark only (owner's choice).** The theme toggle is gone and next-themes is forced to dark; the
+velvet tokens are now the root default, so there is no flash of light before hydration. The light
+tokens stay in `tokens.ts` as the record the contrast tests check, but nothing renders them.
+
+**English throughout (owner's choice).** The Taglish brand lines were rewritten in English
+("Real gold. Verified people.", "It shines because it is real."), and so were the page mottos,
+the account welcome and the confirmation email. This overrides the brief's Taglish voice note;
+next-intl (Phase 7) can still add Filipino later as a separate language.
+
+**The header is an entrance, not a toolbar.** Tall (128px) and open at the top of a page, with the
+crest centred between the nav and the sign-in actions; after 32px of scroll it settles into an 80px
+band of smoked glass. A gold thread along its lower edge fills with reading progress. Nav links
+draw a gold underline from the centre. On phones the nav becomes a full-screen velvet menu that
+opens as a widening circle from the button. `/about` floats the header over its opening photo.
+
+**Atmosphere, kept quiet.** A 5% film grain over every page (velvet has a nap), a faint lamp glow
+at the top of the page, a single band of light across gold buttons on hover, and photos that lean
+in slowly with a mat line appearing on hover. All of it is decoration only: no layout shift, and
+reduced motion turns the moving parts off.

@@ -29,7 +29,9 @@
   color-scheme: light;
 }
 
-/* Dark theme, and any section that always sits on velvet (hero, market pages). */
+/* The site is dark only (owner, 30 Sep 2026): velvet everywhere. The light
+   tokens above stay only as the design record the contrast tests check. */
+:root,
 .dark,
 .surface-velvet {
   --bg: #17101f;
@@ -156,6 +158,53 @@
   ::selection {
     background: color-mix(in srgb, #d6b26e 45%, transparent);
   }
+}
+
+/* ------------------------------------------------------------------ atmosphere */
+
+/* Velvet has a nap. A whisper of grain over the whole page stops the dark from
+   reading as a flat screen colour. Fixed, non-interactive, below every dialog. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* A soft lamp glow at the top of every page, so the velvet has a light source. */
+body {
+  background-image: radial-gradient(120% 60% at 50% -10%, rgb(214 178 110 / 0.09), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Primary buttons: a band of light crosses the gold on hover, once. */
+.lx-sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.lx-sheen::after {
+  content: "";
+  position: absolute;
+  inset: -20% auto -20% -60%;
+  width: 45%;
+  transform: skewX(-18deg) translateX(0);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.lx-sheen:hover::after,
+.lx-sheen:focus-visible::after {
+  animation: lx-sheen 0.9s var(--ease-vault) both;
+}
+@keyframes lx-sheen {
+  0% { opacity: 0; transform: skewX(-18deg) translateX(0); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: skewX(-18deg) translateX(420%); }
 }
 
 /* ------------------------------------------------------------------ utilities */

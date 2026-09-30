@@ -10,7 +10,7 @@ const buttonVariants = cva(
       variant: {
         /** Signature CTA — the only button with the real gold gradient. */
         primary:
-          "bg-gold-metal text-velvet shadow-[inset_0_1px_0_rgb(255_255_255/0.45),0_1px_2px_rgb(var(--shadow)/0.25),0_8px_24px_-12px_#A8823F] hover:brightness-[1.06] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.5),0_1px_2px_rgb(var(--shadow)/0.25),0_14px_32px_-12px_#A8823F]",
+          "lx-sheen bg-gold-metal text-velvet shadow-[inset_0_1px_0_rgb(255_255_255/0.45),0_1px_2px_rgb(var(--shadow)/0.25),0_8px_24px_-12px_#A8823F] hover:brightness-[1.06] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.5),0_1px_2px_rgb(var(--shadow)/0.25),0_14px_32px_-12px_#A8823F]",
         /** Flat gold outline for secondary actions. */
         secondary:
           "border border-gold-large/70 text-gold hover:bg-gold-tint hover:border-gold-large",
