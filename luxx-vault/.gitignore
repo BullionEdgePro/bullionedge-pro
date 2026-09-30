@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+Thumbs.db
+
+# Raw brand photos stay on the owner's machine; only processed output is committed.
+brand-assets/**/*
+!brand-assets/**/
+!brand-assets/**/.gitkeep
