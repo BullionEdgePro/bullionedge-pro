@@ -3,7 +3,7 @@
  *
  *   npm run images
  *
- * Reads the owner's photos from brand-assets/{logo,cover,products,store,testimonials},
+ * Reads the owner's photos from brand-assets/{logo,cover,owner,team,store,visits,products,testimonials},
  * and for each one:
  *   - auto-orients from EXIF, then strips ALL metadata (EXIF, GPS location, camera serials)
  *   - resizes to responsive widths (never upscales)
@@ -18,15 +18,18 @@ import sharp from "sharp";
 
 const SRC = "brand-assets";
 const OUT = "public/images";
-const FOLDERS = ["logo", "cover", "products", "store", "testimonials"] as const;
+const FOLDERS = ["logo", "cover", "owner", "team", "store", "visits", "products", "testimonials"] as const;
 const WIDTHS = [480, 960, 1600, 2400];
 const INPUT = /\.(jpe?g|png|webp|avif|heic|heif|tiff?)$/i;
 
 const WANTED: Record<(typeof FOLDERS)[number], string> = {
   logo: "Profile picture and any logo files",
   cover: "Facebook cover photos",
+  owner: "The owner: portraits, press, awards and interviews",
+  team: "The team: group portraits and people at work",
+  visits: "Guests and creators who visited a branch — each person must agree to appear",
   products: "Product photos: rings, necklaces, bracelets, earrings, bars (plain light background preferred)",
-  store: "Shop, team, packaging and live-selling photos",
+  store: "Shop interiors, storefronts, packaging and live-selling photos",
   testimonials: "Customer screenshots — only with each customer's permission",
 };
 

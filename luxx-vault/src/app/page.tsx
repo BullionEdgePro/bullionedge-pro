@@ -18,6 +18,9 @@ export default function Home() {
           <Button asChild variant="secondary">
             <Link href="/design-system/hero">Hero prototype</Link>
           </Button>
+          <Button asChild variant="secondary">
+            <Link href="/about">Behind the counter</Link>
+          </Button>
         </div>
       </div>
     </main>

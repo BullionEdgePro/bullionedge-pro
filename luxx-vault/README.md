@@ -2,7 +2,7 @@
 
 Precious-metals storefront and verified marketplace for Luxx4less Golds and Diamonds. The full brief is in `PROMPT.md`.
 
-Current phase: **2, accounts and security — awaiting owner review.** Put it online with **`DEPLOY.md`**. See `DECISIONS.md` and `TODO.md`; screenshots in `docs/screenshots/phase-2/` and `phase-1/`. Phase 0 audit: `AUDIT.md`, `PARITY.md`, `FEATURES.md`.
+Current phase: **2, accounts and security — awaiting owner review.** The people page is live at `/about`. Put it online with **`DEPLOY.md`**. See `DECISIONS.md` and `TODO.md`; screenshots in `docs/screenshots/phase-2/` and `phase-1/`. Phase 0 audit: `AUDIT.md`, `PARITY.md`, `FEATURES.md`.
 
 ## Work on it locally with Claude Code (Windows)
 
@@ -25,6 +25,7 @@ Needs Node.js 22+ and PostgreSQL. Then open http://localhost:3000/design-system 
 | Command | What it does |
 |---|---|
 | `npm run images` | Process photos in `brand-assets/` (strips GPS/EXIF, makes AVIF/WebP) |
+| | Folders: `logo cover owner team store visits products testimonials`. `_withheld/` is never read. |
 | `npm run brand:logo` | Rebuild the Luxx4less logo geometry |
 | `npm run brand:icons` | Rebuild favicon, app icons and the logo files in `public/brand/` |
 | `npm run test:e2e` | Browser tests of the account flow (dev server running) |

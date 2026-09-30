@@ -10,7 +10,186 @@ export interface BrandImage {
   src: string;
 }
 
-export const images: readonly BrandImage[] = [];
+export const images: readonly BrandImage[] = [
+  {
+    "id": "logo/luxx4less-logo",
+    "folder": "logo",
+    "width": 500,
+    "height": 500,
+    "blurDataURL": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAADwAQCdASoQABAAA4BaJYwAApP5DQFlb4AA/vnI1Arkn9IA/cM896T6f89mtQT8Ahopde9CUrx9JVRLDN3hGEZjvhOJZDnNl1tGmkKXip9Xfe76bFAAAA==",
+    "sources": {
+      "avif": [
+        "/images/logo/luxx4less-logo-480.avif 480w",
+        "/images/logo/luxx4less-logo-500.avif 500w"
+      ],
+      "webp": [
+        "/images/logo/luxx4less-logo-480.webp 480w",
+        "/images/logo/luxx4less-logo-500.webp 500w"
+      ]
+    },
+    "src": "/images/logo/luxx4less-logo-500.webp"
+  },
+  {
+    "id": "owner/owner-awards-night",
+    "folder": "owner",
+    "width": 1290,
+    "height": 1368,
+    "blurDataURL": "data:image/webp;base64,UklGRogAAABXRUJQVlA4IHwAAAAQAgCdASoPABAAA4BaJbACdAD7tHZMUUAAAPrhITEWGIDYCXNRaWU7LCRITj91OS8MkeDC8+MTVUbAO7p++Iv4byNWC5/YZ4V4nTC+btdGzju73w3eObuBQGtrzz7LTrAgE0JXKPQH19jFdqvxGhqdvjyHfjkNn4aVZAAA",
+    "sources": {
+      "avif": [
+        "/images/owner/owner-awards-night-480.avif 480w",
+        "/images/owner/owner-awards-night-960.avif 960w",
+        "/images/owner/owner-awards-night-1290.avif 1290w"
+      ],
+      "webp": [
+        "/images/owner/owner-awards-night-480.webp 480w",
+        "/images/owner/owner-awards-night-960.webp 960w",
+        "/images/owner/owner-awards-night-1290.webp 1290w"
+      ]
+    },
+    "src": "/images/owner/owner-awards-night-1290.webp"
+  },
+  {
+    "id": "owner/owner-radio-dzar-hosts",
+    "folder": "owner",
+    "width": 1080,
+    "height": 810,
+    "blurDataURL": "data:image/webp;base64,UklGRooAAABXRUJQVlA4IH4AAACQAgCdASoQAAwAA4BaJbACdH8AgsDBJ+89O8rtAAD+iDK2tT21To0GSAfq1cbIinWcFf7ErNTdZq4UfyRuHihLcntnbGQauD97xoTFQPwZZGiSvJABctD/FdPzqM4+MM+qXwmn7wUmoT+2+L0kXHHHuc+Wc7KFyzf5pYicAAA=",
+    "sources": {
+      "avif": [
+        "/images/owner/owner-radio-dzar-hosts-480.avif 480w",
+        "/images/owner/owner-radio-dzar-hosts-960.avif 960w",
+        "/images/owner/owner-radio-dzar-hosts-1080.avif 1080w"
+      ],
+      "webp": [
+        "/images/owner/owner-radio-dzar-hosts-480.webp 480w",
+        "/images/owner/owner-radio-dzar-hosts-960.webp 960w",
+        "/images/owner/owner-radio-dzar-hosts-1080.webp 1080w"
+      ]
+    },
+    "src": "/images/owner/owner-radio-dzar-hosts-1080.webp"
+  },
+  {
+    "id": "owner/owner-radio-dzar-interview",
+    "folder": "owner",
+    "width": 1448,
+    "height": 1086,
+    "blurDataURL": "data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAABwAgCdASoQAAwAA4BaJZgCsAYsPqh0fcL6hiGgAOIY/E0yzMxUwUB0VYDLDD7GVO1rE2FRIqcc5wCPdVKtmlIOTuTD8I3bh+eBGFEqIexmuU6v07ix18w65i0TO/em779l7THykIqh3gktP188ojRwhZDv4AAA",
+    "sources": {
+      "avif": [
+        "/images/owner/owner-radio-dzar-interview-480.avif 480w",
+        "/images/owner/owner-radio-dzar-interview-960.avif 960w",
+        "/images/owner/owner-radio-dzar-interview-1448.avif 1448w"
+      ],
+      "webp": [
+        "/images/owner/owner-radio-dzar-interview-480.webp 480w",
+        "/images/owner/owner-radio-dzar-interview-960.webp 960w",
+        "/images/owner/owner-radio-dzar-interview-1448.webp 1448w"
+      ]
+    },
+    "src": "/images/owner/owner-radio-dzar-interview-1448.webp"
+  },
+  {
+    "id": "team/team-candid",
+    "folder": "team",
+    "width": 1644,
+    "height": 2048,
+    "blurDataURL": "data:image/webp;base64,UklGRnQAAABXRUJQVlA4IGgAAACQAgCdASoNABAAA4BaJbAC7GuADzzQcP8vItPOmAD+7NZFiE+79oCUGXzI4cO63qJcBuLq8ayYIhfX4QX3MYkyuangrjEKhcvxLbuYHo0jySHcUq2oCqTt/3Tv/tZpZH+6cDKiU0ugAA==",
+    "sources": {
+      "avif": [
+        "/images/team/team-candid-480.avif 480w",
+        "/images/team/team-candid-960.avif 960w",
+        "/images/team/team-candid-1600.avif 1600w",
+        "/images/team/team-candid-1644.avif 1644w"
+      ],
+      "webp": [
+        "/images/team/team-candid-480.webp 480w",
+        "/images/team/team-candid-960.webp 960w",
+        "/images/team/team-candid-1600.webp 1600w",
+        "/images/team/team-candid-1644.webp 1644w"
+      ]
+    },
+    "src": "/images/team/team-candid-1644.webp"
+  },
+  {
+    "id": "team/team-formal",
+    "folder": "team",
+    "width": 1445,
+    "height": 1800,
+    "blurDataURL": "data:image/webp;base64,UklGRngAAABXRUJQVlA4IGwAAADwAQCdASoNABAAA4BaJbACdAYvDPOhYAAA/uZcev8u5Hfx9i+5tn+8RcBY3tT9LYM0DXTcvoMNkZfW2lPKuIK9vWiSBgql6mPvpDryrai3DTjNLHva7kKPXfrtrrfLbXl7N5ymEHotfTSBgAA=",
+    "sources": {
+      "avif": [
+        "/images/team/team-formal-480.avif 480w",
+        "/images/team/team-formal-960.avif 960w",
+        "/images/team/team-formal-1445.avif 1445w"
+      ],
+      "webp": [
+        "/images/team/team-formal-480.webp 480w",
+        "/images/team/team-formal-960.webp 960w",
+        "/images/team/team-formal-1445.webp 1445w"
+      ]
+    },
+    "src": "/images/team/team-formal-1445.webp"
+  },
+  {
+    "id": "team/team-portrait",
+    "folder": "team",
+    "width": 747,
+    "height": 960,
+    "blurDataURL": "data:image/webp;base64,UklGRnQAAABXRUJQVlA4IGgAAACQAgCdASoMABAAA4BaJbACdGuADzwQbqQHduU4AAD+y9HSDrgIZVLRWjUbOype7aqSugb8g4p8LSL6Fk/ZZG+KmnwALbav/NlD22pA6XmPelMom/XsP7fe/2CXf0B03KbML13n4mAAAA==",
+    "sources": {
+      "avif": [
+        "/images/team/team-portrait-480.avif 480w",
+        "/images/team/team-portrait-747.avif 747w"
+      ],
+      "webp": [
+        "/images/team/team-portrait-480.webp 480w",
+        "/images/team/team-portrait-747.webp 747w"
+      ]
+    },
+    "src": "/images/team/team-portrait-747.webp"
+  },
+  {
+    "id": "store/store-counter-team",
+    "folder": "store",
+    "width": 1536,
+    "height": 2048,
+    "blurDataURL": "data:image/webp;base64,UklGRnAAAABXRUJQVlA4IGQAAAAQAgCdASoMABAAA4BaJZgCdAEDc1wky5jAAP3ZhaJeLgquCtEhSYAq2zMAGQ2v4pycxT3XjhFohmYG2v3HOFaat0AtZjbeORSZIy+EuIqOX2fB97uICKoHgnOScKidxZUnDAAA",
+    "sources": {
+      "avif": [
+        "/images/store/store-counter-team-480.avif 480w",
+        "/images/store/store-counter-team-960.avif 960w",
+        "/images/store/store-counter-team-1536.avif 1536w"
+      ],
+      "webp": [
+        "/images/store/store-counter-team-480.webp 480w",
+        "/images/store/store-counter-team-960.webp 960w",
+        "/images/store/store-counter-team-1536.webp 1536w"
+      ]
+    },
+    "src": "/images/store/store-counter-team-1536.webp"
+  },
+  {
+    "id": "store/store-front-antipolo",
+    "folder": "store",
+    "width": 1536,
+    "height": 2048,
+    "blurDataURL": "data:image/webp;base64,UklGRnQAAABXRUJQVlA4IGgAAADwAQCdASoMABAAA4BaJQBOgBusTqgSHGoA/u5XXSmmRr76RgDLlUsO4eFVcig1fqr4fduKKgs6cC/mcsIL/7S23eFT/zRF3Dt3BR5aolG1jZySKfGU1WarkZDih6a4wMPi/ZDWAQgAAA==",
+    "sources": {
+      "avif": [
+        "/images/store/store-front-antipolo-480.avif 480w",
+        "/images/store/store-front-antipolo-960.avif 960w",
+        "/images/store/store-front-antipolo-1536.avif 1536w"
+      ],
+      "webp": [
+        "/images/store/store-front-antipolo-480.webp 480w",
+        "/images/store/store-front-antipolo-960.webp 960w",
+        "/images/store/store-front-antipolo-1536.webp 1536w"
+      ]
+    },
+    "src": "/images/store/store-front-antipolo-1536.webp"
+  }
+];
 
 export function imagesIn(folder: string): readonly BrandImage[] {
   return images.filter((i) => i.folder === folder);

@@ -80,3 +80,65 @@ The owner asked for the project to live in `C:\CLIENT FILES\LUXXE4LESS`. This bu
 - **Email:** provider interface with Resend and a mock that stores mail for `/dev/mailbox`. The mailbox exists only in mock mode, and on a public URL needs `?key=MAILBOX_KEY` (it shows sign-in links). A public deployment refuses to start with mock email unless `ALLOW_MOCK_EMAIL_IN_PRODUCTION=true` and a mailbox key are set. A banner marks test mode on every page.
 - **Server env** is validated with zod at first use. On Vercel, `BETTER_AUTH_URL` defaults to the production domain (production) or the branch URL (previews).
 - **Deferred:** Cloudflare Turnstile on sign-up/sign-in (needs keys; Better Auth's captcha plugin is ready to switch on), new-*location* alerts (needs an IP-geolocation service), full legal texts (drafts at `/terms` and `/privacy` are marked pending lawyer review).
+
+## Phase 2.5 — the people page (30 Sep 2026)
+
+**A separate `/about` page, not the home page.** The home page is Phase 3 and needs the price
+engine. The owner's photos were ready now, so they got their own page rather than waiting.
+
+**A photo with a bank account number was withheld.** One guest photo had an EastWest account
+number and name printed across it. The brief forbids bank account numbers anywhere in the UI, and
+a published account number invites payment fraud against the shop. It was moved to
+`brand-assets/_withheld/`, which the pipeline never reads. `PHOTO/modes of payment/eastwest.jpg`
+was never imported for the same reason. Payment details belong behind sign-in at checkout.
+
+**No names, no quotes, no invented history.** The photos show the founder at an awards night and
+on DZAR Sonshine Radio, and the team in a studio session. We know what the rooms were; we do not
+know anyone's name. `src/content/people.ts` leaves `FOUNDER.name` and the pull quote blank and the
+page simply omits them until the owner fills them in — a placeholder name would be a fabricated
+fact about a real person.
+
+**Recognition is described, never claimed.** The awards photo says "on the carpet, representing
+the shop", not that the shop won anything. We only know she attended.
+
+**The Makati branch is hidden until confirmed.** It is printed on the shop's paper bags, so it is
+real, but a stale address sends customers to a closed door. `brand.branches` carries it with
+`confirm: true`, and both the page and the footer filter those out.
+
+**Motion is built from three primitives, not per-section one-offs.** `Reveal` (rise out of blur),
+`RisingWords` (words lift into place) and `GoldRule` (a hairline drawing itself across), plus
+`ParallaxFrame` for photos. Every one returns plain markup under `prefers-reduced-motion`, and
+`RisingWords` keeps the whole sentence in a visually-hidden span so screen readers and copy-paste
+get one string, not loose words.
+
+**Photos are framed, not cropped, and focal points are explicit.** `BrandImage` takes a `focus`
+prop because the storefront photo is a portrait selfie whose sign sits in the top tenth — a
+centred crop threw the shop name away. It also throws at build time if a page names a photo that
+is not in `brand-assets/`, so a missing file fails the build instead of leaving a hole on the
+live site.
+
+**The guest wall duplicates its rows and hides the copy from assistive tech.** A seamless marquee
+needs two copies of the strip; `aria-hidden` on the whole thing stops screen readers reading
+twenty-four decorative photos twice. Under reduced motion it becomes a still, swipeable strip.
+
+
+## Phase 2.5 follow-up — names, consent and brand lines (30 Sep 2026)
+
+**The founder is named; the team is not.** The owner gave the founder's name (Lovely Joy Serrano)
+and confirmed all nine staff agreed to appear, but chose group photos without individual names.
+Fewer names on a public page means fewer people a scammer can impersonate in a DM.
+
+**The guest wall is off, and its photos are out of the build.** Hiding the section was not enough:
+the processed files would still be served from `public/images/visits/` to anyone who guessed the
+URL, and the repository is public. The originals moved to `brand-assets/_awaiting-consent/`
+(the pipeline only reads its listed folders), and the unpushed commit that added them was amended
+so they never reach GitHub.
+
+**Invented history removed.** "She started with one tray", "outgrew its first counter" and "the
+600,000th follower" were written as colour but read as facts about a real business. The founder
+copy now states only what is known (founded 2019, Antipolo, a second branch in Ongpin, on air at
+DZAR) and leans on the brand lines in `src/content/lines.ts`.
+
+**Brand lines as a scroll-lit band** (`BrandLines`): each line catches the light in turn as the
+band passes, driven by scroll position rather than a timer, so it never moves faster than the
+reader. Under reduced motion every line is simply lit.
