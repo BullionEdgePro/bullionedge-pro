@@ -121,7 +121,7 @@ We match the reference site's features, not its code, copy, images or layout. Th
 
 ## 5. Weaknesses we will beat
 
-| Area | What we observed | Luxx Vault answer |
+| Area | What we observed | Luxx4less answer |
 |---|---|---|
 | **"Verified" isn't real** | Hero and marketplace claim "verified buyers" and "ID-checked counterparties", but sign-up collects no ID, selfie or OTP, and the disclaimer says the platform does not verify anyone. | Published tiers (email → phone OTP → ID + liveness + face match → verified seller), a tier badge beside every name, and ID checks by a KYC vendor. |
 | **No transaction protection** | Disclaimer: no payment processing, no escrow, disputes left to the users. | Payment hold through a licensed provider's marketplace features, release on buyer confirmation, a dispute flow with evidence, and an audit log. |

@@ -1,6 +1,6 @@
-# Parity checklist — reference → Luxx Vault
+# Parity checklist — reference → Luxx4less
 
-Every row must be checked off before launch. Source: the 2026-09-30 crawl (see AUDIT.md). Routes refer to Luxx Vault.
+Every row must be checked off before launch. Source: the 2026-09-30 crawl (see AUDIT.md). Routes refer to Luxx4less.
 
 ## Global
 
@@ -90,4 +90,4 @@ Every row must be checked off before launch. Source: the 2026-09-30 crawl (see A
 
 ## Beyond parity
 
-Luxx Vault originals (Owner Studio, seller, buyer and reseller portals, trust tools) are planned in FEATURES.md. Items marked ★ there aren't on the reference site.
+Luxx4less originals (Owner Studio, seller, buyer and reseller portals, trust tools) are planned in FEATURES.md. Items marked ★ there aren't on the reference site.

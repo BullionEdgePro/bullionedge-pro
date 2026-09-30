@@ -15,6 +15,20 @@
 - [ ] Owner checks the redrawn logo against the original (and sends the designer's original file if available, for the sharpest match)
 - [ ] Owner approves look and feel (Checkpoint 1)
 
+## Phase 2 — checkpoint
+- [x] PostgreSQL + Prisma schema and migration; Better Auth with email verification, Argon2id, breached-password check, TOTP 2FA + backup codes, passkeys, roles, rate limits, device list, security alerts, consent records, audit log
+- [x] Branded emails (confirm, reset, security alert) with Resend and mock providers; test mailbox
+- [x] Pages: sign-up, sign-in, two-step code, forgot/reset password, verify email, account, security; draft Terms and Privacy
+- [x] Unit tests (46) and Playwright E2E: sign-up → confirm email → sign in → 2FA on → sign in with code
+- [ ] Owner deploys to Vercel (DEPLOY.md) and tries the flow
+- [ ] Owner approves (Checkpoint 2)
+
+## Owner to provide
+- [ ] Staff and owner photos (attach in chat; staff must agree to appear on the website)
+- [ ] Resend account + domain for real emails (DEPLOY.md step 7)
+- [ ] Cloudflare Turnstile keys (free) for bot protection on sign-up/sign-in
+- [ ] Lawyer review of the Terms and Privacy Notice drafts; Data Protection Officer name
+
 ## Deferred from Phase 1 (planned later)
 - [ ] Pre-rendered WebP frame sequence for "lite" devices, instead of one still (Phase 9 motion polish)
 - [ ] Odometer-style wrap for the digit reels (e.g. 0→9 steps back one instead of spinning through), Phase 9
@@ -28,7 +42,7 @@
 
 ## Owner decisions / confirmations
 - [ ] Project home: keep in `luxx-vault/` here, or create a dedicated repository (recommended)
-- [ ] Platform name "Luxx Vault" `[CONFIRM]`
+- [x] Name: "Luxx4less" everywhere (owner, 30 Sep 2026)
 - [ ] Business model: free to join? fees on marketplace trades?
 - [ ] Review FEATURES.md: approve, cut or reprioritise; confirm Luxx-Tested fee, consignment terms, buyback rate, reseller commission
 - [x] Antipolo and Ongpin branch addresses, Facebook follower counts (from the cover)

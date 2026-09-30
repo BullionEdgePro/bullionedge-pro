@@ -2,7 +2,7 @@
   "name": "luxx-vault",
   "version": "0.0.0",
   "private": true,
-  "description": "Luxx Vault by Luxx4less — precious-metals storefront and verified marketplace",
+  "description": "Luxx4less Golds and Diamonds \u2014 official store and verified precious-metals marketplace",
   "type": "module",
   "scripts": {
     "dev": "next dev",
@@ -16,22 +16,30 @@
     "audit:reference": "tsx scripts/audit-reference.ts",
     "screenshots": "tsx scripts/screenshot-pages.ts",
     "brand:peso": "tsx scripts/build-peso-font.ts",
-    "preview:build": "PREVIEW_EXPORT=1 next build --webpack && tsx scripts/build-preview.ts",
-    "brand:logo": "tsx scripts/build-logo.ts"
+    "brand:logo": "tsx scripts/build-logo.ts",
+    "test:e2e": "playwright test",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma migrate deploy && next build",
+    "db:migrate": "prisma migrate dev"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/fontkit": "^2.0.9",
     "@types/node": "^22.0.0",
     "@types/opentype.js": "^1.3.10",
+    "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
+    "dotenv": "^18.0.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.7",
     "fontkit": "^2.0.4",
     "opentype.js": "^2.0.0",
     "playwright": "^1.56.0",
+    "prisma": "^7.10.0",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.19.0",
@@ -39,9 +47,15 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.7.6",
+    "@node-rs/argon2": "^2.2.1",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "@radix-ui/react-slot": "^1.3.3",
+    "@react-email/components": "^1.0.12",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
+    "better-auth": "^1.7.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "gsap": "^3.15.0",
@@ -50,10 +64,18 @@
     "motion": "^13.4.6",
     "next": "^16.3.7",
     "next-themes": "^0.4.6",
+    "pg": "^8.23.0",
+    "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "resend": "^6.31.0",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.7.0",
     "three": "^0.186.1",
-    "three-stdlib": "^2.36.1"
+    "three-stdlib": "^2.36.1",
+    "zod": "^4.6.5"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

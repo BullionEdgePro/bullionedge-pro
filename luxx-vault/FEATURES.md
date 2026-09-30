@@ -1,8 +1,8 @@
-# Luxx Vault — portals and original features
+# Luxx4less — portals and original features
 
-Luxx Vault covers everything the reference site does (see PARITY.md) and goes further in the areas where Luxx4less has an advantage: a real shop in Antipolo, testing equipment, live selling, resellers, and an audience built since 2019.
+Luxx4less covers everything the reference site does (see PARITY.md) and goes further in the areas where Luxx4less has an advantage: a real shop in Antipolo, testing equipment, live selling, resellers, and an audience built since 2019.
 
-The site has **four portals**, one per type of user. Each feature is tagged with the phase it's built in (see PROMPT.md §16) and **★** for a Luxx Vault original that the reference doesn't have. Items marked `[CONFIRM]` need a legal or business check before launch.
+The site has **four portals**, one per type of user. Each feature is tagged with the phase it's built in (see PROMPT.md §16) and **★** for a Luxx4less original that the reference doesn't have. Items marked `[CONFIRM]` need a legal or business check before launch.
 
 ---
 

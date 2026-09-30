@@ -38,8 +38,8 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: `${brand.platformFullName.value} — ${brand.tagline.en}`,
-    template: `%s · ${brand.platformName.value}`,
+    default: `${brand.siteName} Golds and Diamonds — ${brand.tagline.en}`,
+    template: `%s · ${brand.siteName}`,
   },
   description: "Live gold prices in the Philippines, the official Luxx4less store, and a marketplace where every buyer and seller is ID-verified.",
 };

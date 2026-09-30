@@ -24,7 +24,7 @@ import { createHash } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const USER_AGENT = "LuxxVaultAuditBot/0.1 (+one-time design audit; 1 req/s)";
+const USER_AGENT = "Luxx4lessAuditBot/0.1 (+one-time design audit; 1 req/s)";
 const VIEWPORTS = [
   { name: "1440", width: 1440, height: 900, isMobile: false },
   { name: "390", width: 390, height: 844, isMobile: true },

@@ -234,6 +234,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* The living emblem simply rests: delays alone would hide parts of it. */
+  .lx-animate * {
+    animation: none !important;
+  }
+
   *,
   *::before,
   *::after {

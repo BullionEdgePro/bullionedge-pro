@@ -12,8 +12,8 @@ export const brand = {
   publicName: "Luxx4less Golds and Diamonds",
   /** As written on the logo. */
   logoTagline: "Golds and Diamonds Jewelries",
-  platformName: { value: "Luxx Vault", confirm: true },
-  platformFullName: { value: "Luxx Vault by Luxx4less", confirm: true },
+  /** One name everywhere (owner's decision, 30 Sep 2026): no separate platform brand. */
+  siteName: "Luxx4less",
   tagline: {
     en: "Legit gold since 2019.",
     fil: "Tunay na ginto. Verified na tao.",
