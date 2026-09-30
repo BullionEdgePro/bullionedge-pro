@@ -478,7 +478,9 @@ async function main(): Promise<void> {
       }
       seenHashes.set(r.contentHash, next.path);
 
-      const { contentHash: _h, discovered, ...route } = r;
+      const { discovered, ...rest } = r;
+      const route: Omit<typeof rest, "contentHash"> & { contentHash?: string } = { ...rest };
+      delete route.contentHash;
       results.push({ ...route, source: next.source });
       await writeFile(path.join(outDir, "data", `${r.slug}.json`), JSON.stringify(route, null, 2));
       // Links found in the page jump ahead of the remaining seed guesses.

@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+/* Dark mode follows the .dark class set by next-themes. */
+@custom-variant dark (&:where(.dark, .dark *, .surface-velvet, .surface-velvet *));
+
+/* ------------------------------------------------------------------ tokens
+   Mirrors src/config/tokens.ts (tested for WCAG AA in tokens.test.ts). */
+
+:root {
+  --bg: #eef0f3;
+  --surface: #ffffff;
+  --surface-sunk: #e4e7ec;
+  --line: #d5d8de;
+  --fg: #1c1a22;
+  --muted: #55505e;
+  --gold: #7a5b22; /* small gold text on light */
+  --gold-large: #a8823f; /* large gold text / icons on light */
+  --ring: #2f6f8a;
+  --ring-halo: #bfd8e4;
+  --success: #23704b;
+  --warning: #855607;
+  --danger: #a3322b;
+  --success-tint: #e2f1e9;
+  --warning-tint: #f7ecd7;
+  --danger-tint: #f6e1df;
+  --ice-tint: #e3eff5;
+  --gold-tint: #f3ead8;
+  --shadow: 28 20 40;
+  color-scheme: light;
+}
+
+/* Dark theme, and any section that always sits on velvet (hero, market pages). */
+.dark,
+.surface-velvet {
+  --bg: #17101f;
+  --surface: #221830;
+  --surface-sunk: #120c19;
+  --line: #3a2d4a;
+  --fg: #f3eef6;
+  --muted: #b8aec4;
+  --gold: #d6b26e;
+  --gold-large: #d6b26e;
+  --ring: #bfd8e4;
+  --ring-halo: #2f6f8a;
+  --success: #6cc79a;
+  --warning: #e9b55a;
+  --danger: #ee8078;
+  --success-tint: #1d2e27;
+  --warning-tint: #33261a;
+  --danger-tint: #36191e;
+  --ice-tint: #1e2735;
+  --gold-tint: #2d2230;
+  --shadow: 0 0 0;
+  color-scheme: dark;
+}
+
+.surface-velvet {
+  background-color: var(--bg);
+  color: var(--fg);
+}
+
+@theme inline {
+  /* Brand palette (fixed across themes) */
+  --color-velvet: #17101f;
+  --color-velvet-raised: #221830;
+  --color-champagne: #d6b26e;
+  --color-bullion: #a8823f;
+  --color-bullion-ink: #7a5b22;
+  --color-pearl: #eef0f3;
+  --color-ice: #bfd8e4;
+  --color-ice-deep: #2f6f8a;
+  --color-ink: #1c1a22;
+
+  /* Semantic, theme-aware */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-sunk: var(--surface-sunk);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-gold: var(--gold);
+  --color-gold-large: var(--gold-large);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-success-tint: var(--success-tint);
+  --color-warning-tint: var(--warning-tint);
+  --color-danger-tint: var(--danger-tint);
+  --color-ice-tint: var(--ice-tint);
+  --color-gold-tint: var(--gold-tint);
+
+  /* Peso face first: it only holds ₱, so every other glyph comes from Cinzel. */
+  --font-display: var(--font-peso), var(--font-cinzel), "Cinzel", Georgia, serif;
+  --font-sans: var(--font-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
+
+  /* Type scale — 1.25 ratio from a 16px base */
+  --text-2xs: 0.64rem;
+  --text-xs: 0.8rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.563rem;
+  --text-2xl: 1.953rem;
+  --text-3xl: 2.441rem;
+  --text-4xl: 3.052rem;
+  --text-5xl: 3.815rem;
+  --text-6xl: 4.768rem;
+  --text-7xl: 5.96rem;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --ease-vault: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ------------------------------------------------------------------ base */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    /* 16px on phones, easing to 18px on wide screens */
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Cinzel is a capitals face: lowercase renders as small capitals, so
+     headings keep sentence-case source text but read as refined caps. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    text-wrap: balance;
+  }
+
+  /* Visible focus everywhere: solid ring plus a soft ice halo. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--ring-halo) 45%, transparent);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, #d6b26e 45%, transparent);
+  }
+}
+
+/* ------------------------------------------------------------------ utilities */
+
+/* All prices and tables use tabular figures. */
+@utility tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+@utility measure {
+  max-width: 68ch;
+}
+
+/* The one real gold gradient — logo, live-price hero and primary CTA only. */
+@utility bg-gold-metal {
+  background-image: linear-gradient(135deg, #f0dba6 0%, #d6b26e 32%, #a8823f 68%, #d6b26e 100%);
+}
+
+/* Seamless: the gradient ends on the colour it starts with, runs straight
+   across (90deg) and tiles every 200%, so the animation can travel exactly one
+   tile and loop with no visible edge. */
+@utility text-gold-metal {
+  background-image: linear-gradient(90deg, #a8823f 0%, #d6b26e 16%, #f7e7bb 28%, #d6b26e 40%, #a8823f 56%, #c9a45e 76%, #a8823f 100%);
+  background-size: 200% 100%;
+  background-repeat: repeat-x;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Molten shimmer moving through the hero numerals: one full tile per loop. */
+@keyframes molten {
+  from { background-position: 200% 50%; }
+  to { background-position: 0% 50%; }
+}
+
+@utility animate-molten {
+  animation: molten 7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

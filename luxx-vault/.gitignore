@@ -12,3 +12,7 @@ Thumbs.db
 brand-assets/**/*
 !brand-assets/**/
 !brand-assets/**/.gitkeep
+
+# Build output
+*.tsbuildinfo
+next-env.d.ts
