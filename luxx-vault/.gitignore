@@ -16,3 +16,6 @@ brand-assets/**/*
 # Build output
 *.tsbuildinfo
 next-env.d.ts
+out/
+preview/*
+!preview/index.html

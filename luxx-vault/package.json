@@ -2,7 +2,7 @@
   "name": "luxx-vault",
   "version": "0.0.0",
   "private": true,
-  "description": "Luxx Vault by Luxx4less \u2014 precious-metals storefront and verified marketplace",
+  "description": "Luxx Vault by Luxx4less — precious-metals storefront and verified marketplace",
   "type": "module",
   "scripts": {
     "dev": "next dev",
@@ -16,7 +16,8 @@
     "images": "tsx scripts/process-images.ts",
     "audit:reference": "tsx scripts/audit-reference.ts",
     "screenshots": "tsx scripts/screenshot-pages.ts",
-    "brand:peso": "tsx scripts/build-peso-font.ts"
+    "brand:peso": "tsx scripts/build-peso-font.ts",
+    "preview:build": "PREVIEW_EXPORT=1 next build --webpack && tsx scripts/build-preview.ts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

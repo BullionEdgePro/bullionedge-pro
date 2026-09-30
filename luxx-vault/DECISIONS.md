@@ -51,3 +51,8 @@ The owner asked for the project to live in `C:\CLIENT FILES\LUXXE4LESS`. This bu
 
 ## 2026-09-30 — Brand photo pipeline
 - `npm run images`: sharp auto-orients from EXIF and then strips all metadata (tested: a sideways 3000×2000 photo with GPS came out upright with no EXIF), exports responsive AVIF + WebP without upscaling, makes blur placeholders, writes `src/content/images.ts`, and lists empty folders in TODO.md.
+
+## 2026-09-30 — Shareable review preview
+- The owner can't run the dev server, so reviews go out as a private claude.ai preview link (`npm run preview:build`, then publish `preview/index.html` with `preview/design-system.html` and `preview/hero.html`).
+- The build is a static export (`PREVIEW_EXPORT=1`, webpack) turned into single self-contained HTML files by `scripts/build-preview.ts`: each page's own chunks and the on-demand 3D chunks as separate inline scripts (runtime last), CSS inlined with fonts and images as data URIs, and internal links rewritten to sibling files. A tiny `document.currentScript` shim covers Next's asset-prefix check, which expects a script `src`.
+- Tested from an unfamiliar deep path at desktop and phone widths: the page hydrates, the theme toggle, karat switch and page link all work, the WebGL bar renders under `?motion=full`, and there are no page errors. The only remaining requests (the original CSS path, a link prefetch) are for files the pages don't need.

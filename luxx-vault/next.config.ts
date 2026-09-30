@@ -11,15 +11,25 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
 ];
 
-const config: NextConfig = {
-  poweredByHeader: false,
-  reactStrictMode: true,
-  images: {
-    formats: ["image/avif", "image/webp"],
-  },
-  async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
-  },
-};
+// PREVIEW_EXPORT=1 builds a static copy for the shareable review preview
+// (scripts/build-preview.ts). Static exports can't set headers or optimise images.
+const previewExport = process.env.PREVIEW_EXPORT === "1";
+
+const config: NextConfig = previewExport
+  ? {
+      output: "export",
+      reactStrictMode: true,
+      images: { unoptimized: true },
+    }
+  : {
+      poweredByHeader: false,
+      reactStrictMode: true,
+      images: {
+        formats: ["image/avif", "image/webp"],
+      },
+      async headers() {
+        return [{ source: "/:path*", headers: securityHeaders }];
+      },
+    };
 
 export default config;
