@@ -1,0 +1,71 @@
+{
+  "path": "/signup",
+  "status": 200,
+  "slug": "signup",
+  "external": [
+    "fonts.googleapis.com",
+    "fonts.gstatic.com"
+  ],
+  "dataRequests": [],
+  "consoleErrors": [],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 606,
+    "loadMs": 608
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/signup",
+    "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Join Metal Market PH"
+      },
+      {
+        "level": 2,
+        "text": "I'm a Buyer"
+      },
+      {
+        "level": 2,
+        "text": "I'm a Seller"
+      }
+    ],
+    "buttons": [
+      "Sign Up for Free"
+    ],
+    "links": [
+      {
+        "text": "(no text)",
+        "href": "https://www.metalmarketph.com/"
+      },
+      {
+        "text": "I'm a BuyerPost buying offers, connect with verified sellers, and access market ",
+        "href": "https://www.metalmarketph.com/signup/buyer"
+      },
+      {
+        "text": "I'm a SellerList your items, browse buyer offers, and reach verified buyers.✓ Li",
+        "href": "https://www.metalmarketph.com/signup/seller"
+      },
+      {
+        "text": "Log in",
+        "href": "https://www.metalmarketph.com/login"
+      }
+    ],
+    "forms": [],
+    "selects": [],
+    "tables": [],
+    "images": {
+      "total": 1,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 0,
+      "iconOnlyButtons": 0,
+      "headingSkips": 0,
+      "hasMainLandmark": false
+    },
+    "textSample": "Join Metal Market PHChoose your account type to get startedThis choice is permanent — an account cannot switch between buyer and seller, and each email can be used for only one account.I'm a BuyerPost buying offers, connect with verified sellers, and access market data.✓ Post unlimited buying offers✓ Direct messaging with sellers✓ Verified buyer badge✓ Price alerts & notificationsSign Up for FreeI'm a SellerList your items, browse buyer offers, and reach verified buyers.✓ List items with photos✓ Browse buyer offers✓ Direct messaging with buyers✓ Market price notificationsSign Up for FreeAlready have an account? Log in"
+  }
+}

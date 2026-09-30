@@ -1,0 +1,133 @@
+{
+  "path": "/about",
+  "status": 200,
+  "slug": "about",
+  "external": [
+    "fonts.googleapis.com",
+    "fonts.gstatic.com"
+  ],
+  "dataRequests": [],
+  "consoleErrors": [],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 813,
+    "loadMs": 815
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/about",
+    "title": "About Metal Market PH — Our Mission & Story",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 2,
+        "text": "About Metal Market PH"
+      },
+      {
+        "level": 3,
+        "text": "Why it matters to you"
+      },
+      {
+        "level": 3,
+        "text": "What we stand for"
+      },
+      {
+        "level": 4,
+        "text": "Transparency"
+      },
+      {
+        "level": 4,
+        "text": "Legitimacy"
+      },
+      {
+        "level": 4,
+        "text": "Accessibility"
+      },
+      {
+        "level": 3,
+        "text": "Meet the Founder"
+      }
+    ],
+    "buttons": [
+      "Log In",
+      "Sign Up",
+      "Toggle menu"
+    ],
+    "links": [
+      {
+        "text": "Metal Market PH",
+        "href": "https://www.metalmarketph.com/"
+      },
+      {
+        "text": "About Metal Market PH",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Calculator",
+        "href": "https://www.metalmarketph.com/#calculator"
+      },
+      {
+        "text": "Marketplace",
+        "href": "https://www.metalmarketph.com/marketplace"
+      },
+      {
+        "text": "How It Works",
+        "href": "https://www.metalmarketph.com/#how"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Log In",
+        "href": "https://www.metalmarketph.com/login"
+      },
+      {
+        "text": "Sign Up",
+        "href": "https://www.metalmarketph.com/signup"
+      },
+      {
+        "text": "Sign Up Now",
+        "href": "https://www.metalmarketph.com/signup"
+      },
+      {
+        "text": "About",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "https://www.metalmarketph.com/privacy"
+      },
+      {
+        "text": "Terms and Conditions",
+        "href": "https://www.metalmarketph.com/terms"
+      }
+    ],
+    "forms": [],
+    "selects": [],
+    "tables": [],
+    "images": {
+      "total": 4,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 0,
+      "iconOnlyButtons": 0,
+      "headingSkips": 0,
+      "hasMainLandmark": true
+    },
+    "textSample": "Metal Market PHAbout Metal Market PHCalculatorMarketplaceHow It WorksMarket DataInstall AppLog InSign UpAbout Metal Market PHWe built what the Philippines was missing.For years, buying and selling physical gold and silver here meant relying on word of mouth, suki relationships, and hoping you weren't getting shortchanged. There was no central place. No price transparency. No platform built specifically for Filipinos who take precious metals seriously.So we built one.Metal Market PH is the Philippines' first dedicated digital marketplace for real, physical gold and silver. Not paper gold. Not crypto. Actual metal, in your hands.And we didn't launch quietly — the country's top precious metal buyers were already here before the doors opened to the public.Why it matters to youThe peso weakens. Prices rise. Banks hand you 1% interest while inflation quietly eats the rest. Meanwhile, gold and silver have protected real wealth for thousands of years — long before banks even existed.Filipinos deserve a modern, trustworthy way to access that same protection.That's exactly what we built Metal Market PH for.What we stand forTransparencyYou see the price, you know the deal.LegitimacyReal sellers, real metal, real transactions.AccessibilityWhether you're buying your first gram or your hundredth troy ounce, you belong here.Meet the FounderMelvin Lim didn't choose the precious metals industry — he was born into it.Growing up in Meycauayan, the jewelry capital of the Philippines, Melvin learned the craft the way it's meant to be learned — from family, through years of watching, working, and getting his hands dirty. Nearly a decade later, that foundation turned into Blacksmith Jewelry, a brand built on the same values his family instilled in him: authenticity, craftsmanship, and respect for the metal.But Melvin saw a bigger problem.The same gold and silver that his family had worked with for generations — Filipinos had no proper, trustworthy place to trade it. No transparency. No platform. No standard.So he built one.Metal Market PH is his answer to that gap — the Philippines' first dedicated digital marketplace for real, physical gold and silver. Built not by a tech startup chasing trends, but by someone who has lived and breathed precious metals his entire life.When Melvin says he knows the value of gold, he means it in every sense of the word.The smartest Filipinos have already started protecting their wealth with metal.The question is — are you next?Sign Up NowAboutMarket DataInstall AppPrivacy PolicyTerms and Conditions© 2026 Metal Market PH. All rights reserved."
+  }
+}

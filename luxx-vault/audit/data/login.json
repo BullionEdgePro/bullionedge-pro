@@ -1,0 +1,80 @@
+{
+  "path": "/login",
+  "status": 200,
+  "slug": "login",
+  "external": [
+    "fonts.googleapis.com",
+    "fonts.gstatic.com"
+  ],
+  "dataRequests": [],
+  "consoleErrors": [],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 660,
+    "loadMs": 661
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/login",
+    "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Welcome Back"
+      }
+    ],
+    "buttons": [
+      "(icon)",
+      "Sign In"
+    ],
+    "links": [
+      {
+        "text": "(no text)",
+        "href": "https://www.metalmarketph.com/"
+      },
+      {
+        "text": "Forgot password?",
+        "href": "https://www.metalmarketph.com/forgot-password"
+      },
+      {
+        "text": "Sign up",
+        "href": "https://www.metalmarketph.com/signup"
+      }
+    ],
+    "forms": [
+      {
+        "fields": [
+          {
+            "tag": "input",
+            "type": "email",
+            "name": null,
+            "label": "you@email.com",
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "password",
+            "name": null,
+            "label": "Enter your password",
+            "required": true
+          }
+        ],
+        "submit": "Sign In"
+      }
+    ],
+    "selects": [],
+    "tables": [],
+    "images": {
+      "total": 1,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 0,
+      "iconOnlyButtons": 1,
+      "headingSkips": 0,
+      "hasMainLandmark": false
+    },
+    "textSample": "Welcome BackSign in to your accountEmailPasswordSign InForgot password?Don't have an account? Sign up"
+  }
+}

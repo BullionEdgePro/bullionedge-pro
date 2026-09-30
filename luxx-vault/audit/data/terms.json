@@ -1,0 +1,189 @@
+{
+  "path": "/terms",
+  "status": 200,
+  "slug": "terms",
+  "external": [
+    "fonts.googleapis.com",
+    "fonts.gstatic.com"
+  ],
+  "dataRequests": [],
+  "consoleErrors": [],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 616,
+    "loadMs": 618
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/terms",
+    "title": "Terms and Conditions — Metal Market PH",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Terms and Conditions"
+      },
+      {
+        "level": 2,
+        "text": "1. About Metal Market PH"
+      },
+      {
+        "level": 2,
+        "text": "2. Role of the Platform"
+      },
+      {
+        "level": 2,
+        "text": "3. User Responsibility"
+      },
+      {
+        "level": 2,
+        "text": "4. Eligibility to Use the Platform"
+      },
+      {
+        "level": 2,
+        "text": "5. Listings and User Content"
+      },
+      {
+        "level": 2,
+        "text": "6. Accuracy of Listings"
+      },
+      {
+        "level": 2,
+        "text": "7. Prohibited Activities"
+      },
+      {
+        "level": 2,
+        "text": "8. Payments and Transactions"
+      },
+      {
+        "level": 2,
+        "text": "9. Product Quality, Safety, and Availability"
+      },
+      {
+        "level": 2,
+        "text": "10. Delivery, Pickup, and Logistics"
+      },
+      {
+        "level": 2,
+        "text": "11. No Warranty"
+      },
+      {
+        "level": 2,
+        "text": "12. Limitation of Liability"
+      },
+      {
+        "level": 2,
+        "text": "13. Disputes Between Users"
+      },
+      {
+        "level": 2,
+        "text": "14. Account Suspension or Termination"
+      },
+      {
+        "level": 2,
+        "text": "15. Third-Party Links and Services"
+      },
+      {
+        "level": 2,
+        "text": "16. Intellectual Property"
+      },
+      {
+        "level": 2,
+        "text": "17. Privacy"
+      },
+      {
+        "level": 2,
+        "text": "18. Reports and Complaints"
+      },
+      {
+        "level": 2,
+        "text": "19. Changes to These Terms"
+      },
+      {
+        "level": 2,
+        "text": "20. Governing Law"
+      },
+      {
+        "level": 2,
+        "text": "21. Contact Information"
+      }
+    ],
+    "buttons": [
+      "Log In",
+      "Sign Up",
+      "Toggle menu"
+    ],
+    "links": [
+      {
+        "text": "Metal Market PH",
+        "href": "https://www.metalmarketph.com/"
+      },
+      {
+        "text": "About Metal Market PH",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Calculator",
+        "href": "https://www.metalmarketph.com/#calculator"
+      },
+      {
+        "text": "Marketplace",
+        "href": "https://www.metalmarketph.com/marketplace"
+      },
+      {
+        "text": "How It Works",
+        "href": "https://www.metalmarketph.com/#how"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Log In",
+        "href": "https://www.metalmarketph.com/login"
+      },
+      {
+        "text": "Sign Up",
+        "href": "https://www.metalmarketph.com/signup"
+      },
+      {
+        "text": "About",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "https://www.metalmarketph.com/privacy"
+      },
+      {
+        "text": "Terms and Conditions",
+        "href": "https://www.metalmarketph.com/terms"
+      }
+    ],
+    "forms": [],
+    "selects": [],
+    "tables": [],
+    "images": {
+      "total": 3,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 0,
+      "iconOnlyButtons": 0,
+      "headingSkips": 0,
+      "hasMainLandmark": true
+    },
+    "textSample": "Metal Market PHAbout Metal Market PHCalculatorMarketplaceHow It WorksMarket DataInstall AppLog InSign UpTerms and ConditionsEffective Date: May 2026 · www.metalmarketph.comWelcome to Metal Market PH. These Terms and Conditions govern your access to and use of our website, platform, services, pages, communication tools, listings, and any related features collectively referred to as the \"Platform.\"By accessing or using Metal Market PH, you agree to be bound by these Terms and Conditions. If you do not agree with these Terms, please do not use the Platform.1. About Metal Market PHMetal Market PH is a third-party communication platform created to help buyers and sellers connect with each other regarding metal-related products, materials, supplies, and related listings.Metal Market PH is not a seller, buyer, broker, agent, dealer, distributor, payment processor, escrow provider, logistics provider, or guarantor of any transaction. All negotiations, inspections, payments, deliveries, warranties, refunds, returns, and other transaction-related arrangements are made directly and personally between the buyer and the seller.2. Role of the PlatformMetal Market PH only provides a space where users may post, view, inquire about, or respond to listings. Metal Market PH does not: own, inspect, verify, or guarantee any listed item; participate in pricing, negotiation, or payment; handle deposits, payments, collections, or refunds; provide escrow, payment protection, or buyer protection; arrange delivery, shipping, pickup, transport, or logistics; guarantee the identity, reliability, legality, or credibility of any buyer or seller; guarantee that any product is available, authentic, safe, legal, compliant, or fit for purpose; or become a party to any agreement entered into between users.Any agreement or transaction made through communication initiated on Metal Market PH is strictly between the buyer and the seller.3. User ResponsibilityBy using Metal Market PH, you agree that you are solely responsible for your own actions, communications, decisions, and transactions. Users are responsible for: verifying the identity and credibility of the other party; inspecting products or materials before payment; confirming product specifications, quality, grade, weight, quantity, pricing, and condition; ensuring compliance with applicable laws, permits, licenses, tax obligations, and industry regulations; arranging safe payment terms; arranging delivery, pickup, transport, and logistics; keeping records of agreements, invoices, receipts, and communications; and resolving disputes directly with the other party.Metal Market PH strongly encourages users to conduct proper due diligence before entering into any transaction.4. Eligibility to Use the PlatformBy using Metal Market PH, you represent that you are legally capable of entering into agreements and transactions under applicable laws. If you are using the Platform on behalf of a company, business, organization, or other legal entity, you represent that you have the authority to act on behalf of that entity.5. Listings and User ContentSellers or users who post listings are solely responsible for the accuracy, legality, completeness, and truthfulness of the information they provide. Listings may include product descriptions, photos or videos, prices, quantities, product condition, product grade, specifications or measurements, location, contact details, availability, and delivery or pickup terms.By posting content on Metal Market PH, you confirm that you have the right to post the content; the content is accurate to the best of your knowledge; the content does not violate any law, regulation, intellectual property right, or third-party right; and the item or service being listed is legal to sell, purchase, transport, and possess.Metal Market PH may remove, edit, reject, suspend, or restrict any listing or content at its discretion, especially if it appears misleading, fraudulent, illegal, abusive, harmful,"
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "path": "/install",
+  "status": 200,
+  "slug": "install",
+  "external": [
+    "fonts.googleapis.com",
+    "fonts.gstatic.com"
+  ],
+  "dataRequests": [],
+  "consoleErrors": [],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 798,
+    "loadMs": 798
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/install",
+    "title": "Install Metal Market PH App",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Install Metal Market PH"
+      },
+      {
+        "level": 2,
+        "text": "Desktop (Chrome / Edge / Brave)"
+      },
+      {
+        "level": 3,
+        "text": "On your phone"
+      },
+      {
+        "level": 3,
+        "text": "Why install?"
+      }
+    ],
+    "buttons": [
+      "Log In",
+      "Sign Up",
+      "Toggle menu"
+    ],
+    "links": [
+      {
+        "text": "Metal Market PH",
+        "href": "https://www.metalmarketph.com/"
+      },
+      {
+        "text": "About Metal Market PH",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Calculator",
+        "href": "https://www.metalmarketph.com/#calculator"
+      },
+      {
+        "text": "Marketplace",
+        "href": "https://www.metalmarketph.com/marketplace"
+      },
+      {
+        "text": "How It Works",
+        "href": "https://www.metalmarketph.com/#how"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Log In",
+        "href": "https://www.metalmarketph.com/login"
+      },
+      {
+        "text": "Sign Up",
+        "href": "https://www.metalmarketph.com/signup"
+      },
+      {
+        "text": "About",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "https://www.metalmarketph.com/privacy"
+      },
+      {
+        "text": "Terms and Conditions",
+        "href": "https://www.metalmarketph.com/terms"
+      }
+    ],
+    "forms": [],
+    "selects": [],
+    "tables": [],
+    "images": {
+      "total": 4,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 0,
+      "iconOnlyButtons": 0,
+      "headingSkips": 0,
+      "hasMainLandmark": true
+    },
+    "textSample": "Metal Market PHAbout Metal Market PHCalculatorMarketplaceHow It WorksMarket DataInstall AppLog InSign UpInstall Metal Market PHAdd the app to your home screen for one-tap access, full-screen experience, and faster loading.Desktop (Chrome / Edge / Brave)Click the install icon in the address bar, or open the browser menu and choose Install Metal Market PH.On your phoneOpen metalmarketph.com on your phone's browser and visit this page again to see install instructions for iPhone or Android.Why install?Launches full-screen with no browser barsOne-tap access from your home screenFaster startup and smoother navigationAlways up-to-date — no app store updates neededAboutMarket DataInstall AppPrivacy PolicyTerms and Conditions© 2026 Metal Market PH. All rights reserved."
+  }
+}

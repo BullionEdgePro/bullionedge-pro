@@ -1,0 +1,142 @@
+{
+  "path": "/marketplace",
+  "status": 200,
+  "slug": "marketplace",
+  "external": [
+    "api.gold-api.com",
+    "fonts.googleapis.com",
+    "fonts.gstatic.com",
+    "gmvvsqryuqjawlwnpcqc.supabase.co",
+    "open.er-api.com"
+  ],
+  "dataRequests": [
+    "GET https://api.gold-api.com/price/XAG",
+    "GET https://api.gold-api.com/price/XAU",
+    "GET https://api.gold-api.com/price/XPT",
+    "GET https://gmvvsqryuqjawlwnpcqc.supabase.co/rest/v1/buyer_offers",
+    "GET https://gmvvsqryuqjawlwnpcqc.supabase.co/rest/v1/seller_listings",
+    "GET https://open.er-api.com/v6/latest/USD"
+  ],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 685,
+    "loadMs": 686
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/marketplace",
+    "title": "Marketplace — Metal Market PH",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "P2P Marketplace"
+      },
+      {
+        "level": 3,
+        "text": "No listings for Gold yet"
+      }
+    ],
+    "buttons": [
+      "Log In",
+      "Sign Up",
+      "Toggle menu",
+      "Seller Listings",
+      "Buyer Requests",
+      "Post a Request",
+      "Gold",
+      "Silver",
+      "Platinum",
+      "Palladium",
+      "Filters",
+      "Diamonds",
+      "Gemstones",
+      "Coins & Bullion",
+      "₱ PHP",
+      "Recently posted",
+      "All purities",
+      "All forms"
+    ],
+    "links": [
+      {
+        "text": "Metal Market PH",
+        "href": "https://www.metalmarketph.com/"
+      },
+      {
+        "text": "About Metal Market PH",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Calculator",
+        "href": "https://www.metalmarketph.com/#calculator"
+      },
+      {
+        "text": "Marketplace",
+        "href": "https://www.metalmarketph.com/marketplace"
+      },
+      {
+        "text": "How It Works",
+        "href": "https://www.metalmarketph.com/#how"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Log In",
+        "href": "https://www.metalmarketph.com/login"
+      },
+      {
+        "text": "Sign Up",
+        "href": "https://www.metalmarketph.com/signup"
+      },
+      {
+        "text": "About",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "https://www.metalmarketph.com/privacy"
+      },
+      {
+        "text": "Terms and Conditions",
+        "href": "https://www.metalmarketph.com/terms"
+      }
+    ],
+    "forms": [],
+    "selects": [],
+    "tables": [],
+    "images": {
+      "total": 3,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 0,
+      "iconOnlyButtons": 0,
+      "headingSkips": 1,
+      "hasMainLandmark": true
+    },
+    "textSample": "Metal Market PHAbout Metal Market PHCalculatorMarketplaceHow It WorksMarket DataInstall AppLog InSign UpLive Spot · per gramGold₱5,394Silver₱64Platinum₱1,952Updated 19:21:52 PHTP2P MarketplaceTrade gold, silver, platinum, diamonds, gemstones and bullion with verified Filipinos. Trade safely with verified peers.Seller ListingsBuyer RequestsPost a RequestGoldSilverPlatinumPalladiumFiltersGoldSilverPlatinumDiamondsGemstonesCoins & Bullion₱ PHPSort ByRecently postedMarket Stats · GoldAll puritiesAll formsNo active asks or bids yet for Gold · any purity · any form.Be the first to post — your price sets the market.0 active asks · 0 active bids · all gold listings, mixed purity & form (expired & stale excluded)Secure messaging & ID-verified peersIn-app messaging only · no addresses sharedID-checked counterparties onlySellerPrice · vs SpotDetailsLocationTradeNo listings for Gold yetBe the first to post a Want-To-Buy request in this category — verified members get matched within minutes.Post a RequestSpot prices update every 60s. Premium/discount calculated against current PHP/gram spot.AboutMarket DataInstall AppPrivacy PolicyTerms and Conditions© 2026 Metal Market PH. All rights reserved."
+  }
+}

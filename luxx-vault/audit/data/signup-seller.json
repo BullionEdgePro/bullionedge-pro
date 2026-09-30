@@ -1,0 +1,215 @@
+{
+  "path": "/signup/seller",
+  "status": 200,
+  "slug": "signup-seller",
+  "external": [
+    "fonts.googleapis.com",
+    "fonts.gstatic.com"
+  ],
+  "dataRequests": [],
+  "consoleErrors": [],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 548,
+    "loadMs": 549
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/signup/seller",
+    "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Seller Account"
+      }
+    ],
+    "buttons": [
+      "Gold Jewelry",
+      "Gold Bars/Coins",
+      "Silver Items",
+      "Gemstones",
+      "Antiques with precious metals",
+      "Mixed lot",
+      "Create Seller Account"
+    ],
+    "links": [
+      {
+        "text": "Back",
+        "href": "https://www.metalmarketph.com/signup"
+      }
+    ],
+    "forms": [
+      {
+        "fields": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "password",
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "tel",
+            "name": null,
+            "label": "9171234567",
+            "required": true
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "number",
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "number",
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "label": "Open for offers",
+            "required": false
+          },
+          {
+            "tag": "textarea",
+            "type": null,
+            "name": null,
+            "label": "Describe your item(s)...",
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "label": null,
+            "required": false
+          }
+        ],
+        "submit": "Create Seller Account"
+      }
+    ],
+    "selects": [
+      {
+        "label": null,
+        "options": [
+          "Select region",
+          "NCR — National Capital Region",
+          "CAR — Cordillera Administrative Region",
+          "Region I — Ilocos Region",
+          "Region II — Cagayan Valley",
+          "Region III — Central Luzon",
+          "Region IV-A — CALABARZON",
+          "Region IV-B — MIMAROPA",
+          "Region V — Bicol Region",
+          "Region VI — Western Visayas",
+          "Region VII — Central Visayas",
+          "Region VIII — Eastern Visayas",
+          "Region IX — Zamboanga Peninsula",
+          "Region X — Northern Mindanao",
+          "Region XI — Davao Region",
+          "Region XII — SOCCSKSARGEN",
+          "Region XIII — Caraga",
+          "BARMM — Bangsamoro Autonomous Region in Muslim Mindanao"
+        ]
+      },
+      {
+        "label": null,
+        "options": [
+          "Select city"
+        ]
+      },
+      {
+        "label": null,
+        "options": [
+          "Select item type",
+          "Gold Jewelry",
+          "Gold Bars/Coins",
+          "Silver Items",
+          "Gemstones",
+          "Antiques with precious metals",
+          "Mixed lot"
+        ]
+      },
+      {
+        "label": null,
+        "options": [
+          "Select",
+          "24K",
+          "22K",
+          "21K",
+          "20K",
+          "18K",
+          "14K",
+          "10K",
+          "9K",
+          "6K",
+          ".999 Fine Silver",
+          ".925 Sterling Silver",
+          ".900 Coin Silver",
+          "Other (specify)"
+        ]
+      }
+    ],
+    "tables": [],
+    "images": {
+      "total": 1,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 10,
+      "iconOnlyButtons": 0,
+      "headingSkips": 0,
+      "hasMainLandmark": false
+    },
+    "textSample": "BackSeller AccountFree for the first 100 users — List your items & connect with buyersComplete Name *Email *Password *At least 10 charactersAt least one uppercase letterAt least one lowercase letterAt least one numberAt least one special characterContact Number *+63Region *Select regionNCR — National Capital RegionCAR — Cordillera Administrative RegionRegion I — Ilocos RegionRegion II — Cagayan ValleyRegion III — Central LuzonRegion IV-A — CALABARZONRegion IV-B — MIMAROPARegion V — Bicol RegionRegion VI — Western VisayasRegion VII — Central VisayasRegion VIII — Eastern VisayasRegion IX — Zamboanga PeninsulaRegion X — Northern MindanaoRegion XI — Davao RegionRegion XII — SOCCSKSARGENRegion XIII — CaragaBARMM — Bangsamoro Autonomous Region in Muslim MindanaoCity *Select cityProduct Type *Gold JewelryGold Bars/CoinsSilver ItemsGemstonesAntiques with precious metalsMixed lotWhat is this item? *Select item typeGold JewelryGold Bars/CoinsSilver ItemsGemstonesAntiques with precious metalsMixed lotKarat/Purity *Select24K22K21K20K18K14K10K9K6K.999 Fine Silver.925 Sterling Silver.900 Coin SilverOther (specify)Weight (grams) *Asking Price (₱) *Open for offersBrief Description *I agree to receive updates on precious metal values and platform news. I confirm that I am the legal owner of items listed and that all information provided is accurate to the best of my knowledge.Create Seller Account"
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "path": "/privacy",
+  "status": 200,
+  "slug": "privacy",
+  "external": [
+    "fonts.googleapis.com",
+    "fonts.gstatic.com"
+  ],
+  "dataRequests": [],
+  "consoleErrors": [],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 840,
+    "loadMs": 1121
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/privacy",
+    "title": "Privacy Policy — Metal Market PH",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Privacy Policy"
+      },
+      {
+        "level": 2,
+        "text": "1. About Metal Market PH"
+      },
+      {
+        "level": 2,
+        "text": "2. Personal Information We May Collect"
+      },
+      {
+        "level": 2,
+        "text": "3. How We Collect Information"
+      },
+      {
+        "level": 2,
+        "text": "4. Why We Use Your Information"
+      },
+      {
+        "level": 2,
+        "text": "5. Legal Basis for Processing Personal Information"
+      },
+      {
+        "level": 2,
+        "text": "6. Communication Between Buyers and Sellers"
+      },
+      {
+        "level": 2,
+        "text": "7. Public Listings and User-Generated Content"
+      },
+      {
+        "level": 2,
+        "text": "8. Sharing of Personal Information"
+      },
+      {
+        "level": 2,
+        "text": "9. Third-Party Service Providers"
+      },
+      {
+        "level": 2,
+        "text": "10. Payments and Financial Information"
+      },
+      {
+        "level": 2,
+        "text": "11. Cookies and Tracking Technologies"
+      },
+      {
+        "level": 2,
+        "text": "12. Data Security"
+      },
+      {
+        "level": 2,
+        "text": "13. Data Retention"
+      },
+      {
+        "level": 2,
+        "text": "14. Your Rights as a Data Subject"
+      },
+      {
+        "level": 2,
+        "text": "15. Children's Privacy"
+      },
+      {
+        "level": 2,
+        "text": "16. Third-Party Websites and External Links"
+      },
+      {
+        "level": 2,
+        "text": "17. International Access"
+      },
+      {
+        "level": 2,
+        "text": "18. Updates to This Privacy Policy"
+      },
+      {
+        "level": 2,
+        "text": "19. Contact Information"
+      }
+    ],
+    "buttons": [
+      "Log In",
+      "Sign Up",
+      "Toggle menu"
+    ],
+    "links": [
+      {
+        "text": "Metal Market PH",
+        "href": "https://www.metalmarketph.com/"
+      },
+      {
+        "text": "About Metal Market PH",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Calculator",
+        "href": "https://www.metalmarketph.com/#calculator"
+      },
+      {
+        "text": "Marketplace",
+        "href": "https://www.metalmarketph.com/marketplace"
+      },
+      {
+        "text": "How It Works",
+        "href": "https://www.metalmarketph.com/#how"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Log In",
+        "href": "https://www.metalmarketph.com/login"
+      },
+      {
+        "text": "Sign Up",
+        "href": "https://www.metalmarketph.com/signup"
+      },
+      {
+        "text": "About",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "https://www.metalmarketph.com/privacy"
+      },
+      {
+        "text": "Terms and Conditions",
+        "href": "https://www.metalmarketph.com/terms"
+      }
+    ],
+    "forms": [],
+    "selects": [],
+    "tables": [],
+    "images": {
+      "total": 3,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 0,
+      "iconOnlyButtons": 0,
+      "headingSkips": 0,
+      "hasMainLandmark": true
+    },
+    "textSample": "Metal Market PHAbout Metal Market PHCalculatorMarketplaceHow It WorksMarket DataInstall AppLog InSign UpPrivacy PolicyEffective Date: May 2026 · www.metalmarketph.comMetal Market PH respects your privacy and is committed to protecting your personal information. This Privacy Policy explains how we collect, use, store, share, and protect your personal data when you access or use our website, platform, services, pages, forms, listings, communication tools, and related features collectively referred to as the \"Platform.\"By using Metal Market PH, you agree to the collection and use of your personal information in accordance with this Privacy Policy.1. About Metal Market PHMetal Market PH is a third-party communication platform that allows buyers and sellers to connect regarding metal-related products, materials, supplies, and related listings.We do not sell products directly. We do not process transactions. We do not handle buyer or seller payments. We do not act as a broker, agent, escrow provider, or guarantor. All transactions are made directly and personally between the buyer and the seller.2. Personal Information We May CollectWe may collect personal information that you voluntarily provide when you use the Platform, including: full name; business name; email address; mobile number; address or business address; general location; account login details; product listing details; product inquiries; messages or communications sent through the Platform; photos, documents, or other files you upload; reports, complaints, or feedback submitted to us; transaction-related details that you voluntarily share in messages or listings.We may also collect technical and usage information, including: IP address; device information; browser type; operating system; pages visited; date and time of access; referring website or source; Platform activity; cookies and similar tracking technologies.3. How We Collect InformationWe may collect information when you: visit www.metalmarketph.com; create an account; submit, edit, or manage a listing; contact a buyer or seller; send an inquiry; reply to a message; fill out a form; contact Metal Market PH; report an issue or suspicious activity; upload photos, files, or other content; subscribe to updates, if applicable; or browse or interact with the Platform.4. Why We Use Your InformationWe may use your personal information to create and manage user accounts; allow buyers and sellers to communicate; display listings and inquiries; facilitate communication between users; respond to questions, reports, complaints, or support requests; review and manage listings; improve Platform functionality and user experience; prevent fraud, scams, abuse, or misuse; verify suspicious activity when necessary; send service-related notices; provide updates about the Platform; maintain security and system integrity; enforce our Terms and Conditions; comply with legal obligations; and protect the rights, safety, and interests of Metal Market PH, its users, and the public.We process personal information only for legitimate, lawful, and necessary purposes.5. Legal Basis for Processing Personal InformationMetal Market PH may process your personal information based on one or more lawful grounds, including: your consent; the need to provide access to and operate the Platform; the need to respond to your inquiries or requests; compliance with legal obligations; protection of our rights, users, and Platform; and legitimate business interests, provided these do not override your rights and freedoms.6. Communication Between Buyers and SellersBecause Metal Market PH functions as a communication platform, certain information may be visible to other users depending on how you use the Platform. For example, when you post a listing or respond to an inquiry, your name, business details, contact information, listing details, location, or message content may be shared with the intended buyer or seller.Users are responsible for the personal inform"
+  }
+}

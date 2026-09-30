@@ -1,0 +1,233 @@
+{
+  "path": "/",
+  "status": 200,
+  "slug": "home",
+  "external": [
+    "api.gold-api.com",
+    "fonts.googleapis.com",
+    "fonts.gstatic.com",
+    "open.er-api.com"
+  ],
+  "dataRequests": [
+    "GET https://api.gold-api.com/price/XAG",
+    "GET https://api.gold-api.com/price/XAU",
+    "GET https://api.gold-api.com/price/XPT",
+    "GET https://open.er-api.com/v6/latest/USD"
+  ],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
+  "dismissedDialog": "I Agree",
+  "timings": {
+    "domContentLoadedMs": 1463,
+    "loadMs": 1464
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/",
+    "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Buy & Sell Gold, Silver & Precious Gems"
+      },
+      {
+        "level": 2,
+        "text": "Philippine Precious Metals Market"
+      },
+      {
+        "level": 3,
+        "text": "Gold · PHP/g"
+      },
+      {
+        "level": 3,
+        "text": "Gold Price Performance PHP"
+      },
+      {
+        "level": 2,
+        "text": "Precious Metals Calculator"
+      },
+      {
+        "level": 2,
+        "text": "How It Works"
+      },
+      {
+        "level": 3,
+        "text": "Create Your Account"
+      },
+      {
+        "level": 3,
+        "text": "Browse or Post Offers"
+      },
+      {
+        "level": 3,
+        "text": "Connect & Transact"
+      }
+    ],
+    "buttons": [
+      "Log In",
+      "Sign Up",
+      "Toggle menu",
+      "I'm a Buyer",
+      "I'm a Seller",
+      "Gold₱5,394+6.28% 30d",
+      "Silver₱64-3.55% 30d",
+      "Platinum₱1,952+4.69% 30d"
+    ],
+    "links": [
+      {
+        "text": "Metal Market PH",
+        "href": "https://www.metalmarketph.com/"
+      },
+      {
+        "text": "About Metal Market PH",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Calculator",
+        "href": "https://www.metalmarketph.com/#calculator"
+      },
+      {
+        "text": "Marketplace",
+        "href": "https://www.metalmarketph.com/marketplace"
+      },
+      {
+        "text": "How It Works",
+        "href": "https://www.metalmarketph.com/#how"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Log In",
+        "href": "https://www.metalmarketph.com/login"
+      },
+      {
+        "text": "Sign Up",
+        "href": "https://www.metalmarketph.com/signup"
+      },
+      {
+        "text": "About",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "https://www.metalmarketph.com/privacy"
+      },
+      {
+        "text": "Terms and Conditions",
+        "href": "https://www.metalmarketph.com/terms"
+      }
+    ],
+    "forms": [],
+    "selects": [
+      {
+        "label": null,
+        "options": [
+          "Gold",
+          "Silver",
+          "Platinum"
+        ]
+      },
+      {
+        "label": null,
+        "options": [
+          "24K",
+          "22K",
+          "21K",
+          "20K",
+          "18K",
+          "14K",
+          "10K",
+          "9K",
+          "6K"
+        ]
+      },
+      {
+        "label": null,
+        "options": [
+          "Use Karat above (no SP)",
+          "SG 11.1 — 14%",
+          "SG 11.2 — 15%",
+          "SG 11.3 — 16%",
+          "SG 11.4 — 17%",
+          "SG 11.4 — 22%",
+          "SG 11.5 — 18%",
+          "SG 11.5 — 23.8%",
+          "SG 11.6 — 19%",
+          "SG 11.6 — 25.6%",
+          "SG 11.7 — 20%",
+          "SG 11.7 — 27.4%",
+          "SG 11.8 — 22%",
+          "SG 11.8 — 29.6%",
+          "SG 11.9 — 32%",
+          "SG 12.0 — 26%",
+          "SG 12.0 — 33.2%",
+          "SG 12.1 — 28%",
+          "SG 12.1 — 34.4%",
+          "SG 12.2 — 30%",
+          "SG 12.2 — 35.6%",
+          "SG 12.3 — 32%",
+          "SG 12.3 — 36.8%",
+          "SG 12.4 — 34%",
+          "SG 12.4 — 38%",
+          "SG 12.5 — 36%",
+          "SG 12.5 — 39.2%",
+          "SG 12.6 — 38%",
+          "SG 12.6 — 40.4%",
+          "SG 12.7 — 39%"
+        ]
+      },
+      {
+        "label": null,
+        "options": [
+          "Grams",
+          "Troy Ounce (Oz)",
+          "Kilos",
+          "Tola"
+        ]
+      }
+    ],
+    "tables": [
+      {
+        "caption": null,
+        "headers": [
+          "Change",
+          "Amount",
+          "%"
+        ],
+        "rows": 6
+      }
+    ],
+    "images": {
+      "total": 3,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 4,
+      "iconOnlyButtons": 0,
+      "headingSkips": 0,
+      "hasMainLandmark": true
+    },
+    "textSample": "Metal Market PHAbout Metal Market PHCalculatorMarketplaceHow It WorksMarket DataInstall AppLog InSign UpThe Philippines' Trusted Precious Metals MarketplaceBuy & Sell Gold, Silver & Precious GemsConnect with verified buyers and sellers. Get real-time market prices, transparent valuations, and secure transactions — all in one platform.I'm a BuyerI'm a SellerVerified Buyers OnlySecure MessagingDaily Market UpdatesLive Philippine Spot PricesPhilippine Precious Metals Market30-day trend · PHP per gramGold₱5,394+6.28% 30dSilver₱64-3.55% 30dPlatinum₱1,952+4.69% 30dGold · PHP/gSource: gold-api.com · Updated live+6.28%Sep 1Sep 7Sep 13Sep 19Sep 25₱4,950₱5,100₱5,250₱5,400₱5,550Sep 23Gold Price Performance PHPChangeAmount%Today-656.82-0.39%30 Days-4,002.00-2.33%6 Months+22,424.87+15.43%1 Year+56,953.43+51.40%5 Year+113,243.17+207.73%20 Years+146,948.28+706.16%Reference: goldprice.org · FX USD/PHP ≈ 62.60Live CalculatorPrecious Metals CalculatorLive Market Spot PricesLast Updated: 7:21:05 PMCurrent Gold Spot₱5,393.53 / gramLast Updated: 7:21:05 PMMetal TypeGoldSilverPlatinumKarat24K22K21K20K18K14K10K9K6KSP Mines (Specific Gravity → Purity %)Use Karat above (no SP)SG 11.1 — 14%SG 11.2 — 15%SG 11.3 — 16%SG 11.4 — 17%SG 11.4 — 22%SG 11.5 — 18%SG 11.5 — 23.8%SG 11.6 — 19%SG 11.6 — 25.6%SG 11.7 — 20%SG 11.7 — 27.4%SG 11.8 — 22%SG 11.8 — 29.6%SG 11.9 — 32%SG 12.0 — 26%SG 12.0 — 33.2%SG 12.1 — 28%SG 12.1 — 34.4%SG 12.2 — 30%SG 12.2 — 35.6%SG 12.3 — 32%SG 12.3 — 36.8%SG 12.4 — 34%SG 12.4 — 38%SG 12.5 — 36%SG 12.5 — 39.2%SG 12.6 — 38%SG 12.6 — 40.4%SG 12.7 — 39%SG 12.7 — 41.6%SG 12.8 — 40%SG 12.8 — 42.8%SG 12.9 — 41%SG 12.9 — 44%SG 13.0 — 42%SG 13.0 — 45.2%SG 13.1 — 43%SG 13.1 — 46.4%SG 13.2 — 44%SG 13.2 — 48%SG 13.3 — 45%SG 13.3 — 49.2%SG 13.4 — 46%SG 13.4 — 50.4%SG 13.5 — 47%SG 13.5 — 51.6%SG 13.6 — 48%SG 13.6 — 52.8%SG 13.7 — 49%SG 13.7 — 53%SG 13.8 — 50%SG 13.8 — 54.2%SG 13.9 — 51%SG 13.9 — 55.4%SG 14 — 52%SG 14.0 — 56.3%SG 14.1 — 53%SG 14.1 — 57%SG 14.2 — 54%SG 14.2 — 58%SG 14.3 — 55%SG 14.3 — 59%SG 14.4 — 56%SG 14.45 — 60%SG 14.5 — 57%SG 14.54 — 61%SG 14.6 — 58%SG 14.63 — 62%SG 14.7 — 59%SG 14.73 — 63%SG 14.82 — 64%SG 14.92 — 65%SG 15.01 — 66%SG 15.11 — 67%SG 15.2 — 68%SG 15.32 — 69%SG 15.43 — 70%SG 15.53 — 71%SG 15.63 — 72%SG 15.74 — 73%SG 15.85 — 74%SG 15.98 — 75%SG 16.01 — 76%SG 16.2 — 77%SG 16.3 — 78%SG 16.4 — 79%SG 16.5 — 80%SG 16.6 — 81%SG 16.72 — 82%SG 16.89 — 83%SG 17.02 — 84%SG 17.14 — 85%SG 17.27 — 86%SG 17.37 — 87%SG 17.51 — 88%SG 17.67 — 89%SG 17.81 — 90%SG 17.95 — 91%SG 18.09 — 92%SG 18.23 — 93%SG 18.39 — 94%SG 18.40 — 94%SG 18.41 — 94%SG 18.43 — 94%SG 18.45 — 94%SG 18.46 — 94%SG 18.48 — 94%SG 18.49 — 94%SG 18.50 — 94%SG 18.52 — 93%SG 18.54 — 95.2%SG 18.55 — 95.4%SG 18.57 — 95.4%SG 18.58 — 95.4%SG 18.6 — 95.5%SG 18.61 — 95.6%SG 18.63 — 95.7%SG 18.64 — 95.8%SG 18.66 — 95.9%SG 18.67 — 96%SG 18.69 — 96.1%SG 18.7 — 96.2%SG 18.72 — 96.4%SG 18.73 — 96.4%SG 18.75 — 96.5%SG 18.78 — 96.8%SG 18.80 — 96.8%SG 18.81 — 96.9%SG 18.82 — 97%SG 18.83 — 97%SG 18.86 — 97.1%SG 18.87 — 97.3%SG 18.89 — 97.4%SG 18.90 — 97.5%SG 18.92 — 97.6%SG 18.93 — 97.8%SG 18.95 — 97.9%SG 18.97 — 97.9%SG 18.98 — 98%SG 19.02 — 98.2%SG 19.03 — 98.3%SG 19.04 — 98.4%SG 19.06 — 98.5%SG 19.09 — 98.6%SG 19.1 — 98.1%SG 19.1 — 98.7%SG 19.14 — 99.1%SG 19.16 — 99.2%SG 19.17 — 99.3%SG 19.20 — 99.5%SG 19.22 — 99.6%SG 19.25 — 99.7%SG 19.28 — 99.8%SG 19.29 — 99.9%SG 19.9 — 99.19%SG 20 — 99.9%WeightUnitGramsTroy Ounce (Oz)KilosTolaThis calculator is for reference only and does not constitute a buy/sell offer.How It WorksThree simple steps to start trading precious metals with confidence on our secure platform.Create Your AccountSign up in minutes with our secure onboarding process. Verify your identity to gain full access to the marketplace.Get Started Browse or Post OffersExplore a wide range of metal listings or create your own. Our real-time calculator helps you find the best value.Connect & TransactMessage buyers or sellers directly. Close deals through our verified framework fo"
+  }
+}

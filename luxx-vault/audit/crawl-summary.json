@@ -1,0 +1,183 @@
+{
+  "base": "https://www.metalmarketph.com",
+  "crawledAt": "2026-09-30T11:25:06.110Z",
+  "routes": [
+    {
+      "path": "/",
+      "source": "start",
+      "status": 200,
+      "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems"
+    },
+    {
+      "path": "/about",
+      "source": "link",
+      "status": 200,
+      "title": "About Metal Market PH — Our Mission & Story"
+    },
+    {
+      "path": "/marketplace",
+      "source": "link",
+      "status": 200,
+      "title": "Marketplace — Metal Market PH"
+    },
+    {
+      "path": "/market-data",
+      "source": "link",
+      "status": 200,
+      "title": "Market Data — Live Gold & Silver Prices Philippines"
+    },
+    {
+      "path": "/install",
+      "source": "link",
+      "status": 200,
+      "title": "Install Metal Market PH App"
+    },
+    {
+      "path": "/login",
+      "source": "link",
+      "status": 200,
+      "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems"
+    },
+    {
+      "path": "/forgot-password",
+      "source": "link",
+      "status": 200,
+      "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems"
+    },
+    {
+      "path": "/signup",
+      "source": "link",
+      "status": 200,
+      "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems"
+    },
+    {
+      "path": "/signup/buyer",
+      "source": "link",
+      "status": 200,
+      "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems"
+    },
+    {
+      "path": "/signup/seller",
+      "source": "link",
+      "status": 200,
+      "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems"
+    },
+    {
+      "path": "/privacy",
+      "source": "link",
+      "status": 200,
+      "title": "Privacy Policy — Metal Market PH"
+    },
+    {
+      "path": "/terms",
+      "source": "link",
+      "status": 200,
+      "title": "Terms and Conditions — Metal Market PH"
+    }
+  ],
+  "skipped": [
+    {
+      "path": "/listings",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/buy",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/sell",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/prices",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/calculator",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/tools",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/learn",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/education",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/resources",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/faq",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/contact",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/signin",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/sign-in",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/register",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/sign-up",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/verify",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/verification",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/dashboard",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/account",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/profile",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/privacy-policy",
+      "reason": "renders the not-found page"
+    },
+    {
+      "path": "/terms-of-service",
+      "reason": "renders the not-found page"
+    }
+  ],
+  "externalHosts": [
+    "api.gold-api.com",
+    "fonts.googleapis.com",
+    "fonts.gstatic.com",
+    "gmvvsqryuqjawlwnpcqc.supabase.co",
+    "open.er-api.com"
+  ],
+  "dataEndpoints": [
+    "GET https://api.gold-api.com/price/XAG",
+    "GET https://api.gold-api.com/price/XAU",
+    "GET https://api.gold-api.com/price/XPT",
+    "GET https://gmvvsqryuqjawlwnpcqc.supabase.co/rest/v1/buyer_offers",
+    "GET https://gmvvsqryuqjawlwnpcqc.supabase.co/rest/v1/seller_listings",
+    "GET https://open.er-api.com/v6/latest/USD"
+  ]
+}

@@ -1,14 +1,18 @@
 # TODO
 
-## Phase 0 — blocking checkpoint
-- [ ] Run `npm run audit:reference` against metalmarketph.com, either locally or after allowing the host in this environment's network settings
-- [ ] Fold `audit/AUDIT-RAW.md` into AUDIT.md; turn every B/I into V or remove it
-- [ ] Add crawl-discovered rows to PARITY.md
-- [ ] Pick key screenshots for the checkpoint review
+## Phase 0 — checkpoint
+- [x] Crawl metalmarketph.com (12 routes, 1440 + 390 screenshots)
+- [x] AUDIT.md and PARITY.md from the crawl
+- [ ] Owner review (Checkpoint 0)
+
+## Environment
+- [ ] Allow `api.gold-api.com` in Network access (the price API is on the `api.` subdomain; `gold-api.com` alone isn't enough). Needed for Phase 3.
+- [ ] Pick and allow second spot and FX sources for failover (Phase 3)
 
 ## Owner decisions / confirmations
 - [ ] Project home: keep in `luxx-vault/` here, or create a dedicated repository (recommended)
 - [ ] Platform name "Luxx Vault" `[CONFIRM]`
+- [ ] Business model: free to join? fees on marketplace trades?
 - [ ] Full Antipolo address, current follower counts, email (domain email recommended), phone numbers, Lazada store URL, Messenger channel link
 
 ## Brand assets (owner)

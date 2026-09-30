@@ -1,0 +1,189 @@
+{
+  "path": "/signup/buyer",
+  "status": 200,
+  "slug": "signup-buyer",
+  "external": [
+    "fonts.googleapis.com",
+    "fonts.gstatic.com"
+  ],
+  "dataRequests": [],
+  "consoleErrors": [],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 601,
+    "loadMs": 603
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/signup/buyer",
+    "title": "Metal Market PH — Buy & Sell Gold, Silver & Precious Gems",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Buyer Account"
+      }
+    ],
+    "buttons": [
+      "Gold Assaying",
+      "Diamond Grading",
+      "Gemstone Identification",
+      "Silver Testing",
+      "Antique Jewelry",
+      "Coins & Bullion",
+      "XRF Machine",
+      "Acid Test Kit",
+      "Electronic Gold Tester",
+      "Loupe/Microscope",
+      "GIA Certification",
+      "Diamond Tester",
+      "Spectrometer",
+      "(icon)",
+      "Create Buyer Account"
+    ],
+    "links": [
+      {
+        "text": "Back",
+        "href": "https://www.metalmarketph.com/signup"
+      }
+    ],
+    "forms": [
+      {
+        "fields": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "password",
+            "name": null,
+            "label": null,
+            "required": true
+          },
+          {
+            "tag": "input",
+            "type": "tel",
+            "name": null,
+            "label": "9171234567",
+            "required": true
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "label": null,
+            "required": false
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "label": null,
+            "required": false
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "label": "Add custom tool...",
+            "required": false
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "label": null,
+            "required": false
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "label": null,
+            "required": false
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "label": null,
+            "required": false
+          }
+        ],
+        "submit": "Create Buyer Account"
+      }
+    ],
+    "selects": [
+      {
+        "label": null,
+        "options": [
+          "Select region",
+          "NCR — National Capital Region",
+          "CAR — Cordillera Administrative Region",
+          "Region I — Ilocos Region",
+          "Region II — Cagayan Valley",
+          "Region III — Central Luzon",
+          "Region IV-A — CALABARZON",
+          "Region IV-B — MIMAROPA",
+          "Region V — Bicol Region",
+          "Region VI — Western Visayas",
+          "Region VII — Central Visayas",
+          "Region VIII — Eastern Visayas",
+          "Region IX — Zamboanga Peninsula",
+          "Region X — Northern Mindanao",
+          "Region XI — Davao Region",
+          "Region XII — SOCCSKSARGEN",
+          "Region XIII — Caraga",
+          "BARMM — Bangsamoro Autonomous Region in Muslim Mindanao"
+        ]
+      },
+      {
+        "label": null,
+        "options": [
+          "Select city"
+        ]
+      },
+      {
+        "label": null,
+        "options": [
+          "Select",
+          "Less than 1 year",
+          "1-3 years",
+          "3-5 years",
+          "5-10 years",
+          "10+ years"
+        ]
+      }
+    ],
+    "tables": [],
+    "images": {
+      "total": 1,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 9,
+      "iconOnlyButtons": 1,
+      "headingSkips": 0,
+      "hasMainLandmark": false
+    },
+    "textSample": "BackBuyer AccountFree for the first 100 users — Connect with verified sellersComplete Name *Username *Email *Password *At least 10 charactersAt least one uppercase letterAt least one lowercase letterAt least one numberAt least one special characterContact Number *+63RegionSelect regionNCR — National Capital RegionCAR — Cordillera Administrative RegionRegion I — Ilocos RegionRegion II — Cagayan ValleyRegion III — Central LuzonRegion IV-A — CALABARZONRegion IV-B — MIMAROPARegion V — Bicol RegionRegion VI — Western VisayasRegion VII — Central VisayasRegion VIII — Eastern VisayasRegion IX — Zamboanga PeninsulaRegion X — Northern MindanaoRegion XI — Davao RegionRegion XII — SOCCSKSARGENRegion XIII — CaragaBARMM — Bangsamoro Autonomous Region in Muslim MindanaoCity/MunicipalitySelect citySpecializationsGold AssayingDiamond GradingGemstone IdentificationSilver TestingAntique JewelryCoins & BullionTools UsedXRF MachineAcid Test KitElectronic Gold TesterLoupe/MicroscopeGIA CertificationDiamond TesterSpectrometerYears of ExperienceSelectLess than 1 year1-3 years3-5 years5-10 years10+ yearsBusiness Name (optional)I agree to receive market updates on gold, silver, precious metals, and gemstones, and important platform announcements. I understand this platform facilitates connections only and does not guarantee transactions.Create Buyer Account"
+  }
+}

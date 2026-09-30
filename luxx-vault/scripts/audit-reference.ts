@@ -65,16 +65,29 @@ interface RobotsRules {
   crawlDelayMs: number;
 }
 
-async function loadRobots(base: URL): Promise<RobotsRules> {
-  const empty: RobotsRules = { rules: [], crawlDelayMs: 0 };
-  let text: string;
+/**
+ * Fetch a plain-text file through the browser so it takes the same network
+ * path (proxy, trust store) as the pages themselves.
+ */
+async function fetchText(browser: Browser, url: URL): Promise<{ status: number; text: string } | null> {
+  const context = await browser.newContext({ userAgent: USER_AGENT });
   try {
-    const res = await fetch(new URL("/robots.txt", base), { headers: { "user-agent": USER_AGENT } });
-    if (!res.ok) return empty;
-    text = await res.text();
+    const res = await context.newPage().then((p) => p.goto(url.toString(), { timeout: 30_000 }));
+    return res ? { status: res.status(), text: await res.text() } : null;
   } catch {
-    return empty;
+    return null;
+  } finally {
+    await context.close();
   }
+}
+
+/** RFC 9309: 4xx means no restrictions; unreachable or 5xx means don't crawl. */
+async function loadRobots(browser: Browser, base: URL): Promise<RobotsRules> {
+  const res = await fetchText(browser, new URL("/robots.txt", base));
+  if (!res || res.status >= 500) throw new Error("robots.txt is unreachable, so the crawl is not allowed to proceed.");
+  if (res.status >= 400) return { rules: [], crawlDelayMs: 0 };
+  const text = res.text;
+  const empty: RobotsRules = { rules: [], crawlDelayMs: 0 };
 
   // Group lines by user-agent; prefer a group naming us, else "*".
   const groups: { agents: string[]; lines: [string, string][] }[] = [];
@@ -159,6 +172,25 @@ class Throttle {
   }
 }
 
+const CONSENT_BUTTON = /^\s*(i agree|agree|accept|accept all|got it|ok(ay)?|continue)\s*$/i;
+
+/** Click through a blocking consent/disclaimer dialog so the page underneath can be captured. */
+async function dismissConsent(page: Page): Promise<string | null> {
+  const button = page.getByRole("button", { name: CONSENT_BUTTON }).first();
+  if (!(await button.isVisible().catch(() => false))) return null;
+  const label = (await button.textContent())?.trim() ?? "consent";
+  await button.click().catch(() => {});
+  await page.waitForTimeout(400);
+  return label;
+}
+
+/**
+ * Scroll-reveal libraries leave off-screen content at an inline
+ * "opacity: 0; transform: ..." until it enters the viewport, which a
+ * full-page screenshot never triggers. Show it as a visitor would see it.
+ */
+const REVEAL_OVERRIDE = `[style*="opacity: 0"][style*="transform"] { opacity: 1 !important; transform: none !important; }`;
+
 async function settle(page: Page): Promise<void> {
   await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
   // Trigger lazy-loaded sections, then return to the top for the screenshot.
@@ -166,7 +198,7 @@ async function settle(page: Page): Promise<void> {
     const step = window.innerHeight;
     for (let y = 0; y < document.body.scrollHeight; y += step) {
       window.scrollTo(0, y);
-      await new Promise((r) => setTimeout(r, 120));
+      await new Promise((r) => setTimeout(r, 250));
     }
     window.scrollTo(0, 0);
   });
@@ -273,6 +305,12 @@ async function collectInventory(page: Page): Promise<Inventory> {
 
 // ---------------------------------------------------------------- crawl
 
+class LoadError extends Error {
+  constructor(readonly pathname: string) {
+    super(`Could not load ${pathname}`);
+  }
+}
+
 interface RouteResult {
   path: string;
   source: "start" | "link" | "seed" | "sitemap";
@@ -281,6 +319,8 @@ interface RouteResult {
   external: string[];
   dataRequests: string[];
   consoleErrors: string[];
+  /** Label of the consent/disclaimer button clicked before capture, if any. */
+  dismissedDialog: string | null;
   timings: { domContentLoadedMs: number | null; loadMs: number | null };
   inventory: Inventory;
 }
@@ -327,7 +367,15 @@ async function visit(
 
     await throttle.wait();
     const res = await page.goto(new URL(pathname, base).toString(), { waitUntil: "domcontentloaded", timeout: 45_000 }).catch(() => null);
+    if (!res || page.url().startsWith("chrome-error://")) {
+      await context.close();
+      throw new LoadError(pathname);
+    }
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    const dismissed = await dismissConsent(page);
     await settle(page);
+    await page.addStyleTag({ content: REVEAL_OVERRIDE }).catch(() => {});
+    await page.waitForTimeout(200);
 
     if (screenshots) {
       await page.screenshot({ path: path.join(outDir, "screenshots", `${slug}-${vp.name}.png`), fullPage: true });
@@ -349,9 +397,11 @@ async function visit(
         external: [],
         dataRequests: [],
         consoleErrors,
+        dismissedDialog: dismissed,
         timings,
         inventory,
-        contentHash: createHash("sha1").update(inventory.title + inventory.textSample).digest("hex"),
+        // Digits are dropped so a live price ticker doesn't make identical pages look different.
+        contentHash: createHash("sha1").update((inventory.title + inventory.textSample).replace(/[\d.,:]+/g, "")).digest("hex"),
         discovered: inventory.links.map((l) => normalise(l.href, base)).filter((p): p is string => !!p),
       };
     }
@@ -362,17 +412,12 @@ async function visit(
   return result!;
 }
 
-async function sitemapPaths(base: URL): Promise<string[]> {
-  try {
-    const res = await fetch(new URL("/sitemap.xml", base), { headers: { "user-agent": USER_AGENT } });
-    if (!res.ok) return [];
-    const xml = await res.text();
-    return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)]
-      .map((m) => normalise(m[1]!, base))
-      .filter((p): p is string => !!p);
-  } catch {
-    return [];
-  }
+async function sitemapPaths(browser: Browser, base: URL): Promise<string[]> {
+  const res = await fetchText(browser, new URL("/sitemap.xml", base));
+  if (!res || res.status >= 400) return [];
+  return [...res.text.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)]
+    .map((m) => normalise(m[1]!, base))
+    .filter((p): p is string => !!p);
 }
 
 async function main(): Promise<void> {
@@ -380,20 +425,21 @@ async function main(): Promise<void> {
   await mkdir(path.join(outDir, "screenshots"), { recursive: true });
   await mkdir(path.join(outDir, "data"), { recursive: true });
 
-  const robots = await loadRobots(base);
-  const throttle = new Throttle(Math.max(1000, robots.crawlDelayMs));
-  console.log(`Auditing ${base.origin} (max ${maxPages} routes, ${Math.max(1000, robots.crawlDelayMs)}ms between pages)`);
-
   // CHROMIUM_PATH lets the script use a preinstalled browser instead of `npx playwright install`.
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const skipped: { path: string; reason: string }[] = [];
   const results: RouteResult[] = [];
   try {
+    const robots = await loadRobots(browser, base);
+    const throttle = new Throttle(Math.max(1000, robots.crawlDelayMs));
+    console.log(`Auditing ${base.origin} (max ${maxPages} routes, ${Math.max(1000, robots.crawlDelayMs)}ms between pages)`);
+    await throttle.wait(); // counts the robots.txt request
     const probe = await visit(browser, base, NOT_FOUND_PROBE, throttle, outDir, false);
     const notFoundHash = probe.contentHash;
 
     const queue: { path: string; source: RouteResult["source"] }[] = [{ path: "/", source: "start" }];
-    for (const p of await sitemapPaths(base)) queue.push({ path: p, source: "sitemap" });
+    await throttle.wait();
+    for (const p of await sitemapPaths(browser, base)) queue.push({ path: p, source: "sitemap" });
     for (const p of SEED_PATHS) queue.push({ path: p, source: "seed" });
     const seen = new Set<string>();
     const seenHashes = new Map<string, string>();
@@ -408,7 +454,17 @@ async function main(): Promise<void> {
       }
 
       console.log(`→ ${next.path}`);
-      const r = await visit(browser, base, next.path, throttle, outDir, true);
+      let r: Awaited<ReturnType<typeof visit>>;
+      try {
+        r = await visit(browser, base, next.path, throttle, outDir, true);
+      } catch (err) {
+        if (!(err instanceof LoadError)) throw err;
+        // If the start page itself won't load, nothing after it will either.
+        if (next.source === "start") throw err;
+        skipped.push({ path: next.path, reason: "failed to load" });
+        for (const vp of VIEWPORTS) await rm(path.join(outDir, "screenshots", `${slugFor(next.path)}-${vp.name}.png`), { force: true });
+        continue;
+      }
       const dupOf = seenHashes.get(r.contentHash);
       const reason =
         next.source !== "seed" ? undefined
@@ -479,6 +535,7 @@ function renderRaw(
     const inv = r.inventory;
     out.push("", `## \`${r.path}\` — ${inv.title}`, "");
     out.push(`Screenshots: \`screenshots/${r.slug}-1440.png\`, \`screenshots/${r.slug}-390.png\``, "");
+    if (r.dismissedDialog) out.push(`Blocking dialog on load, dismissed with “${r.dismissedDialog}” before capture.`, "");
     if (inv.headings.length) {
       out.push("Headings:", "");
       for (const h of inv.headings) out.push(`${"  ".repeat(Math.max(0, h.level - 1))}- h${h.level}: ${h.text}`);

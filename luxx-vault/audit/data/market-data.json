@@ -1,0 +1,148 @@
+{
+  "path": "/market-data",
+  "status": 200,
+  "slug": "market-data",
+  "external": [
+    "api.gold-api.com",
+    "fonts.googleapis.com",
+    "fonts.gstatic.com",
+    "open.er-api.com"
+  ],
+  "dataRequests": [
+    "GET https://api.gold-api.com/price/XAG",
+    "GET https://api.gold-api.com/price/XAU",
+    "GET https://api.gold-api.com/price/XPT",
+    "GET https://open.er-api.com/v6/latest/USD"
+  ],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
+  "dismissedDialog": null,
+  "timings": {
+    "domContentLoadedMs": 937,
+    "loadMs": 937
+  },
+  "inventory": {
+    "url": "https://www.metalmarketph.com/market-data",
+    "title": "Market Data — Live Gold & Silver Prices Philippines",
+    "metaDescription": "The Philippines' trusted P2P marketplace for gold, silver, precious metals, and gemstones. Real-time prices, verified buyers, secure transactions.",
+    "lang": "en",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Market Data"
+      },
+      {
+        "level": 2,
+        "text": "Live Prices"
+      },
+      {
+        "level": 2,
+        "text": "Karat Conversion Table"
+      },
+      {
+        "level": 2,
+        "text": "Frequently Asked Questions"
+      }
+    ],
+    "buttons": [
+      "Log In",
+      "Sign Up",
+      "Toggle menu",
+      "(icon)"
+    ],
+    "links": [
+      {
+        "text": "Metal Market PH",
+        "href": "https://www.metalmarketph.com/"
+      },
+      {
+        "text": "About Metal Market PH",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Calculator",
+        "href": "https://www.metalmarketph.com/#calculator"
+      },
+      {
+        "text": "Marketplace",
+        "href": "https://www.metalmarketph.com/marketplace"
+      },
+      {
+        "text": "How It Works",
+        "href": "https://www.metalmarketph.com/#how"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Log In",
+        "href": "https://www.metalmarketph.com/login"
+      },
+      {
+        "text": "Sign Up",
+        "href": "https://www.metalmarketph.com/signup"
+      },
+      {
+        "text": "GoldPrice.org Philippines",
+        "href": "https://goldprice.org/gold-price-philipines.html"
+      },
+      {
+        "text": "GoldPrice.org (PH) ↗",
+        "href": "https://goldprice.org/gold-price-philipines.html"
+      },
+      {
+        "text": "About",
+        "href": "https://www.metalmarketph.com/about"
+      },
+      {
+        "text": "Market Data",
+        "href": "https://www.metalmarketph.com/market-data"
+      },
+      {
+        "text": "Install App",
+        "href": "https://www.metalmarketph.com/install"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "https://www.metalmarketph.com/privacy"
+      },
+      {
+        "text": "Terms and Conditions",
+        "href": "https://www.metalmarketph.com/terms"
+      }
+    ],
+    "forms": [],
+    "selects": [],
+    "tables": [
+      {
+        "caption": null,
+        "headers": [
+          "Karat",
+          "Purity %",
+          "Gold Parts",
+          "Live Price/g"
+        ],
+        "rows": 7
+      }
+    ],
+    "images": {
+      "total": 3,
+      "missingAlt": 0
+    },
+    "a11y": {
+      "unlabeledInputs": 0,
+      "iconOnlyButtons": 1,
+      "headingSkips": 0,
+      "hasMainLandmark": true
+    },
+    "textSample": "Metal Market PHAbout Metal Market PHCalculatorMarketplaceHow It WorksMarket DataInstall AppLog InSign UpMarket DataLive precious metal prices, karat conversion tables, and educational resources for traders. Spot prices cross-referenced with GoldPrice.org Philippines.Live PricesUpdated 7:22:00 PMGoldPrice.org (PH) ↗Gold (XAU)₱5,393.53/g$2,680/oz spotSilver (XAG)₱64.40/g$32/oz spotPlatinum (XPT)₱1,952.14/g$970/oz spotUSD/PHP: 62.60 · 1 troy oz = 31.1035 g · Source: gold-api.com & open.er-api.comKarat Conversion TableKaratPurity %Gold PartsLive Price/g24K99.9%24/24₱5,388.1422K91.7%22/24₱4,945.8721K87.5%21/24₱4,719.3418K75.0%18/24₱4,045.1514K58.3%14/24₱3,144.4310K41.7%10/24₱2,249.109K37.5%9/24₱2,022.58Computed from live gold spot × purity. Dealer prices may vary with premiums.Frequently Asked QuestionsHow to check gold purity?+The most reliable methods are XRF (X-ray Fluorescence) testing and acid testing. XRF is non-destructive and gives exact purity readings. Acid test kits use different acid strengths to determine karat — if the metal doesn't react, it's at or above that karat level.What is a Karat?+A karat (K) measures gold purity. Pure gold is 24K. The karat number tells you how many parts out of 24 are gold. For example, 18K = 18/24 = 75% gold. The remaining 25% consists of other metals like copper, silver, or zinc.Red flags when buying gold+Watch out for: prices significantly below market rate, sellers refusing to let you test the item, discoloration or green/black marks, unusually lightweight for size, no hallmark stamps, and sellers with no verifiable business address or reviews.What tools do professional buyers use?+Professional gold buyers typically use: XRF machines for precise analysis, acid test kits as a secondary check, electronic gold testers, high-powered loupes (10x–20x), precision digital scales, and diamond testers for gemstones.How is gold price determined in the Philippines?+Philippine gold prices follow international spot prices (LBMA/COMEX), converted to PHP using the current USD/PHP exchange rate. Local prices may vary slightly due to dealer premiums, purity, and supply/demand in the local market.AboutMarket DataInstall AppPrivacy PolicyTerms and Conditions© 2026 Metal Market PH. All rights reserved."
+  }
+}
