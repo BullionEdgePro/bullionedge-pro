@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three-stdlib";
+import { emblemSvg } from "@/components/brand/logo-svg";
 import { CENTERED, type LayoutRef } from "./bar-layout";
 
 /** Scroll progress 0→1 written by the hero's ScrollTrigger; read every frame (no React renders). */
@@ -59,6 +60,9 @@ function useStampTexture() {
 
   useEffect(() => {
     const c = tex.image as HTMLCanvasElement;
+    // The emblem, in white (white = struck into the metal on the alpha/bump maps).
+    const emblem = new Image();
+    emblem.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(emblemSvg({ id: "stamp", detail: "mono", color: "#fff" }))}`;
     const draw = () => {
       const ctx = c.getContext("2d")!;
       const { width: w, height: h } = c;
@@ -67,24 +71,27 @@ function useStampTexture() {
       ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = "#fff";
       ctx.strokeStyle = "#fff";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
       // Hallmark frame
       ctx.lineWidth = 6;
-      ctx.strokeRect(70, 60, w - 140, h - 120);
+      ctx.strokeRect(60, 56, w - 120, h - 112);
       ctx.lineWidth = 2;
-      ctx.strokeRect(86, 76, w - 172, h - 152);
-      ctx.font = `700 104px ${face}`;
-      ctx.fillText("LUXX VAULT", w / 2, 192);
-      ctx.font = `600 50px ${face}`;
-      ctx.fillText("FINE GOLD  999.9", w / 2, 300);
-      ctx.font = `600 32px ${face}`;
-      ctx.fillText("ANTIPOLO  ·  PHILIPPINES", w / 2, 372);
+      ctx.strokeRect(76, 72, w - 152, h - 144);
+      if (emblem.complete && emblem.naturalWidth) ctx.drawImage(emblem, 110, 116, 280, 280);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const tx = 668;
+      ctx.font = `700 92px ${face}`;
+      ctx.fillText("LUXX4LESS", tx, 196);
+      ctx.font = `600 46px ${face}`;
+      ctx.fillText("FINE GOLD  999.9", tx, 296);
+      ctx.font = `600 28px ${face}`;
+      ctx.fillText("ANTIPOLO  ·  PHILIPPINES", tx, 360);
       reupload(tex);
     };
     draw();
-    // Redraw once Cinzel has loaded, or the first stamp uses a fallback serif.
+    // Redraw once Cinzel and the emblem image have loaded.
     let alive = true;
+    emblem.onload = () => alive && draw();
     document.fonts.ready.then(() => alive && draw());
     return () => {
       alive = false;

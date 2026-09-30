@@ -196,6 +196,43 @@
   animation: molten 7s linear infinite;
 }
 
+/* Living emblem: the frame draws itself in, then the stones catch the light
+   one after another. Resting state (and reduced motion) is the full logo. */
+@keyframes lx-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes lx-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes lx-twinkle {
+  0%, 82%, 100% { filter: none; }
+  88% { filter: brightness(1.45) drop-shadow(0 0 2px #fff); }
+}
+@keyframes lx-glint {
+  0%, 78%, 100% { opacity: 0.35; transform: scale(0.6) rotate(0deg); }
+  86% { opacity: 1; transform: scale(1.15) rotate(12deg); }
+}
+.lx-animate .lx-frame {
+  stroke-dasharray: 1;
+  animation: lx-draw 1.6s var(--ease-vault) both;
+}
+.lx-animate .lx-frame:nth-child(2) { animation-delay: 0.12s; }
+.lx-animate .lx-frame:nth-child(3) { animation-delay: 0.24s; }
+.lx-animate .lx-frame:nth-child(4) { animation-delay: 0.36s; }
+.lx-animate .lx-letter {
+  animation: lx-rise 0.9s var(--ease-vault) 0.5s both;
+}
+.lx-animate .lx-stone {
+  animation: lx-twinkle 5.6s ease-in-out calc(1.4s + var(--i) * 0.28s) infinite;
+}
+.lx-animate .lx-glint {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lx-glint 5.6s ease-in-out calc(1.4s + var(--i) * 0.28s) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -9,10 +9,10 @@
 - [x] Next.js + TypeScript + Tailwind setup, tokens with AA contrast tests
 - [x] Display font Cinzel with custom ₱ glyph; Plus Jakarta Sans for UI
 - [x] Buttons, badges, cards, theme toggle, magnetic CTA, card spotlight
-- [x] Three monogram options (Cinzel outlines); favicon/app icons from option C as placeholder
+- [x] Owner's Luxx4less logo rebuilt as vector (full / small / single-colour, stacked + horizontal lockups, living emblem); favicon, app icons and logo files
 - [x] Hero prototype: rolling price, karat chips, 3D bar with scroll scene, still fallback
 - [x] Brand photo pipeline (`npm run images`)
-- [ ] Owner picks a monogram (A Hallmark / B Karat dial / C Ingot) → `npm run brand:icons -- <option>`
+- [ ] Owner checks the redrawn logo against the original (and sends the designer's original file if available, for the sharpest match)
 - [ ] Owner approves look and feel (Checkpoint 1)
 
 ## Deferred from Phase 1 (planned later)
@@ -20,7 +20,7 @@
 - [ ] Odometer-style wrap for the digit reels (e.g. 0→9 steps back one instead of spinning through), Phase 9
 - [ ] Header price ticker marquee, Phase 3 (needs the price engine)
 - [ ] English/Filipino i18n (next-intl) and header language toggle, Phase 7
-- [ ] Recreate the existing Luxx4less logo as SVG, once the owner adds it to `brand-assets/logo/`
+- [x] Recreate the existing Luxx4less logo as SVG
 
 ## Environment
 - [ ] Allow `api.gold-api.com` in Network access (the price API is on the `api.` subdomain; `gold-api.com` alone isn't enough). Needed for Phase 3.
@@ -31,7 +31,10 @@
 - [ ] Platform name "Luxx Vault" `[CONFIRM]`
 - [ ] Business model: free to join? fees on marketplace trades?
 - [ ] Review FEATURES.md: approve, cut or reprioritise; confirm Luxx-Tested fee, consignment terms, buyback rate, reseller commission
-- [ ] Full Antipolo address, current follower counts, email (domain email recommended), phone numbers, Lazada store URL, Messenger channel link
+- [x] Antipolo and Ongpin branch addresses, Facebook follower counts (from the cover)
+- [ ] Is `luxx4less.ph` (on the storefront sign) the web domain to use?
+- [ ] Links to the Ongpin, Venus, Earth and Mercury Facebook pages
+- [ ] Email (domain email recommended), phone numbers, Lazada store URL, Messenger channel link
 
 ## Brand assets (owner)
 Save into `brand-assets/` (raw photos are git-ignored; only processed output is committed):

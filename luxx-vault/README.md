@@ -19,8 +19,9 @@ Then open http://localhost:3000/design-system (design board) and http://localhos
 | Command | What it does |
 |---|---|
 | `npm run images` | Process photos in `brand-assets/` (strips GPS/EXIF, makes AVIF/WebP) |
-| `npm run brand:icons -- a` | Rebuild favicon and app icons from monogram A, B or C |
-| `npm run brand:monograms` | Rebuild the monogram artwork from Cinzel |
+| `npm run brand:logo` | Rebuild the Luxx4less logo geometry |
+| `npm run brand:icons` | Rebuild favicon, app icons and the logo files in `public/brand/` |
+| `npm run preview:build` | Build the self-contained review preview in `preview/` |
 | `npm run brand:peso` | Rebuild the ₱ glyph that pairs with Cinzel |
 | `npm test` / `npm run lint` / `npm run typecheck` | Checks |
 | `npm run screenshots` | Review screenshots + hero still image (needs `npm run build && npm start` running) |

@@ -10,6 +10,8 @@ type Confirmable<T> = { value: T; confirm: boolean };
 export const brand = {
   legalName: "LUXX4LESS GOLDS AND DIAMONDS OPC",
   publicName: "Luxx4less Golds and Diamonds",
+  /** As written on the logo. */
+  logoTagline: "Golds and Diamonds Jewelries",
   platformName: { value: "Luxx Vault", confirm: true },
   platformFullName: { value: "Luxx Vault by Luxx4less", confirm: true },
   tagline: {
@@ -21,15 +23,39 @@ export const brand = {
     city: "Antipolo City",
     province: "Rizal",
     country: "Philippines",
-    fullAddress: { value: "", confirm: true },
+    // From the owner's Facebook cover (Sep 2026).
+    fullAddress: { value: "B3 L3 Mt. Banahaw St., Grand Heights, Brgy. San Roque, Antipolo City, 1870", confirm: false },
   },
+  /** Physical branches, from the owner's Facebook cover (Sep 2026). */
+  branches: [
+    {
+      name: "Antipolo Branch",
+      address: "B3 L3 Mt. Banahaw St., Grand Heights, Brgy. San Roque, Antipolo City, 1870",
+      main: true,
+    },
+    {
+      name: "Ongpin Branch",
+      address: "MBI Building, Ace Jewelries, Brgy. 303 Zone 29, Sta. Cruz, Manila",
+      main: false,
+    },
+  ],
+  /** The storefront sign reads "LUXX4LESS.PH". Is that the planned web domain? */
+  domain: { value: "luxx4less.ph", confirm: true },
   social: {
     facebookUrl: "https://www.facebook.com/luxx4less.phgoldsanddiamonds",
-    facebookLikes: { value: 722_000, confirm: true },
+    // Followers as shown on the Facebook cover (Sep 2026).
+    facebookFollowers: { value: 796_000, confirm: false },
     instagramHandle: "luxx4less.golds.and.diamonds",
     instagramFollowers: { value: 87_000, confirm: true },
     messengerBroadcastUrl: { value: "", confirm: true },
     lazadaStoreUrl: { value: "", confirm: true },
+    /** Other official pages, from the Facebook cover (Sep 2026). URLs to confirm. */
+    otherPages: [
+      { name: "Luxx4Less Jewelry by Ongpin Branch", followers: 45_000, url: { value: "", confirm: true } },
+      { name: "Venus Jewelry by Luxx4less Michiko", followers: 139_000, url: { value: "", confirm: true } },
+      { name: "Earth Jewelry by Luxx4Less", followers: 4_900, url: { value: "", confirm: true } },
+      { name: "Mercury Jewelry by Luxx4Less", followers: 3_200, url: { value: "", confirm: true } },
+    ],
   },
   contact: {
     email: { value: "luxx4less.ph@gmail.com", confirm: true },

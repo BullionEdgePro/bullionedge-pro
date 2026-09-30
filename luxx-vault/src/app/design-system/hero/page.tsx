@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Monogram, Wordmark } from "@/components/brand/monogram";
+import { Lockup } from "@/components/brand/logo";
 import { LivingGram } from "@/components/hero/living-gram";
 import { EditorialProductCard } from "@/components/product/cards";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -21,8 +21,7 @@ export default function HeroPrototypePage() {
       <header className="surface-velvet fixed inset-x-0 top-0 z-30 border-b border-line/60 bg-velvet/70 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <Link href="/design-system" className="flex items-center gap-2.5 rounded-md">
-            <Monogram option="c" variant="metal" className="size-8" title="" aria-hidden />
-            <Wordmark className="text-base" />
+            <Lockup className="text-base" emblemClassName="size-9" />
           </Link>
           <ThemeToggle />
         </div>

@@ -34,10 +34,17 @@ The owner asked for the project to live in `C:\CLIENT FILES\LUXXE4LESS`. This bu
 - **Cinzel has no ₱ glyph.** `scripts/build-peso-font.ts` builds a one-glyph "Luxx Peso" font per weight from Cinzel's own P plus two bars (wound to match the outer contour, so the nonzero fill leaves no holes). It comes first in the display stack, so the browser takes only ₱ from it. Loaded with `adjustFontFallback: false`, otherwise next/font's generated Arial fallback would cover every other character and hide Cinzel. Plus Jakarta Sans loads its `latin-ext` subset, which carries ₱.
 - Cinzel has no tabular figures. Tables and data use Jakarta's; the hero's rolling reels are sized per digit from Cinzel's measured advance widths.
 
-## 2026-09-30 — Monograms
-- Built from real Cinzel glyph outlines (`scripts/build-monograms.ts`), in three frames: Hallmark (assay-stamp cartouche), Karat dial (24 ticks), Ingot (letters cut from a bar).
-- **L and V always stand side by side, never interlocked:** an interlocking LV reads as Louis Vuitton's registered monogram.
-- Favicon and app icons come from the chosen option (`npm run brand:icons -- a|b|c`). Option C is a placeholder until the owner picks.
+## 2026-09-30 — Logo: the owner's Luxx4less emblem (replaces the LV monogram options)
+- The owner asked to use their own logo from Facebook. The three "LV" monogram options were retired (they also avoided an interlocking LV, which would read as Louis Vuitton's registered monogram).
+- The logo is rebuilt as vector geometry from the 447px Facebook profile picture (`scripts/build-logo.ts` → `logo-data.ts`):
+  - frame measured from the original: an upright square and a 45° diamond of equal size (the eight-point star) plus two concentric regular octagons, one line weight, flat peach gold `#E8BA88` sampled from the original;
+  - the L from Bodoni Moda opsz 11 Black (SIL OFL): the closest free Didone to the original's L (heavy stem, curved beak on the foot). A metal stroke under the fill thickens its hairline serifs to match;
+  - a channel of brilliant-cut stones down the stem (large stones with pairs of small ones, as on the original) and one stone at the foot;
+  - wordmark in Cinzel, read with fontkit, because opentype.js returns NaN for a point in Cinzel's X and silently truncated the outline.
+- `logo-svg.ts` draws it at three detail levels (full / simple for ≤48px / mono for watermarks and light backgrounds) and two lockups (stacked like the profile picture, horizontal like the cover). The same code feeds the React `Emblem`/`Lockup`, the icon and file build, and the 3D bar's stamp.
+- Creative additions, all using the owner's mark unchanged: a foil finish of the frame, a "living" emblem (frame draws in, stones twinkle in sequence; still under reduced motion), and the gold bar stamped with the emblem like a refinery hallmark.
+- `npm run brand:icons` writes the favicon, app icons and downloadable files (`public/brand/luxx4less-*.svg` and a 1080px PNG).
+- Branch addresses, follower counts and sibling pages were taken from the owner's Facebook cover into `src/config/brand.ts`.
 
 ## 2026-09-30 — Hero ("The Living Gram")
 - The price numerals use a gradient clipped to the text (`background-clip: text`). Chrome leaves transformed or positioned descendants out of that clip, so the digit reels roll with a negative `margin-top` (no transform, no positioning), and the root is clipped to one 1em line.

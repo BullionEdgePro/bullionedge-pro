@@ -1,52 +1,49 @@
 /**
- * Favicon and app icons from the chosen monogram.
+ * Favicon, app icons and downloadable logo files from the Luxx4less emblem.
  *
- *   npm run brand:icons            # uses option c until the owner picks
- *   npm run brand:icons -- a       # or a / b
+ *   npm run brand:icons
  *
- * Writes src/app/icon.svg, src/app/apple-icon.png and public/icons/icon-{192,512}.png.
+ * Writes:
+ *   src/app/icon.svg, src/app/apple-icon.png, public/icons/icon-{192,512}.png
+ *   public/brand/luxx4less-*.svg (and a PNG of the stacked logo for social posts)
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import sharp from "sharp";
-import { MONOGRAMS } from "../src/components/brand/monogram-data";
+import { emblemSvg, lockupSvg } from "../src/components/brand/logo-svg";
 
-const choice = (process.argv[2] ?? "c") as "a" | "b" | "c";
-const o = MONOGRAMS.find((m) => m.id === choice);
-if (!o) throw new Error(`Unknown monogram option: ${choice}`);
-
-function svg(pad: number, radius: number): string {
-  const knock = [...(o!.knockouts ?? []), ...(o!.letters.mode === "knockout" ? [o!.letters.l, o!.letters.v] : [])];
-  const inner = 120 - pad * 2;
-  const s = inner / 120;
-  const mask = knock.length
-    ? `<mask id="k"><rect width="120" height="120" fill="#fff"/>${knock.map((d) => `<path d="${d}" fill="#000"/>`).join("")}</mask>`
-    : "";
-  return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">` +
-    `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0DBA6"/><stop offset=".35" stop-color="#D6B26E"/><stop offset=".7" stop-color="#A8823F"/><stop offset="1" stop-color="#D6B26E"/></linearGradient>${mask}</defs>` +
-    `<rect width="120" height="120" rx="${radius}" fill="#17101F"/>` +
-    `<g transform="translate(${pad} ${pad}) scale(${s})">` +
-    `<g fill="url(#g)"${knock.length ? ' mask="url(#k)"' : ""}>` +
-    o!.fill.map((d) => `<path d="${d}" fill-rule="evenodd"/>`).join("") +
-    (o!.letters.mode === "draw" ? `<path d="${o!.letters.l}"/><path d="${o!.letters.v}"/>` : "") +
-    `</g>` +
-    o!.strokes.map((st) => `<path d="${st.d}" fill="none" stroke="url(#g)" stroke-width="${st.width}"/>`).join("") +
-    o!.accents.map((d) => `<path d="${d}" fill="#BFD8E4"/>`).join("") +
-    `</g></svg>\n`
-  );
-}
+const VELVET = "#17101F";
 
 async function main() {
-  // Favicon: tight padding so the mark reads at 16px.
-  await writeFile("src/app/icon.svg", svg(6, 26));
-  // App icons: platform masks crop corners, so keep a safe margin and square corners.
-  const app = Buffer.from(svg(16, 0));
+  // Favicon: the small-size emblem on velvet with rounded corners.
+  await writeFile("src/app/icon.svg", emblemSvg({ id: "fav", detail: "simple", background: VELVET, backgroundRadius: 40 }));
+
+  // App icons: platform masks crop corners, so square corners and a safe margin.
+  const app = Buffer.from(emblemSvg({ id: "app", detail: "full", background: VELVET, inset: 22 }));
   await sharp(app, { density: 600 }).resize(180, 180).png().toFile("src/app/apple-icon.png");
   await mkdir("public/icons", { recursive: true });
   for (const size of [192, 512]) {
     await sharp(app, { density: 600 }).resize(size, size).png().toFile(`public/icons/icon-${size}.png`);
   }
-  console.log(`Icons written from option ${choice.toUpperCase()} (${o!.name}).`);
+
+  // Logo files for the owner, printers and social media.
+  await mkdir("public/brand", { recursive: true });
+  const files: Record<string, string> = {
+    "luxx4less-emblem.svg": emblemSvg({ id: "e", detail: "full" }),
+    "luxx4less-emblem-foil.svg": emblemSvg({ id: "f", detail: "full", frame: "foil" }),
+    "luxx4less-emblem-small.svg": emblemSvg({ id: "s", detail: "simple" }),
+    "luxx4less-emblem-white.svg": emblemSvg({ id: "w", detail: "mono", color: "#FFFFFF" }),
+    "luxx4less-emblem-black.svg": emblemSvg({ id: "k", detail: "mono", color: "#1C1A22" }),
+    "luxx4less-logo-stacked.svg": lockupSvg({ id: "ls", detail: "full", layout: "stacked" }),
+    "luxx4less-logo-horizontal.svg": lockupSvg({ id: "lh", detail: "full", layout: "horizontal" }),
+    "luxx4less-logo-stacked-on-black.svg": lockupSvg({ id: "lb", detail: "full", layout: "stacked", background: "#000000" }),
+  };
+  for (const [name, svg] of Object.entries(files)) await writeFile(`public/brand/${name}`, svg);
+  await sharp(Buffer.from(files["luxx4less-logo-stacked-on-black.svg"]!), { density: 600 })
+    .resize(1080)
+    .png()
+    .toFile("public/brand/luxx4less-logo-stacked-1080.png");
+
+  console.log(`Icons and ${Object.keys(files).length + 1} logo files written.`);
 }
 
 main().catch((e) => {

@@ -1,4 +1,4 @@
-import { Monogram } from "@/components/brand/monogram";
+import { Emblem } from "@/components/brand/logo";
 import { cn } from "@/lib/cn";
 
 /**
@@ -29,7 +29,7 @@ export function PlaceholderPhoto({
         className,
       )}
     >
-      <Monogram option="c" variant="current" className="w-1/4 max-w-24" aria-hidden title="" />
+      <Emblem detail="mono" className="w-1/4 max-w-24" title="" />
       {!compact && (
         <span className="absolute bottom-3 left-3 rounded-full bg-black/5 px-2 py-0.5 text-2xs font-medium tracking-wide text-muted dark:bg-white/5">
           Photo coming soon

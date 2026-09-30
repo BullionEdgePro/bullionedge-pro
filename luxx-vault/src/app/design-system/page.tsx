@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, Heart, Search, ShieldCheck } from "lucide-react";
-import { Monogram, Wordmark } from "@/components/brand/monogram";
-import { MONOGRAMS } from "@/components/brand/monogram-data";
+import { Emblem, Lockup } from "@/components/brand/logo";
 import { Magnetic } from "@/components/motion/magnetic";
 import { CompactListingCard, EditorialProductCard } from "@/components/product/cards";
 import { PlaceholderPhoto } from "@/components/product/placeholder-photo";
@@ -85,11 +84,10 @@ export default function DesignSystemPage() {
       <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <Monogram option="c" variant="metal" className="size-8" title="" aria-hidden />
-            <Wordmark className="text-base" />
+            <Lockup className="text-base" emblemClassName="size-9" />
           </div>
           <nav aria-label="Sections" className="hidden gap-5 text-sm text-muted lg:flex">
-            {["Colour", "Type", "Buttons", "Badges", "Cards", "Monograms", "Hero"].map((s) => (
+            {["Colour", "Type", "Buttons", "Badges", "Cards", "Logo", "Hero"].map((s) => (
               <a key={s} href={`#${s.toLowerCase()}`} className="rounded-sm hover:text-fg">
                 {s}
               </a>
@@ -319,55 +317,83 @@ export default function DesignSystemPage() {
         </Section>
 
         <Section
-          id="monograms"
-          title="Monograms"
-          lead="Three options for the LV mark, drawn from Cinzel's own letterforms. The letters stand side by side on purpose: an interlocking L and V reads as Louis Vuitton's registered monogram. Pick one for the favicon, app icon, loading state and photo watermark."
+          id="logo"
+          title="Logo"
+          lead="The Luxx4less logo from your Facebook page, redrawn as crisp vector artwork: the eight-point star frame in its original peach gold, the bevelled L with its channel of diamonds, and the wordmark. It stays sharp at any size and can move."
         >
-          <div className="grid gap-6 lg:grid-cols-3">
-            {MONOGRAMS.map((m) => (
-              <Card key={m.id} className="overflow-hidden">
-                <div className="surface-velvet grid place-items-center py-10">
-                  <Monogram option={m.id} variant="metal" className="size-40" />
-                </div>
-                <CardBody className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted">Option {m.id.toUpperCase()}</p>
-                    <h3 className="mt-1 text-2xl">{m.name}</h3>
-                    <p className="mt-2 text-sm text-muted">{m.story}</p>
+          <div className="grid gap-6 lg:grid-cols-12">
+            <Card className="surface-velvet overflow-hidden lg:col-span-7">
+              <CardBody className="grid place-items-center gap-2 py-12">
+                <Lockup layout="stacked" animate emblemClassName="size-56" />
+                <p className="mt-6 max-w-sm text-center text-sm text-muted">
+                  The living emblem: the frame draws itself in, then the diamonds catch the light one after another. Used for the page loader and brand moments;
+                  it stays still for visitors who turn motion off.
+                </p>
+              </CardBody>
+            </Card>
+            <div className="grid gap-6 lg:col-span-5">
+              <Card className="overflow-hidden">
+                <div className="grid grid-cols-2">
+                  <div className="surface-velvet grid place-items-center p-6">
+                    <Emblem className="size-32" title="Luxx4less logo, original flat gold frame" />
+                    <span className="mt-2 text-2xs text-muted">Original finish</span>
                   </div>
-                  <div className="flex items-end gap-4" aria-label="Small sizes">
-                    {[64, 32, 16].map((s) => (
-                      <div key={s} className="flex flex-col items-center gap-1">
+                  <div className="surface-velvet grid place-items-center border-l border-line p-6">
+                    <Emblem frame="foil" className="size-32" title="Luxx4less logo, foil frame" />
+                    <span className="mt-2 text-2xs text-muted">Foil finish</span>
+                  </div>
+                </div>
+              </Card>
+              <Card>
+                <CardBody className="space-y-4">
+                  <p className="text-sm font-semibold">Small sizes and single colour</p>
+                  <div className="flex flex-wrap items-end gap-4" aria-label="Small sizes">
+                    {[64, 32, 16].map((px) => (
+                      <div key={px} className="flex flex-col items-center gap-1">
                         <div className="grid place-items-center rounded-md bg-velvet p-1.5">
-                          <Monogram option={m.id} variant="gold" style={{ width: s, height: s }} title="" aria-hidden />
+                          <Emblem detail="simple" style={{ width: px, height: px }} title="" />
                         </div>
-                        <span className="tabular text-2xs text-muted">{s}px</span>
+                        <span className="tabular text-2xs text-muted">{px}px</span>
                       </div>
                     ))}
                     <div className="flex flex-col items-center gap-1">
-                      <div className="grid size-[76px] place-items-center rounded-[18px] bg-gold-metal">
-                        <Monogram option={m.id} variant="current" className="size-12 text-velvet" title="" aria-hidden />
+                      <div className="grid size-[76px] place-items-center rounded-[18px] bg-velvet">
+                        <Emblem detail="simple" className="size-14" title="" />
                       </div>
                       <span className="text-2xs text-muted">app icon</span>
                     </div>
                     <div className="flex flex-col items-center gap-1">
-                      <div className="grid place-items-center rounded-md border border-line bg-pearl p-1.5">
-                        <Monogram option={m.id} variant="current" className="size-8 text-bullion-ink" title="" aria-hidden />
+                      <div className="grid place-items-center rounded-md border border-line bg-pearl p-1.5 text-bullion-ink">
+                        <Emblem detail="mono" className="size-12" title="" />
                       </div>
                       <span className="text-2xs text-muted">on pearl</span>
                     </div>
                   </div>
-                  <div className="relative overflow-hidden rounded-lg">
-                    <PlaceholderPhoto label="Listing photo" className="aspect-video" />
-                    <div className="absolute right-3 bottom-3 flex items-center gap-1.5 text-white/70 mix-blend-difference">
-                      <Monogram option={m.id} variant="current" className="size-6" title="" aria-hidden />
-                      <span className="tabular text-2xs">LV-2026-004821</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted">Watermark preview: monogram + listing ID in the corner of every marketplace photo.</p>
+                  <p className="text-xs text-muted">Below 48px the frame drops its two octagons and the stones become one ice-blue channel, so the mark stays readable in a browser tab.</p>
                 </CardBody>
               </Card>
-            ))}
+            </div>
+          </div>
+
+          <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
+            <Card className="surface-velvet">
+              <CardBody className="space-y-3">
+                <p className="text-sm text-muted">Header lockup, as on your Facebook cover</p>
+                <Lockup className="text-2xl" emblemClassName="size-14" />
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody className="space-y-3">
+                <p className="text-sm text-muted">Watermark on every marketplace photo</p>
+                <div className="relative overflow-hidden rounded-lg">
+                  <PlaceholderPhoto label="Listing photo" className="aspect-video" />
+                  <div className="absolute right-3 bottom-3 flex items-center gap-1.5 text-white/75 mix-blend-difference">
+                    <Emblem detail="mono" className="size-7" title="" />
+                    <span className="tabular text-2xs">LX-2026-004821</span>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
           </div>
         </Section>
 
