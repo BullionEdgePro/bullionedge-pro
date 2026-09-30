@@ -11,7 +11,8 @@ export type NotificationKind =
   | "price_alert"
   | "kyc_update"
   | "review"
-  | "request_match";
+  | "request_match"
+  | "sell_quote";
 
 export type NotifyInput = {
   kind: NotificationKind;

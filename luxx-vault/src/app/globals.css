@@ -235,6 +235,12 @@ body {
   color: transparent;
 }
 
+/* Header price ticker: the strip is doubled, so moving half its width loops seamlessly. */
+@keyframes lx-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
 /* Molten shimmer moving through the hero numerals: one full tile per loop. */
 @keyframes molten {
   from { background-position: 200% 50%; }

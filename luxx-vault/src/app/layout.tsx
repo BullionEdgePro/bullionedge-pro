@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cinzel, Plus_Jakarta_Sans } from "next/font/google";
 import localFont from "next/font/local";
+import { ServiceWorkerRegistrar } from "@/components/install/sw-register";
 import { ThemeProvider } from "@/components/theme-provider";
 import { brand } from "@/config/brand";
 import "./globals.css";
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en-PH" className={`dark ${cinzel.variable} ${peso.variable} ${jakarta.variable}`} suppressHydrationWarning>
       <body>
         <ThemeProvider>{children}</ThemeProvider>
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );

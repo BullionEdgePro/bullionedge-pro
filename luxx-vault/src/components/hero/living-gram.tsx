@@ -2,13 +2,16 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { Info } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, Info } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useLiveMarket } from "@/components/prices/use-live-market";
 import { Magnetic } from "@/components/motion/magnetic";
 import { Button } from "@/components/ui/button";
 import { useMotionTier } from "@/hooks/use-motion-tier";
 import { cn } from "@/lib/cn";
-import { KARATS, phpPerGramAtKarat, type Karat } from "@/lib/pricing";
+import { purityFromKarat, type Market } from "@/lib/market";
+import { KARATS, phpPerGram, type Karat } from "@/lib/pricing";
+import { formatManilaDateTime, formatManilaTime } from "@/lib/prices-format";
 import { useSamplePrice } from "@/lib/sample-price";
 import { CENTERED, type BarLayout } from "./bar-layout";
 import { RollingNumber } from "./rolling-number";
@@ -21,13 +24,32 @@ const whole = new Intl.NumberFormat("en-PH", { maximumFractionDigits: 0 });
 /** Cinzel SemiBold digit advance widths (em), measured from the font file. Cinzel has no tabular figures. */
 const CINZEL_DIGITS = { "0": 0.634, "1": 0.376, "2": 0.596, "3": 0.543, "4": 0.607, "5": 0.536, "6": 0.607, "7": 0.53, "8": 0.586, "9": 0.607 } as const;
 
+const HERO_KARATS = KARATS.filter((k) => k >= 14);
+
+type CaptionFor = (karat: Karat) => { tone: "info" | "warning"; text: ReactNode };
+
 /**
  * "The Living Gram": today's ₱ per gram in huge molten numerals over a 3D
- * gold bar that turns with scroll and sinks into the product grid below.
+ * gold bar that turns with scroll and sinks into the section below.
+ *
+ * The stage is shared by the prototype (sample price, /design-system/hero)
+ * and the home page (live price from the engine).
  */
-export function LivingGram({ children }: { children?: React.ReactNode }) {
+function LivingGramStage({
+  purePerGram,
+  caption,
+  actions,
+  children,
+  headingId = "living-gram-title",
+}: {
+  /** ₱ per gram of pure gold; null when there is no price to show. */
+  purePerGram: number | null;
+  caption: CaptionFor;
+  actions: ReactNode;
+  children?: ReactNode;
+  headingId?: string;
+}) {
   const tier = useMotionTier();
-  const price = useSamplePrice();
   const [karat, setKarat] = useState<Karat>(24);
   const section = useRef<HTMLElement>(null);
   const progress = useRef(0);
@@ -57,7 +79,8 @@ export function LivingGram({ children }: { children?: React.ReactNode }) {
   }, [tier]);
   const [inView, setInView] = useState(true);
 
-  const perGram = phpPerGramAtKarat(price.usdPerOz, price.usdPhp, karat);
+  const perGram = purePerGram ? purePerGram * purityFromKarat(karat) : null;
+  const note = caption(karat);
 
   // Scroll choreography: Lenis smooth scroll + one ScrollTrigger scrubbing progress.
   useEffect(() => {
@@ -108,8 +131,8 @@ export function LivingGram({ children }: { children?: React.ReactNode }) {
 
   return (
     <>
-      <section ref={section} className="surface-velvet relative h-[190svh]" aria-labelledby="living-gram-title">
-        <div ref={stage} className="sticky top-0 flex h-svh flex-col items-center overflow-hidden px-4 pt-20 pb-8 sm:pt-24 sm:pb-10">
+      <section ref={section} className="surface-velvet relative h-[190svh]" aria-labelledby={headingId}>
+        <div ref={stage} className="sticky top-0 flex h-svh flex-col items-center overflow-hidden px-4 pt-[calc(var(--header-top,5.5rem)+6.5rem)] pb-8 sm:pb-10 lg:pt-[calc(var(--header-top,4.5rem)+8.5rem)]">
           {/* Warm vignette — the vault after hours */}
           <div
             aria-hidden
@@ -117,13 +140,13 @@ export function LivingGram({ children }: { children?: React.ReactNode }) {
           />
 
           <div className="relative z-10 flex flex-col items-center text-center">
-            <h1 id="living-gram-title" className="font-sans text-sm font-medium tracking-wide text-muted sm:text-base">
-              Today&rsquo;s gold, per gram
+            <h1 id={headingId} className="font-sans text-sm font-medium tracking-wide text-muted sm:text-base">
+              Today&rsquo;s gold, per gram <span className="sr-only">({karat}K)</span>
             </h1>
             <p className="mt-2 flex items-start font-display font-semibold tracking-tight" aria-live="polite">
               <span className="mt-[0.2em] mr-1 text-[clamp(1.5rem,5vw,4rem)] text-gold-metal">₱</span>
               <RollingNumber
-                value={whole.format(perGram)}
+                value={perGram ? whole.format(perGram) : "—"}
                 digitWidths={CINZEL_DIGITS}
                 className="text-gold-metal animate-molten text-[clamp(4.25rem,18vw,12rem)]"
               />
@@ -152,8 +175,8 @@ export function LivingGram({ children }: { children?: React.ReactNode }) {
           </div>
 
           <div ref={controls} className="relative z-10 flex flex-col items-center text-center">
-            <div role="radiogroup" aria-label="Karat" className="flex flex-wrap justify-center gap-2">
-              {KARATS.filter((k) => k >= 14).map((k) => (
+            <div role="radiogroup" aria-label="Karat" className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+              {HERO_KARATS.map((k) => (
                 <button
                   key={k}
                   type="button"
@@ -161,7 +184,7 @@ export function LivingGram({ children }: { children?: React.ReactNode }) {
                   aria-checked={karat === k}
                   onClick={() => setKarat(k)}
                   className={cn(
-                    "tabular h-10 min-w-16 rounded-full border px-4 text-sm font-semibold transition-colors",
+                    "tabular h-10 min-w-14 rounded-full border px-3 text-sm font-semibold transition-colors sm:min-w-16 sm:px-4",
                     karat === k ? "border-champagne bg-champagne text-velvet" : "border-line bg-surface text-fg hover:border-champagne/70",
                   )}
                 >
@@ -170,25 +193,82 @@ export function LivingGram({ children }: { children?: React.ReactNode }) {
               ))}
             </div>
 
-            <p className="tabular mt-4 flex max-w-xl items-start gap-1.5 text-left text-xs text-muted sm:items-center">
-              <Info className="mt-0.5 size-3.5 shrink-0 sm:mt-0" aria-hidden />
-              <span>
-                Sample price for design review · spot ${whole.format(price.usdPerOz)}/oz · ₱{price.usdPhp.toFixed(2)} per $ · live prices arrive in Phase 3
-              </span>
+            <p
+              className={cn(
+                "tabular mt-4 flex max-w-xl items-start gap-1.5 text-left text-xs sm:items-center",
+                note.tone === "warning" ? "text-warning" : "text-muted",
+              )}
+            >
+              {note.tone === "warning" ? (
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0 sm:mt-0" aria-hidden />
+              ) : (
+                <Info className="mt-0.5 size-3.5 shrink-0 sm:mt-0" aria-hidden />
+              )}
+              <span>{note.text}</span>
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <Magnetic>
-                <Button size="lg">Shop Luxx4less gold</Button>
-              </Magnetic>
-              <Button size="lg" variant="secondary">
-                Sell your gold
-              </Button>
-            </div>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">{actions}</div>
           </div>
         </div>
       </section>
       {children}
     </>
+  );
+}
+
+/** Prototype hero for /design-system/hero: a gently moving sample price, clearly labelled. */
+export function LivingGram({ children }: { children?: ReactNode }) {
+  const price = useSamplePrice();
+  return (
+    <LivingGramStage
+      purePerGram={phpPerGram(price.usdPerOz, price.usdPhp)}
+      caption={() => ({
+        tone: "info",
+        text: `Sample price for design review · spot $${whole.format(price.usdPerOz)}/oz · ₱${price.usdPhp.toFixed(2)} per $`,
+      })}
+      actions={
+        <>
+          <Magnetic>
+            <Button size="lg">Shop Luxx4less gold</Button>
+          </Magnetic>
+          <Button size="lg" variant="secondary">
+            Sell your gold
+          </Button>
+        </>
+      }
+    >
+      {children}
+    </LivingGramStage>
+  );
+}
+
+/**
+ * The home page hero on the real price. `initial` is the server-rendered
+ * market, so the first paint (and the LCP) already shows today's number; the
+ * shared poll keeps it live and the reels roll when it ticks.
+ */
+export function LiveLivingGram({ initial, actions, children }: { initial: Market; actions: ReactNode; children?: ReactNode }) {
+  const { market, stale } = useLiveMarket(initial);
+  const gold = market?.metals.gold ?? null;
+
+  const caption: CaptionFor = (karat) => {
+    if (!gold || !market?.usdPhp) {
+      return { tone: "warning", text: "Gold prices are unavailable right now. Please check again in a few minutes." };
+    }
+    const purity = `${karat}K at ${(purityFromKarat(karat) * 100).toFixed(1)}% gold`;
+    const basis = `spot $${whole.format(gold.usdPerOz)}/oz · ₱${market.usdPhp.toFixed(2)} per $`;
+    if (market.delayed || stale) {
+      return { tone: "warning", text: `Prices delayed · last update ${formatManilaDateTime(market.checkedAt)} · ${purity}` };
+    }
+    if (market.marketClosed) {
+      return { tone: "info", text: `Markets closed · last close · ${purity} · ${basis}` };
+    }
+    return { tone: "info", text: `Live melt value · ${purity} · ${basis} · ${formatManilaTime(market.checkedAt)}` };
+  };
+
+  return (
+    <LivingGramStage purePerGram={gold?.phpPerGram ?? null} caption={caption} actions={actions}>
+      {children}
+    </LivingGramStage>
   );
 }

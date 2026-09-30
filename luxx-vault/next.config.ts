@@ -20,6 +20,14 @@ const config: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      // The service worker must never be served stale, or an update could strand installed apps.
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
+      },
       // Brief §11: the camera opens only where identity is verified (ID photos and the selfie check),
       // and on the hallmark reader, where the camera is how a stamp gets photographed.
       {

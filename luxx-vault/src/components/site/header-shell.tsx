@@ -1,9 +1,10 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring } from "motion/react";
+import { AnimatePresence, motion, useScroll, useSpring } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Lockup } from "@/components/brand/logo";
 import { cn } from "@/lib/cn";
 
@@ -22,16 +23,34 @@ export function HeaderShell({
   nav,
   actions,
   banner,
+  ticker,
+  menuFooter,
   overlay = false,
 }: {
   nav: readonly NavItem[];
   actions: ReactNode;
   banner?: ReactNode;
+  /** The live price ticker: a slim band above the header row. */
+  ticker?: ReactNode;
+  /** Extra links at the foot of the phone menu (account, sign out). */
+  menuFooter?: ReactNode;
   overlay?: boolean;
 }) {
   const [settled, setSettled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const reduce = useReducedMotion();
+  const topStrip = useRef<HTMLDivElement>(null);
+
+  // Publish the height of the strip above the header row (test-mode banner + ticker) as
+  // --header-top, so pages under an overlay header reserve exactly the room it takes.
+  useEffect(() => {
+    const el = topStrip.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const ro = new ResizeObserver(() => root.style.setProperty("--header-top", `${el.offsetHeight}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const { scrollYProgress } = useScroll();
   const thread = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
 
@@ -57,7 +76,10 @@ export function HeaderShell({
 
   return (
     <div className={cn("inset-x-0 top-0 z-40", overlay ? "fixed" : "sticky")}>
-      {banner}
+      <div ref={topStrip}>
+        {banner}
+        {ticker && <div className="relative z-10 border-b border-line/70 bg-velvet/75 backdrop-blur-md">{ticker}</div>}
+      </div>
       <header
         className={cn(
           "relative transition-[background-color,backdrop-filter,box-shadow] duration-500 ease-(--ease-vault)",
@@ -85,7 +107,7 @@ export function HeaderShell({
           <Link
             href="/"
             aria-label="Luxx4less home"
-            className="group justify-self-start rounded-md lg:justify-self-center"
+            className="group min-w-0 justify-self-start rounded-md lg:justify-self-center"
           >
             <Lockup
               className={cn(
@@ -159,6 +181,11 @@ export function HeaderShell({
               ))}
             </ul>
             <div aria-hidden className="mt-12 h-px w-24 bg-[linear-gradient(90deg,#d6b26e,transparent)]" />
+            {menuFooter && (
+              <div className="mt-8 flex flex-wrap items-center gap-4" onClick={() => setMenuOpen(false)}>
+                {menuFooter}
+              </div>
+            )}
             <p className="mt-6 font-display text-sm tracking-[0.2em] text-pearl/60 uppercase">Golds and Diamonds · Since 2019</p>
           </motion.nav>
         )}

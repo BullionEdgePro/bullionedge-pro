@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useEffect, useState } from "react";
 
 /** Brand lines that crossfade slowly. One still line under reduced motion. */

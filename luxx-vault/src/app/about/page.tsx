@@ -53,7 +53,7 @@ export default async function AboutPage() {
             className="absolute inset-0 -z-10 bg-gradient-to-b from-velvet/85 via-velvet/70 to-velvet"
           />
 
-          <div className="mx-auto flex min-h-[88svh] max-w-6xl flex-col justify-end px-4 pb-20 pt-40 sm:px-6">
+          <div className="mx-auto flex min-h-[88svh] max-w-6xl flex-col justify-end px-4 pb-20 pt-[calc(var(--header-top,5.5rem)+7rem)] sm:px-6 lg:pt-[calc(var(--header-top,4.5rem)+9rem)]">
             <Reveal>
               <Emblem className="size-14 text-champagne" />
             </Reveal>

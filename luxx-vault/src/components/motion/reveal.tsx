@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion, type Variants } from "motion/react";
+import { motion, type Variants } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import type { ReactNode } from "react";
 
 const EASE_VAULT = [0.22, 1, 0.36, 1] as const;

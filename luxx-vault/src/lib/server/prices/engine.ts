@@ -129,8 +129,13 @@ async function refresh(): Promise<string[]> {
   return notes;
 }
 
-/** Work that should run after new prices land (price alerts). Registered by those modules. */
-const afterRefreshHooks: (() => Promise<void>)[] = [];
+/**
+ * Work that should run after new prices land (price alerts). Kept on globalThis:
+ * the bundler can load this module more than once (route handlers, instrumentation),
+ * and a hook registered on one copy must fire for refreshes made by any other.
+ */
+const hookStore = globalThis as unknown as { __luxxPriceHooks?: (() => Promise<void>)[] };
+const afterRefreshHooks = (hookStore.__luxxPriceHooks ??= []);
 export function onPricesRefreshed(hook: () => Promise<void>) {
   afterRefreshHooks.push(hook);
 }
