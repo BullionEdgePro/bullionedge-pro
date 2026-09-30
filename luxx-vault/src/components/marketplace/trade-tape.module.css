@@ -1,0 +1,42 @@
+/* The trade tape: one slow strip of completed trades, like a ticker in a
+   bourse after hours. Two identical halves travel exactly one half-width per
+   loop, so the seam never shows. Hover or keyboard focus holds it still. */
+
+.viewport {
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.track {
+  display: flex;
+  width: max-content;
+  animation: tape var(--tape-duration, 90s) linear infinite;
+}
+
+.viewport:hover .track,
+.viewport:focus-within .track {
+  animation-play-state: paused;
+}
+
+@keyframes tape {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* Reduced motion: no travel, no duplicate; the entries simply wrap as a list. */
+.static {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion {
+    display: none;
+  }
+  .static {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
