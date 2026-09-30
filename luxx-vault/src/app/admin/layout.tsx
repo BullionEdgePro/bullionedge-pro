@@ -23,8 +23,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-svh">
       <SiteHeader signedIn />
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
-        <nav aria-label="Staff" className="flex gap-1 overflow-x-auto lg:flex-col">
+      <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
+        <nav aria-label="Staff" className="flex min-w-0 gap-1 overflow-x-auto lg:flex-col">
           <p className="mb-2 hidden font-display text-xs tracking-[0.22em] text-champagne uppercase lg:block">Staff</p>
           {links.map((l) => (
             <Link
