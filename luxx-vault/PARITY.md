@@ -87,3 +87,7 @@ Every row must be checked off before launch. Source: the 2026-09-30 crawl (see A
 | C4 | About: mission, values, founder | `/about` | Luxx4less story, store photos | 7 | [ ] |
 | C5 | Privacy policy (DPA rights) | `/privacy` | DPO contact, data export / delete in account | 7 | [ ] |
 | C6 | Terms and conditions | `/terms` + `/prohibited-items`, `/refund-policy`, `/kyc-policy`, `/cookies` | — | 7 | [ ] |
+
+## Beyond parity
+
+Luxx Vault originals (Owner Studio, seller, buyer and reseller portals, trust tools) are planned in FEATURES.md. Items marked ★ there aren't on the reference site.

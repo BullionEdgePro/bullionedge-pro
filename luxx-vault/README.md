@@ -2,7 +2,7 @@
 
 Precious-metals storefront and verified marketplace for Luxx4less Golds and Diamonds. The full brief is in `PROMPT.md`.
 
-Current phase: **0, reference audit — awaiting owner review** (see `AUDIT.md`, `PARITY.md`, `TODO.md`, `DECISIONS.md`; screenshots in `audit/screenshots/`).
+Current phase: **0, reference audit — awaiting owner review** (see `AUDIT.md`, `PARITY.md`, `FEATURES.md`, `TODO.md`, `DECISIONS.md`; screenshots in `audit/screenshots/`).
 
 ## Run the reference audit (Windows)
 

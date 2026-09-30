@@ -13,6 +13,7 @@
 - [ ] Project home: keep in `luxx-vault/` here, or create a dedicated repository (recommended)
 - [ ] Platform name "Luxx Vault" `[CONFIRM]`
 - [ ] Business model: free to join? fees on marketplace trades?
+- [ ] Review FEATURES.md: approve, cut or reprioritise; confirm Luxx-Tested fee, consignment terms, buyback rate, reseller commission
 - [ ] Full Antipolo address, current follower counts, email (domain email recommended), phone numbers, Lazada store URL, Messenger channel link
 
 ## Brand assets (owner)
