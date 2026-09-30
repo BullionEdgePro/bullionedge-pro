@@ -23,3 +23,5 @@ preview/*
 /src/generated/prisma
 test-results/
 playwright-report/
+.vercel
+.env*

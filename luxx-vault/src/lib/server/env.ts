@@ -22,6 +22,12 @@ const schema = z
     HIBP_CHECK: z.enum(["on", "off"]).default("on"),
     /** WebAuthn relying party id: the bare domain, e.g. luxx4less.ph. Defaults to the host of BETTER_AUTH_URL. */
     PASSKEY_RP_ID: z.string().optional(),
+    /** gold-api.com key: only the price-history backfill needs it (free tier, 10 requests/hour). Live prices work without it. */
+    GOLD_API_KEY: z.string().optional(),
+    /** metals.dev key: optional second source for spot prices when gold-api.com is down. */
+    METALS_DEV_API_KEY: z.string().optional(),
+    /** Protects /api/cron/*. Vercel Cron sends it as "Authorization: Bearer <CRON_SECRET>". */
+    CRON_SECRET: z.string().min(16).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.EMAIL_PROVIDER === "resend" && !env.RESEND_API_KEY) {

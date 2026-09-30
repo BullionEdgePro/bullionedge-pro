@@ -120,3 +120,62 @@ export function FormAlert({ tone = "danger", children }: { tone?: "danger" | "su
     </div>
   );
 }
+
+const selectClass =
+  "h-12 w-full cursor-pointer appearance-none rounded-lg border border-line bg-surface bg-[length:1rem] bg-[right_0.9rem_center] bg-no-repeat pl-3.5 pr-10 text-base text-fg transition-colors hover:border-gold-large/50 focus-visible:border-ring aria-invalid:border-danger disabled:cursor-not-allowed disabled:opacity-60";
+// A champagne chevron, so the native select matches the vault styling.
+const chevron =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d6b26e' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")";
+
+/** Native select (best on phones), styled to the tokens. */
+export function Select({ className, style, ...props }: ComponentProps<"select">) {
+  return <select className={cn(selectClass, className)} style={{ backgroundImage: chevron, ...style }} {...props} />;
+}
+
+export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
+  return (
+    <textarea
+      className={cn(
+        "min-h-28 w-full rounded-lg border border-line bg-surface px-3.5 py-3 text-base text-fg placeholder:text-muted/70 transition-colors hover:border-gold-large/50 focus-visible:border-ring aria-invalid:border-danger",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/**
+ * Multi-select as toggle chips (specialisations, tools, product types).
+ * Each chip is a real checkbox, so it submits with the form under `name`.
+ */
+export function ChipGroup({
+  name,
+  options,
+  defaultValue = [],
+  legend,
+  hint,
+}: {
+  name: string;
+  options: readonly string[] | readonly { value: string; label: string }[];
+  defaultValue?: readonly string[];
+  legend: ReactNode;
+  hint?: ReactNode;
+}) {
+  const items = options.map((o) => (typeof o === "string" ? { value: o, label: o } : o));
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="mb-1.5 text-sm font-semibold">{legend}</legend>
+      <div className="flex flex-wrap gap-2">
+        {items.map((o) => (
+          <label key={o.value} className="cursor-pointer">
+            <input type="checkbox" name={name} value={o.value} defaultChecked={defaultValue.includes(o.value)} className="peer sr-only" />
+            <span className="inline-flex h-9 items-center rounded-full border border-line bg-surface px-4 text-sm text-fg/85 transition-[color,background-color,border-color,box-shadow] duration-300 peer-checked:border-champagne peer-checked:bg-gold-tint peer-checked:text-champagne peer-checked:shadow-[0_0_0_1px_rgb(214_178_110/0.35),0_6px_18px_-10px_rgb(214_178_110/0.6)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring hover:border-gold-large/60">
+              {o.label}
+            </span>
+          </label>
+        ))}
+      </div>
+      {hint && <p className="text-xs text-muted">{hint}</p>}
+    </fieldset>
+  );
+}

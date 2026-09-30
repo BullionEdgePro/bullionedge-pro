@@ -2,7 +2,7 @@
   "name": "luxx-vault",
   "version": "0.0.0",
   "private": true,
-  "description": "Luxx4less Golds and Diamonds \u2014 official store and verified precious-metals marketplace",
+  "description": "Luxx4less Golds and Diamonds — official store and verified precious-metals marketplace",
   "type": "module",
   "scripts": {
     "dev": "next dev",
@@ -20,7 +20,8 @@
     "test:e2e": "playwright test",
     "postinstall": "prisma generate",
     "vercel-build": "prisma migrate deploy && next build",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "build:locations": "tsx scripts/build-locations.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

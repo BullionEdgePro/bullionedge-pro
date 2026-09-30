@@ -13,17 +13,17 @@ datasource db {
 }
 
 model User {
-  id               String          @id
+  id               String                    @id
   name             String
   email            String
-  emailVerified    Boolean         @default(false)
+  emailVerified    Boolean                   @default(false)
   image            String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  twoFactorEnabled Boolean?        @default(false)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  twoFactorEnabled Boolean?                  @default(false)
   /// Comma-separated roles: buyer, seller, reseller, support, kyc_reviewer, admin, super_admin
-  role             String?         @default("buyer")
-  banned           Boolean?        @default(false)
+  role             String?                   @default("buyer")
+  banned           Boolean?                  @default(false)
   banReason        String?
   banExpires       DateTime?
   sessions         Session[]
@@ -31,7 +31,29 @@ model User {
   twofactors       TwoFactor[]
   passkeys         Passkey[]
   consents         ConsentRecord[]
-  auditLogs        AuditLog[]      @relation("actor")
+  auditLogs        AuditLog[]                @relation("actor")
+  profile          Profile?
+  phoneOtps        PhoneOtp[]
+  kycSubmissions   KycSubmission[]           @relation("kycApplicant")
+  kycReviews       KycSubmission[]           @relation("kycReviewer")
+  listings         Listing[]
+  buyRequests      BuyRequest[]
+  offersSent       Offer[]                   @relation("offerFrom")
+  offersReceived   Offer[]                   @relation("offerTo")
+  participations   ConversationParticipant[]
+  messages         Message[]
+  purchases        Trade[]                   @relation("tradeBuyer")
+  sales            Trade[]                   @relation("tradeSeller")
+  reviewsWritten   Review[]                  @relation("reviewAuthor")
+  reviewsReceived  Review[]                  @relation("reviewSubject")
+  reports          Report[]
+  disputes         Dispute[]
+  savedListings    SavedListing[]
+  priceAlerts      PriceAlert[]
+  channels         NotificationChannel[]
+  notifications    Notification[]
+  media            MediaObject[]
+  sellQuotes       SellQuote[]
 
   @@unique([email])
   @@map("user")
@@ -180,4 +202,566 @@ model DevEmail {
 
   @@index([to, createdAt])
   @@map("dev_email")
+}
+
+// ============================================================ profiles & verification
+
+/// Public-facing profile and verification state. One per user, created at onboarding.
+model Profile {
+  userId             String    @id
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Public showroom address: /sellers/{handle}. Lowercase letters, digits, dots, hyphens.
+  handle             String    @unique
+  displayName        String
+  bio                String?
+  /// E.164, e.g. +639171234567. Shown only to staff, never publicly.
+  phone              String?
+  phoneVerifiedAt    DateTime?
+  regionCode         String?
+  provinceCode       String?
+  cityCode           String?
+  businessName       String?
+  specializations    String[]  @default([])
+  tools              String[]  @default([])
+  /// Lower bound of the chosen EXPERIENCE bucket (config/catalog.ts).
+  yearsExperience    Int?
+  /// Tier 3: government ID + liveness + face match approved.
+  identityVerifiedAt DateTime?
+  /// Tier 4: proof of address + payout account in own name approved.
+  sellerVerifiedAt   DateTime?
+  /// Seller showroom extras.
+  showroomTagline    String?
+  coverMediaId       String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([regionCode, cityCode])
+  @@map("profile")
+}
+
+/// SMS one-time codes (Tier 2). Only a hash of the code is stored.
+model PhoneOtp {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone      String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("phone_otp")
+}
+
+/// An identity (Tier 3) or seller (Tier 4) verification attempt.
+/// ID images are never stored here: the provider holds them. Numbers are masked.
+model KycSubmission {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation("kycApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  /// identity | seller
+  level            String
+  /// Key from config/kyc.ts, e.g. philsys, passport, drivers_license.
+  idType           String?
+  /// Last four characters only, for masked display.
+  idNumberLast4    String?
+  nameOnId         String?
+  birthYear        Int?
+  idExpiry         DateTime?
+  /// Seller level: proof-of-address kind, business registration kind, payout account (masked).
+  addressProofKind String?
+  businessRegKind  String?
+  payoutMasked     String?
+  /// mock | sumsub | veriff | persona
+  provider         String
+  providerRef      String?
+  /// 0..1 scores reported by the provider.
+  livenessScore    Float?
+  faceMatchScore   Float?
+  /// Provider or rule flags: expired_id, name_mismatch, underage, duplicate_face, duplicate_id
+  flags            String[]  @default([])
+  /// pending | approved | needs_resubmission | rejected
+  status           String    @default("pending")
+  decisionReason   String?
+  reviewerId       String?
+  reviewer         User?     @relation("kycReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId, level])
+  @@map("kyc_submission")
+}
+
+// ============================================================ prices
+
+/// One observation from the price engine. At most one per metal per minute.
+model PriceSnapshot {
+  id         String   @id @default(cuid())
+  /// gold | silver | platinum | palladium
+  metal      String
+  usdPerOz   Decimal  @db.Decimal(12, 4)
+  usdPhp     Decimal  @db.Decimal(10, 4)
+  /// Pure metal, PHP per gram.
+  phpPerGram Decimal  @db.Decimal(12, 4)
+  source     String
+  fxSource   String
+  /// When the source says the price was set.
+  observedAt DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([metal, createdAt])
+  @@map("price_snapshot")
+}
+
+/// Daily closing price per metal, for charts and the performance table.
+/// Filled from our own snapshots and, when GOLD_API_KEY is set, backfilled from gold-api.com.
+model PriceDaily {
+  metal      String
+  day        DateTime @db.Date
+  usdPerOz   Decimal  @db.Decimal(12, 4)
+  usdPhp     Decimal? @db.Decimal(10, 4)
+  phpPerGram Decimal? @db.Decimal(12, 4)
+  source     String
+
+  @@id([metal, day])
+  @@map("price_daily")
+}
+
+/// Luxx4less buy/sell spreads ("We buy at" / "We sell at") as a ratio of melt value.
+model Spread {
+  id          String   @id @default(cuid())
+  metal       String   @default("gold")
+  /// Karat for gold, fineness (e.g. 925) for other metals.
+  purity      Int
+  /// jewelry | bullion
+  productType String   @default("jewelry")
+  /// 0.92 = we buy at 92% of melt value.
+  buyRatio    Decimal  @db.Decimal(6, 4)
+  /// 1.18 = we sell at 118% of melt value.
+  sellRatio   Decimal  @db.Decimal(6, 4)
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([metal, purity, productType])
+  @@map("spread")
+}
+
+/// "Tell me when 18K goes below PHP X per gram."
+model PriceAlert {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metal            String
+  /// Gold karat, or null for pure metal.
+  karat            Int?
+  /// above | below
+  direction        String
+  targetPhpPerGram Decimal   @db.Decimal(12, 2)
+  /// email | viber | messenger | in_app
+  channels         String[]  @default(["email", "in_app"])
+  active           Boolean   @default(true)
+  lastTriggeredAt  DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([active, metal])
+  @@index([userId])
+  @@map("price_alert")
+}
+
+// ============================================================ media
+
+/// Uploaded images, re-encoded to WebP with metadata stripped.
+/// Stored in the database by default; lib/server/media can move them to a blob store later.
+model MediaObject {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// listing | showroom_cover | dispute_evidence
+  purpose   String
+  mime      String
+  bytes     Bytes?
+  /// Set when stored externally instead of in `bytes`.
+  url       String?
+  width     Int
+  height    Int
+  sha256    String
+  /// 64-bit difference hash as 16 hex characters, for stolen-photo detection.
+  phash     String
+  createdAt DateTime @default(now())
+
+  @@index([phash])
+  @@index([ownerId, createdAt])
+  @@map("media_object")
+}
+
+// ============================================================ marketplace
+
+/// A verified seller's item for sale.
+model Listing {
+  id               String         @id @default(cuid())
+  /// Short public number shown on watermarks and in chats, e.g. LX-4F7K2.
+  code             String         @unique
+  sellerId         String
+  seller           User           @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  title            String
+  category         String
+  metal            String?
+  karat            Int?
+  /// Parts per thousand (916, 750, 925).
+  finenessPermille Int?
+  goldType         String?
+  form             String?
+  weightGrams      Decimal        @db.Decimal(10, 3)
+  /// fixed | spot_premium
+  pricingMode      String         @default("fixed")
+  pricePhp         Decimal?       @db.Decimal(14, 2)
+  /// spot_premium: price = melt value x (1 + premiumPct / 100).
+  premiumPct       Decimal?       @db.Decimal(6, 2)
+  openToOffers     Boolean        @default(false)
+  description      String
+  hasCertificate   Boolean        @default(false)
+  hasReceipt       Boolean        @default(false)
+  pawnable         Boolean?
+  regionCode       String
+  provinceCode     String?
+  cityCode         String
+  /// draft | active | reserved | sold | expired | removed
+  status           String         @default("active")
+  /// Owner-of-items declaration at listing time.
+  declaredOwnerAt  DateTime
+  luxxTestedAt     DateTime?
+  luxxTestResult   String?
+  views            Int            @default(0)
+  reportCount      Int            @default(0)
+  expiresAt        DateTime
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  images           ListingImage[]
+  offers           Offer[]
+  conversations    Conversation[]
+  trades           Trade[]
+  saved            SavedListing[]
+
+  @@index([status, category, createdAt])
+  @@index([sellerId, status])
+  @@index([regionCode, cityCode])
+  @@map("listing")
+}
+
+model ListingImage {
+  id                   String  @id @default(cuid())
+  listingId            String
+  listing              Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  mediaId              String
+  position             Int     @default(0)
+  /// Set when the photo's perceptual hash matches another seller's photo.
+  duplicateOfListingId String?
+
+  @@index([listingId, position])
+  @@map("listing_image")
+}
+
+/// A buyer's wanted post (the reference calls these bids or buying offers).
+model BuyRequest {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  buyerId       String
+  buyer         User           @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  title         String
+  category      String
+  metal         String?
+  karat         Int?
+  goldType      String?
+  form          String?
+  minGrams      Decimal?       @db.Decimal(10, 3)
+  maxGrams      Decimal?       @db.Decimal(10, 3)
+  budgetMaxPhp  Decimal?       @db.Decimal(14, 2)
+  description   String
+  regionCode    String
+  provinceCode  String?
+  cityCode      String?
+  /// open | fulfilled | closed | expired | removed
+  status        String         @default("open")
+  reportCount   Int            @default(0)
+  expiresAt     DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  offers        Offer[]
+  conversations Conversation[]
+  trades        Trade[]
+
+  @@index([status, category, createdAt])
+  @@index([buyerId, status])
+  @@map("buy_request")
+}
+
+/// An offer on a listing (buyer to seller) or on a wanted post (seller to buyer).
+model Offer {
+  id           String      @id @default(cuid())
+  listingId    String?
+  listing      Listing?    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyRequestId String?
+  buyRequest   BuyRequest? @relation(fields: [buyRequestId], references: [id], onDelete: Cascade)
+  fromUserId   String
+  fromUser     User        @relation("offerFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId     String
+  toUser       User        @relation("offerTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  amountPhp    Decimal     @db.Decimal(14, 2)
+  weightGrams  Decimal?    @db.Decimal(10, 3)
+  message      String?
+  /// pending | accepted | declined | withdrawn | countered | expired
+  status       String      @default("pending")
+  counterOfId  String?
+  expiresAt    DateTime
+  respondedAt  DateTime?
+  createdAt    DateTime    @default(now())
+  trade        Trade?
+
+  @@index([toUserId, status])
+  @@index([fromUserId, status])
+  @@map("offer")
+}
+
+model Conversation {
+  id            String                    @id @default(cuid())
+  listingId     String?
+  listing       Listing?                  @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  buyRequestId  String?
+  buyRequest    BuyRequest?               @relation(fields: [buyRequestId], references: [id], onDelete: SetNull)
+  tradeId       String?                   @unique
+  trade         Trade?                    @relation(fields: [tradeId], references: [id], onDelete: SetNull)
+  lastMessageAt DateTime                  @default(now())
+  createdAt     DateTime                  @default(now())
+  participants  ConversationParticipant[]
+  messages      Message[]
+
+  @@index([lastMessageAt])
+  @@map("conversation")
+}
+
+model ConversationParticipant {
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt     DateTime?
+  blockedAt      DateTime?
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participant")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String?
+  sender         User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  /// user | system
+  kind           String       @default("user")
+  body           String
+  /// Anti-scam detector hits: phone_number, bank_account, off_platform_payment, external_link, pressure
+  flags          String[]     @default([])
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@map("message")
+}
+
+/// A deal between two verified users. Money is held by a payment provider, never by Luxx4less.
+model Trade {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  listingId       String?
+  listing         Listing?      @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  buyRequestId    String?
+  buyRequest      BuyRequest?   @relation(fields: [buyRequestId], references: [id], onDelete: SetNull)
+  offerId         String?       @unique
+  offer           Offer?        @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  buyerId         String
+  buyer           User          @relation("tradeBuyer", fields: [buyerId], references: [id], onDelete: Restrict)
+  sellerId        String
+  seller          User          @relation("tradeSeller", fields: [sellerId], references: [id], onDelete: Restrict)
+  amountPhp       Decimal       @db.Decimal(14, 2)
+  /// Snapshot of what was traded, for the anonymised trade tape.
+  category        String
+  metal           String?
+  karat           Int?
+  goldType        String?
+  form            String?
+  weightGrams     Decimal       @db.Decimal(10, 3)
+  regionCode      String
+  cityCode        String?
+  /// shipping | meetup | luxx_meetup
+  fulfilment      String        @default("shipping")
+  trackingNumber  String?
+  courier         String?
+  /// awaiting_payment | payment_held | shipped | received | released | disputed | refunded | cancelled
+  status          String        @default("awaiting_payment")
+  /// mock | paymongo | xendit
+  paymentProvider String        @default("mock")
+  paymentRef      String?
+  /// Released automatically after this date if no dispute is open.
+  autoReleaseAt   DateTime?
+  releasedAt      DateTime?
+  /// Either side can keep a completed trade off the public trade tape.
+  hideFromTape    Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  conversation    Conversation?
+  reviews         Review[]
+  disputes        Dispute[]
+
+  @@index([status, releasedAt])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@map("trade")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  tradeId   String
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("reviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  subjectId String
+  subject   User     @relation("reviewSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+  rating    Int
+  body      String?
+  createdAt DateTime @default(now())
+
+  @@unique([tradeId, authorId])
+  @@index([subjectId, createdAt])
+  @@map("review")
+}
+
+model Dispute {
+  id               String    @id @default(cuid())
+  tradeId          String
+  trade            Trade     @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  openedById       String
+  openedBy         User      @relation(fields: [openedById], references: [id], onDelete: Cascade)
+  reason           String
+  details          String
+  evidenceMediaIds String[]  @default([])
+  /// open | resolved_buyer | resolved_seller | withdrawn
+  status           String    @default("open")
+  resolution       String?
+  resolvedById     String?
+  resolvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([status, createdAt])
+  @@map("dispute")
+}
+
+model Report {
+  id          String    @id @default(cuid())
+  reporterId  String
+  reporter    User      @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  /// user | listing | buy_request | message | outside_number
+  targetType  String
+  targetId    String
+  reason      String
+  details     String?
+  /// open | actioned | dismissed
+  status      String    @default("open")
+  handledById String?
+  handledAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@map("report")
+}
+
+model SavedListing {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, listingId])
+  @@map("saved_listing")
+}
+
+/// Sell to Luxx4less: an instant estimate turned into a quote request or appraisal booking.
+model SellQuote {
+  id               String    @id @default(cuid())
+  userId           String?
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name             String
+  contact          String
+  metal            String
+  karat            Int?
+  finenessPermille Int?
+  weightGrams      Decimal   @db.Decimal(10, 3)
+  estimatePhp      Decimal   @db.Decimal(14, 2)
+  /// antipolo | ongpin | online
+  branch           String
+  preferredDate    DateTime?
+  notes            String?
+  /// new | contacted | booked | bought | closed
+  status           String    @default("new")
+  createdAt        DateTime  @default(now())
+
+  @@index([status, createdAt])
+  @@map("sell_quote")
+}
+
+// ============================================================ notifications
+
+/// A Viber or Messenger account linked to a user, for alerts outside email.
+model NotificationChannel {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// viber | messenger
+  kind       String
+  /// The platform's id for this person (Viber user id, Messenger PSID). Null until linked.
+  externalId String?
+  /// One-time code carried in the deep link, matched by the webhook.
+  linkCode   String?   @unique
+  linkedAt   DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([userId, kind])
+  @@map("notification_channel")
+}
+
+/// In-app notification feed (bell icon), also the record of where each one was delivered.
+model Notification {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// offer_received | offer_accepted | message | trade_update | price_alert | kyc_update | review
+  kind         String
+  title        String
+  body         String
+  href         String?
+  /// Channels actually delivered: in_app, email, viber, messenger
+  deliveredVia String[]  @default([])
+  readAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, readAt, createdAt])
+  @@map("notification")
+}
+
+/// What the mock Viber and Messenger adapters would have sent (like dev_email).
+model DevOutbox {
+  id        String   @id @default(cuid())
+  channel   String
+  to        String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([channel, createdAt])
+  @@map("dev_outbox")
 }
