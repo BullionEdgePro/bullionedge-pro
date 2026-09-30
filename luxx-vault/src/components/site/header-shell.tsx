@@ -7,7 +7,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Lockup } from "@/components/brand/logo";
 import { cn } from "@/lib/cn";
 
-export type NavItem = { href: string; label: string };
+/** `desktopHidden` items appear only in the phone menu (the desktop bar has room for four). */
+export type NavItem = { href: string; label: string; desktopHidden?: boolean };
 
 /**
  * The house header: tall and open at the top of a page, like the entrance of
@@ -73,10 +74,12 @@ export function HeaderShell({
             settled ? "h-20" : "h-24 lg:h-32",
           )}
         >
-          <nav aria-label="Main" className="hidden items-center gap-9 lg:flex">
-            {nav.map((item) => (
-              <HouseLink key={item.href} {...item} />
-            ))}
+          <nav aria-label="Main" className="hidden items-center gap-6 lg:flex xl:gap-9">
+            {nav
+              .filter((item) => !item.desktopHidden)
+              .map((item) => (
+                <HouseLink key={item.href} href={item.href} label={item.label} />
+              ))}
           </nav>
 
           <Link
@@ -141,7 +144,7 @@ export function HeaderShell({
             exit={reduce ? undefined : { clipPath: "circle(0% at 92% 6%)" }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <ul className="space-y-6">
+            <ul className="space-y-5">
               {nav.map((item, i) => (
                 <motion.li
                   key={item.href}
@@ -149,7 +152,7 @@ export function HeaderShell({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.18 + i * 0.07, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <Link href={item.href} onClick={() => setMenuOpen(false)} className="font-display text-4xl text-gold-metal">
+                  <Link href={item.href} onClick={() => setMenuOpen(false)} className="font-display text-3xl text-gold-metal sm:text-4xl">
                     {item.label}
                   </Link>
                 </motion.li>
@@ -165,7 +168,7 @@ export function HeaderShell({
 }
 
 /** A nav link whose gold underline draws out from the centre. */
-function HouseLink({ href, label }: NavItem) {
+function HouseLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
   const current = pathname === href.split("#")[0] && !href.includes("#");
   return (
@@ -173,7 +176,7 @@ function HouseLink({ href, label }: NavItem) {
       href={href}
       aria-current={current ? "page" : undefined}
       className={cn(
-        "group relative py-2 font-display text-[0.8rem] tracking-[0.22em] uppercase transition-colors duration-300",
+        "group relative py-2 font-display text-[0.75rem] tracking-[0.2em] whitespace-nowrap uppercase transition-colors duration-300 xl:text-[0.8rem] xl:tracking-[0.22em]",
         current ? "text-champagne" : "text-pearl/75 hover:text-champagne",
       )}
     >

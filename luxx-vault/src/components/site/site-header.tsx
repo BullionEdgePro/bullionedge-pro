@@ -5,9 +5,12 @@ import { MockEmailBanner } from "./mock-email-banner";
 import { SignOutButton } from "./sign-out-button";
 
 const NAV: readonly NavItem[] = [
-  { href: "/", label: "Home" },
+  { href: "/marketplace", label: "Marketplace" },
+  { href: "/prices", label: "Prices" },
+  { href: "/tools", label: "Tools" },
   { href: "/about", label: "Our story" },
-  { href: "/about#visit", label: "Visit us" },
+  { href: "/sell", label: "Sell to Luxx4less", desktopHidden: true },
+  { href: "/install", label: "Install the app", desktopHidden: true },
 ];
 
 /**
