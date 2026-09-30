@@ -4,10 +4,14 @@ Precious-metals storefront and verified marketplace for Luxx4less Golds and Diam
 
 Current phase: **2, accounts and security — awaiting owner review.** Put it online with **`DEPLOY.md`**. See `DECISIONS.md` and `TODO.md`; screenshots in `docs/screenshots/phase-2/` and `phase-1/`. Phase 0 audit: `AUDIT.md`, `PARITY.md`, `FEATURES.md`.
 
+## Work on it locally with Claude Code (Windows)
+
+Paste `scripts/setup-windows-local.ps1` into PowerShell. It installs Git, Node.js and Claude Code, clones the project into `C:\CLIENT FILES\LUXXE4LESS\bullionedge-pro`, opens the Claude extension page in Edge, and continues the cloud session on your PC. Inside Claude, type `/chrome` and pick Microsoft Edge.
+
 ## Run it
 
 ```powershell
-cd "C:\CLIENT FILES\LUXXE4LESS\luxx-vault"
+cd "C:\CLIENT FILES\LUXXE4LESS\bullionedge-pro\luxx-vault"
 npm install
 copy .env.example .env      # then fill in DATABASE_URL and BETTER_AUTH_SECRET
 npx prisma migrate dev
@@ -32,7 +36,7 @@ Needs Node.js 22+ and PostgreSQL. Then open http://localhost:3000/design-system 
 ## Run the reference audit (Windows)
 
 ```powershell
-cd "C:\CLIENT FILES\LUXXE4LESS\luxx-vault"
+cd "C:\CLIENT FILES\LUXXE4LESS\bullionedge-pro\luxx-vault"
 npm install
 npx playwright install chromium
 npm run audit:reference
