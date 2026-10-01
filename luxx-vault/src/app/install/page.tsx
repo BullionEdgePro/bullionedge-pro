@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { BellRing, CloudOff, Gauge, ScanSearch } from "lucide-react";
+import { GetTheApp } from "@/components/install/get-the-app";
 import { InstallGuide } from "@/components/install/install-guide";
 import { ServiceWorkerRegistrar } from "@/components/install/sw-register";
 import { GoldRule, Reveal, RisingWords } from "@/components/motion/reveal";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/server/session";
 
 export const metadata: Metadata = {
-  title: "Install the app",
-  description: "Put Luxx4less on your home screen: live gold prices at a glance, price alerts, and the last known prices even offline. No app store needed.",
+  title: "Get the Luxx4less app",
+  description: "Download Luxx4less for Android, or add it to your iPhone home screen: live gold prices, your marketplace account and price alerts, full screen. No app store needed.",
 };
 
 const GIVES = [
@@ -34,15 +37,24 @@ export default async function InstallPage() {
             <RisingWords as="h1" text="Keep the vault on your home screen" className="text-4xl sm:text-5xl" />
             <Reveal delay={0.1}>
               <p className="measure text-lg text-muted">
-                Install Luxx4less straight from your browser. No app store, nothing to pay, and it takes almost no space. It updates itself every
-                time you open it.
+                Download the Android app from this page, or add Luxx4less to your iPhone home screen from Safari. No app store, nothing to pay,
+                about 1.4 MB, and it updates itself every time you open it.
               </p>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <Button asChild size="lg" className="w-fit rounded-full px-7">
+                <a href="#download">
+                  <Download aria-hidden /> Get the app
+                </a>
+              </Button>
             </Reveal>
           </div>
           <Reveal delay={0.15} className="justify-self-center">
             <HomeScreen />
           </Reveal>
         </section>
+
+        <GetTheApp />
 
         <GoldRule />
 

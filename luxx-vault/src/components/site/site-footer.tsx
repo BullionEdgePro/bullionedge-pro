@@ -21,7 +21,7 @@ const COLUMNS = [
       { href: "/tools", label: "Gold value calculator" },
       { href: "/tools/hallmark", label: "Hallmark reader" },
       { href: "/sell", label: "Sell to Luxx4less" },
-      { href: "/install", label: "Install the app" },
+      { href: "/install", label: "Get the app (Android, iPhone)" },
     ],
   },
   {

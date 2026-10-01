@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ph.luxx4less.app",
+      "sha256_cert_fingerprints": [
+        "00:78:4D:62:DF:11:46:6E:C1:9E:1C:12:83:0D:63:78:4D:6F:AA:0D:80:29:C5:55:F2:A3:CA:00:8A:CD:7D:6C"
+      ]
+    }
+  }
+]

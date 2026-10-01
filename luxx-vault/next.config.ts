@@ -20,6 +20,15 @@ const config: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      // The Android app file: download with the right type, never sniffed or framed.
+      {
+        source: "/downloads/:file*.apk",
+        headers: [
+          { key: "Content-Type", value: "application/vnd.android.package-archive" },
+          { key: "Content-Disposition", value: 'attachment; filename="Luxx4less.apk"' },
+          { key: "Cache-Control", value: "public, max-age=300, must-revalidate" },
+        ],
+      },
       // The service worker must never be served stale, or an update could strand installed apps.
       {
         source: "/sw.js",

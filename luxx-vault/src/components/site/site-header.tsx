@@ -12,7 +12,7 @@ const NAV: readonly NavItem[] = [
   { href: "/tools", label: "Tools" },
   { href: "/about", label: "Our story" },
   { href: "/sell", label: "Sell to Luxx4less", desktopHidden: true },
-  { href: "/install", label: "Install the app", desktopHidden: true },
+  { href: "/install", label: "Get the app", desktopHidden: true },
 ];
 
 const quietLink =
