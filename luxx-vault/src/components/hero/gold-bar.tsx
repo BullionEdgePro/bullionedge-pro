@@ -195,17 +195,20 @@ export default function GoldBarCanvas({
   onReady,
   transparent = true,
   layout,
+  maxDpr = 1.75,
 }: {
   progress: ProgressRef;
   active?: boolean;
   onReady?: () => void;
   transparent?: boolean;
   layout?: LayoutRef;
+  /** Cap on device pixel ratio: phones render at 1.5x, which looks the same at arm's length and costs far less. */
+  maxDpr?: number;
 }) {
   return (
     <Canvas
       frameloop={active ? "always" : "never"}
-      dpr={[1, 1.75]}
+      dpr={[1, maxDpr]}
       camera={{ position: [0, 1.15, 5.6], fov: 32 }}
       gl={{ antialias: true, alpha: transparent, preserveDrawingBuffer: false, powerPreference: "high-performance" }}
       onCreated={({ gl }) => {

@@ -16,9 +16,9 @@ function detect(): MotionTier {
   const forced = new URLSearchParams(window.location.search).get("motion");
   if (forced === "full" || forced === "lite" || forced === "static") return forced;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "static";
-  // Phones and tablets get the still render: the 1 MB 3D engine froze mid-range phones for
-  // several seconds (Lighthouse, 1 Oct 2026). Checked before the WebGL probe, which itself costs.
-  if (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 1024) return "lite";
+  // Phones get the 3D bar too (owner, 1 Oct 2026), but it never loads during page load:
+  // the still render shows first and the scene arrives once the page is idle (living-gram.tsx).
+  // Low-memory, low-core and data-saver devices keep the still render.
   const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
   const lowCpu = (nav.hardwareConcurrency ?? 8) <= 4;
   const lowMem = (nav.deviceMemory ?? 8) < 4;

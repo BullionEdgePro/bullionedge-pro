@@ -81,15 +81,30 @@ function LivingGramStage({
   // Desktop 3D waits until the browser is idle, so the price and buttons are ready first.
   const [sceneWanted, setSceneWanted] = useState(false);
   const [sceneShown, setSceneShown] = useState(false);
+  // Phones wait longer: until the page has fully loaded, then a quiet moment, so the 1 MB
+  // engine never competes with the price, the buttons or the first scroll.
   useEffect(() => {
     if (tier !== "full") return;
+    const touch = window.matchMedia("(pointer: coarse)").matches;
     const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
-    if (w.requestIdleCallback) {
-      const id = w.requestIdleCallback(() => setSceneWanted(true), { timeout: 2500 });
-      return () => w.cancelIdleCallback?.(id);
-    }
-    const t = window.setTimeout(() => setSceneWanted(true), 1200);
-    return () => window.clearTimeout(t);
+    let idle: number | undefined;
+    let timer: number | undefined;
+    const schedule = () => {
+      timer = window.setTimeout(
+        () => {
+          if (w.requestIdleCallback) idle = w.requestIdleCallback(() => setSceneWanted(true), { timeout: 3000 });
+          else setSceneWanted(true);
+        },
+        touch ? 1800 : 0,
+      );
+    };
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
+    return () => {
+      window.removeEventListener("load", schedule);
+      if (timer) window.clearTimeout(timer);
+      if (idle !== undefined) w.cancelIdleCallback?.(idle);
+    };
   }, [tier]);
 
   const perGram = purePerGram ? purePerGram * purityFromKarat(karat) : null;
@@ -160,7 +175,13 @@ function LivingGramStage({
           {/* WebGL stage covers the whole pinned screen; the scene fits the bar into the zone below */}
           {tier === "full" && sceneWanted && (
             <div aria-hidden className={cn("absolute inset-0 transition-opacity duration-700", sceneShown ? "opacity-100" : "opacity-0")}>
-              <GoldBarCanvas progress={progress} active={inView} layout={layout} onReady={() => requestAnimationFrame(() => setSceneShown(true))} />
+              <GoldBarCanvas
+                progress={progress}
+                active={inView}
+                layout={layout}
+                maxDpr={typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches ? 1.5 : 1.75}
+                onReady={() => requestAnimationFrame(() => setSceneShown(true))}
+              />
             </div>
           )}
 
