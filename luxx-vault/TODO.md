@@ -8,7 +8,7 @@
   SMS codes, ID checks, face checks, payments, Viber/Messenger alerts.
 - Tests: `npx vitest run` (365), `e2e/marketplace.spec.ts` (12) and `e2e/face-check.spec.ts` (2) —
   see the headers of those files for the env vars they need. Local databases only.
-- Owner to set up when ready: free gold-api.com key (GOLD_API_KEY, 20-year charts), Semaphore (SMS),
+- Owner to set up when ready: free gold-api.com key (GOLD_API_KEY, 20-year charts), SMS (free: SMSGate app on a shop Android phone; paid: Semaphore),
   a KYC vendor with face re-verification, PayMongo or Xendit, Resend + domain email, Viber bot / FB Page
   app, and a GitHub login on the Vercel account for automatic deploys.
 - Accepted IDs: government-issued only (owner, 1 Oct 2026).

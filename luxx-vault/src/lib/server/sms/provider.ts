@@ -6,15 +6,17 @@ import { db } from "../db";
  * SMS delivery behind one interface (brief §0: real vendor adapter plus a
  * clearly labelled mock). Settings are read here, not in env.ts:
  *
- *   SMS_PROVIDER                  mock (default) | semaphore
+ *   SMS_PROVIDER                  mock (default) | semaphore | smsgate
  *   SEMAPHORE_API_KEY             required when SMS_PROVIDER=semaphore
  *   SEMAPHORE_SENDER_NAME         registered sender name (optional; Semaphore's default otherwise)
+ *   SMSGATE_USERNAME / SMSGATE_PASSWORD  required when SMS_PROVIDER=smsgate (shown in the app)
+ *   SMSGATE_URL                   optional; defaults to the public relay https://api.sms-gate.app/3rdparty/v1
  *   ALLOW_MOCK_SMS_IN_PRODUCTION  "true" to allow the mock on a public deployment (demos only:
  *                                 the mock shows the code on screen)
  */
 
 export interface SmsProvider {
-  readonly name: "mock" | "semaphore";
+  readonly name: "mock" | "semaphore" | "smsgate";
   /** True when nothing reaches a real phone and the UI must say so. */
   readonly isTest: boolean;
   send(toE164: string, text: string): Promise<{ ref: string | null }>;
@@ -23,13 +25,19 @@ export interface SmsProvider {
 const settingsSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    SMS_PROVIDER: z.enum(["mock", "semaphore"]).default("mock"),
+    SMS_PROVIDER: z.enum(["mock", "semaphore", "smsgate"]).default("mock"),
+    SMSGATE_USERNAME: z.string().min(1).optional(),
+    SMSGATE_PASSWORD: z.string().min(1).optional(),
+    SMSGATE_URL: z.string().url().default("https://api.sms-gate.app/3rdparty/v1"),
     SEMAPHORE_API_KEY: z.string().min(8).optional(),
     SEMAPHORE_SENDER_NAME: z.string().min(1).max(11).optional(),
     ALLOW_MOCK_SMS_IN_PRODUCTION: z.enum(["true", "false"]).default("false"),
     BETTER_AUTH_URL: z.string().optional(),
   })
   .superRefine((s, ctx) => {
+    if (s.SMS_PROVIDER === "smsgate" && (!s.SMSGATE_USERNAME || !s.SMSGATE_PASSWORD)) {
+      ctx.addIssue({ code: "custom", path: ["SMSGATE_PASSWORD"], message: "SMSGATE_USERNAME and SMSGATE_PASSWORD are required when SMS_PROVIDER=smsgate" });
+    }
     if (s.SMS_PROVIDER === "semaphore" && !s.SEMAPHORE_API_KEY) {
       ctx.addIssue({ code: "custom", path: ["SEMAPHORE_API_KEY"], message: "Required when SMS_PROVIDER=semaphore" });
     }
@@ -44,7 +52,8 @@ let cached: SmsSettings | undefined;
 
 export function smsSettings(): SmsSettings {
   if (!cached) {
-    const parsed = settingsSchema.safeParse(process.env);
+    // A blank line in .env (SMSGATE_URL=) means "not set", not an invalid value.
+    const parsed = settingsSchema.safeParse(Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== "")));
     if (!parsed.success) {
       throw new Error(`Invalid SMS settings:\n${parsed.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n")}`);
     }
@@ -96,12 +105,52 @@ class SemaphoreSmsProvider implements SmsProvider {
   }
 }
 
+/**
+ * SMSGate (sms-gate.app, open source, Apache 2.0): the shop's own Android phone
+ * sends the codes from its SIM, so texts cost only the SIM's load or an
+ * unli-text promo (owner asked for a free option, 1 Oct 2026). The site asks
+ * the relay to send; the phone picks the job up and texts the customer. The
+ * phone must stay on, charged and online. Codes arrive from the shop's number.
+ */
+class SmsGateProvider implements SmsProvider {
+  readonly name = "smsgate" as const;
+  readonly isTest = false;
+  constructor(
+    private readonly url: string,
+    private readonly username: string,
+    private readonly password: string,
+  ) {}
+
+  async send(toE164: string, text: string) {
+    const res = await fetch(`${this.url.replace(/\/+$/, "")}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${Buffer.from(`${this.username}:${this.password}`).toString("base64")}`,
+      },
+      // ttl: a code is useless after it expires, so don't let the phone send it late.
+      body: JSON.stringify({ textMessage: { text }, phoneNumbers: [toE164], ttl: 300 }),
+      signal: AbortSignal.timeout(10_000),
+      cache: "no-store",
+    });
+    const payload = (await res.json().catch(() => null)) as { id?: string; state?: string } | null;
+    if (!res.ok) throw new Error(`The SMS phone gateway rejected the message (HTTP ${res.status}).`);
+    if (payload?.state && /fail/i.test(payload.state)) throw new Error("The SMS phone gateway reported the message as failed.");
+    return { ref: payload?.id ?? null };
+  }
+}
+
 let provider: SmsProvider | undefined;
 
 export function smsProvider(): SmsProvider {
   if (!provider) {
     const s = smsSettings();
-    provider = s.SMS_PROVIDER === "semaphore" ? new SemaphoreSmsProvider(s.SEMAPHORE_API_KEY!, s.SEMAPHORE_SENDER_NAME) : new MockSmsProvider();
+    provider =
+      s.SMS_PROVIDER === "semaphore"
+        ? new SemaphoreSmsProvider(s.SEMAPHORE_API_KEY!, s.SEMAPHORE_SENDER_NAME)
+        : s.SMS_PROVIDER === "smsgate"
+          ? new SmsGateProvider(s.SMSGATE_URL, s.SMSGATE_USERNAME!, s.SMSGATE_PASSWORD!)
+          : new MockSmsProvider();
   }
   return provider;
 }
