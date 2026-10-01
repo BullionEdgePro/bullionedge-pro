@@ -16,9 +16,9 @@ import { cn } from "@/lib/cn";
 export type NavItem = { href: string; label: string; desktopHidden?: boolean; from?: "xl" | "2xl" };
 
 /**
- * The house header: tall and open at the top of a page, like the entrance of
- * a jeweller's, then it settles into a slim band of smoked glass once you
- * start reading. A gold thread along its lower edge fills as you scroll.
+ * The house header: open at the top of a page, then a band of smoked glass
+ * fades in behind it once you start reading. Its height never changes, so
+ * nothing on the page moves. A gold thread along its lower edge fills as you scroll.
  *
  * `overlay` floats it over a full-bleed opening photo instead of pushing the
  * page down.
@@ -96,8 +96,9 @@ export function HeaderShell({
       >
         <div
           className={cn(
-            "mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center gap-4 px-4 transition-[height] duration-500 ease-(--ease-vault) sm:px-8 lg:grid-cols-[1fr_auto_1fr]",
-            settled ? "h-20" : "h-24 lg:h-32",
+            // One fixed height (owner, 1 Oct 2026): a header that shrinks on scroll moves the whole
+            // page, and near the top it flickers as the shrink itself pushes the scroll back.
+            "mx-auto grid h-20 max-w-7xl grid-cols-[1fr_auto] items-center gap-4 px-4 sm:px-8 lg:h-24 lg:grid-cols-[1fr_auto_1fr]",
           )}
         >
           <nav aria-label="Main" className="hidden items-center gap-6 lg:flex xl:gap-7">
@@ -118,8 +119,6 @@ export function HeaderShell({
           >
             <Lockup
               className={cn(
-                "origin-left transition-transform duration-500 ease-(--ease-vault) lg:origin-center",
-                settled ? "scale-[0.86]" : "scale-100",
                 "text-lg sm:text-xl lg:text-2xl",
               )}
               emblemClassName="size-12 sm:size-14 lg:size-16 transition-[filter] duration-500 group-hover:drop-shadow-[0_0_18px_rgb(232_186_136/0.45)]"
