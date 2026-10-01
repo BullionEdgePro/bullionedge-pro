@@ -1,13 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { MailCheck } from "lucide-react";
+import { ArrowLeft, Check, MailCheck, ShoppingBag, Store } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, FormAlert, Input, PasswordInput, StrengthMeter } from "@/components/ui/field";
 import { authClient } from "@/lib/auth-client";
+import { cn } from "@/lib/cn";
 import { passwordStrength } from "@/lib/password-strength";
+
+/** What the person came to do. Not a permanent account type: everyone can buy, and anyone can become a seller later. */
+export type JoinAs = "buyer" | "seller";
+
+const PATHS: Record<JoinAs, { title: string; lead: string; icon: typeof Store; points: string[]; after: string }> = {
+  buyer: {
+    title: "I'm a buyer",
+    lead: "Buy from verified sellers and from Luxx4less.",
+    icon: ShoppingBag,
+    points: ["Post what you're looking for", "Offers and chat with verified sellers", "Protected payment until you receive it", "Price alerts by email, Viber or Messenger"],
+    after: "/account?welcome=1&as=buyer",
+  },
+  seller: {
+    title: "I'm a seller",
+    lead: "List your gold and gems for verified buyers.",
+    icon: Store,
+    points: ["Listings with watermarked photos", "Live gold value and fair-price guide", "Answer buyers' wanted posts", "Your own showroom page to share"],
+    after: "/account?welcome=1&as=seller",
+  },
+};
+
+const callbackFor = (as: JoinAs | null) => (as ? PATHS[as].after : "/account?welcome=1");
 
 const schema = z.object({
   name: z.string().trim().min(2, "Please enter your full name.").max(80),
@@ -21,7 +45,70 @@ const schema = z.object({
 
 type Errors = Partial<Record<keyof z.infer<typeof schema> | "form", string>>;
 
-export function SignUpForm() {
+/** Step one: buyer or seller. Step two: the account form. */
+export function SignUpForm({ as }: { as: JoinAs | null }) {
+  const router = useRouter();
+  if (!as) return <ChooseRole onChoose={(r) => router.replace(`/sign-up?as=${r}`, { scroll: false })} />;
+  return <AccountForm as={as} onBack={() => router.replace("/sign-up", { scroll: false })} />;
+}
+
+function ChooseRole({ onChoose }: { onChoose: (as: JoinAs) => void }) {
+  return (
+    <div className="grid gap-6">
+      <div>
+        <h1 className="text-3xl">Join Luxx4less</h1>
+        <p className="mt-2 text-muted">How will you use it first? You can do both later: one account buys and sells.</p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {(Object.keys(PATHS) as JoinAs[]).map((key) => {
+          const p = PATHS[key];
+          const Icon = p.icon;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onChoose(key)}
+              className={cn(
+                "group relative grid gap-4 overflow-hidden rounded-2xl border border-line bg-surface p-5 text-left transition-[border-color,box-shadow,transform] duration-500 ease-(--ease-vault)",
+                "hover:-translate-y-0.5 hover:border-champagne/70 hover:shadow-[0_18px_40px_-24px_rgb(214_178_110/0.55)] focus-visible:border-champagne",
+              )}
+            >
+              <span aria-hidden className="grid size-12 place-items-center rounded-xl bg-gold-metal text-velvet shadow-[0_8px_24px_-12px_#A8823F]">
+                <Icon className="size-6" />
+              </span>
+              <span>
+                <span className="block font-display text-xl text-fg">{p.title}</span>
+                <span className="mt-1 block text-sm text-muted">{p.lead}</span>
+              </span>
+              <ul className="grid gap-1.5 text-sm text-fg/85">
+                {p.points.map((pt) => (
+                  <li key={pt} className="flex gap-2">
+                    <Check className="mt-0.5 size-4 shrink-0 text-champagne" aria-hidden />
+                    {pt}
+                  </li>
+                ))}
+              </ul>
+              <span className="mt-1 inline-flex items-center text-sm font-semibold text-gold transition-colors group-hover:text-champagne">
+                Continue as {key}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-sm text-muted">
+        Selling needs extra checks (ID, proof of address and a payout account in your name) so buyers can trust every listing.
+      </p>
+      <p className="text-center text-sm text-muted">
+        Already have an account?{" "}
+        <Link href="/sign-in" className="font-semibold text-gold underline-offset-2 hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+function AccountForm({ as, onBack }: { as: JoinAs; onBack: () => void }) {
   const [values, setValues] = useState({ name: "", email: "", password: "", acceptTerms: false, acceptPrivacy: false, ageConfirmed: false, marketing: false });
   const [errors, setErrors] = useState<Errors>({});
   const [pending, setPending] = useState(false);
@@ -48,7 +135,7 @@ export function SignUpForm() {
     // Consents travel with the request; the server refuses sign-up without them and records them.
     const { error } = await authClient.signUp.email({
       ...parsed.data,
-      callbackURL: "/account?welcome=1",
+      callbackURL: callbackFor(as),
     } as Parameters<typeof authClient.signUp.email>[0]);
     setPending(false);
     if (error) {
@@ -58,13 +145,21 @@ export function SignUpForm() {
     setSentTo(parsed.data.email);
   }
 
-  if (sentTo) return <CheckInbox email={sentTo} />;
+  if (sentTo) return <CheckInbox email={sentTo} as={as} />;
 
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-5">
       <div>
-        <h1 className="text-3xl">Create your account</h1>
-        <p className="mt-2 text-muted">Shop official Luxx4less gold and save pieces to your wishlist. Verification unlocks more as you go.</p>
+        <button type="button" onClick={onBack} className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted hover:text-champagne">
+          <ArrowLeft className="size-4" aria-hidden /> Joining as a {as}
+          <span className="sr-only">. Change</span>
+        </button>
+        <h1 className="text-3xl">{as === "seller" ? "Create your seller account" : "Create your account"}</h1>
+        <p className="mt-2 text-muted">
+          {as === "seller"
+            ? "Start with your account. After you confirm your email we'll guide you through the seller checks, then your first listing."
+            : "Browse, post what you want and save pieces. Verification unlocks offers and chat as you go."}
+        </p>
       </div>
       {errors.form && <FormAlert>{errors.form}</FormAlert>}
       <Field label="Full name" error={errors.name}>
@@ -118,11 +213,11 @@ export function SignUpForm() {
   );
 }
 
-function CheckInbox({ email }: { email: string }) {
+function CheckInbox({ email, as }: { email: string; as: JoinAs }) {
   const [state, setState] = useState<"idle" | "sending" | "sent" | "limited">("idle");
   async function resend() {
     setState("sending");
-    const { error } = await authClient.sendVerificationEmail({ email, callbackURL: "/account?welcome=1" });
+    const { error } = await authClient.sendVerificationEmail({ email, callbackURL: callbackFor(as) });
     setState(error?.status === 429 ? "limited" : "sent");
   }
   return (

@@ -24,7 +24,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <RotatingLines lines={LUXURY_LINES} className="mt-10 min-h-[3.5em] max-w-sm font-display text-2xl leading-snug text-gold" />
           </div>
           <p className="relative text-xs text-muted">
-            {brand.publicName} · {brand.branches.map((b) => b.name.replace(" Branch", "")).join(" · ")} · Since {brand.established}
+            {brand.publicName} ·{" "}
+            {brand.branches
+              .filter((b) => !("confirm" in b && b.confirm))
+              .map((b) => b.name.replace(" Branch", ""))
+              .join(" · ")}{" "}
+            · Since {brand.established}
           </p>
         </aside>
 
