@@ -6,10 +6,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Lockup } from "@/components/brand/logo";
+import { BuySellCards, BuySellSwitch } from "./buy-sell-switch";
 import { cn } from "@/lib/cn";
 
-/** `desktopHidden` items appear only in the phone menu (the desktop bar has room for four). */
-export type NavItem = { href: string; label: string; desktopHidden?: boolean };
+/**
+ * `desktopHidden` items appear only in the phone menu. `from` holds an item back
+ * until the desktop bar is wide enough for it (the Buy / Sell switch comes first).
+ */
+export type NavItem = { href: string; label: string; desktopHidden?: boolean; from?: "xl" | "2xl" };
 
 /**
  * The house header: tall and open at the top of a page, like the entrance of
@@ -96,11 +100,14 @@ export function HeaderShell({
             settled ? "h-20" : "h-24 lg:h-32",
           )}
         >
-          <nav aria-label="Main" className="hidden items-center gap-6 lg:flex xl:gap-9">
+          <nav aria-label="Main" className="hidden items-center gap-6 lg:flex xl:gap-7">
+            <BuySellSwitch />
             {nav
               .filter((item) => !item.desktopHidden)
               .map((item) => (
-                <HouseLink key={item.href} href={item.href} label={item.label} />
+                <span key={item.href} className={cn(item.from === "xl" && "hidden xl:inline", item.from === "2xl" && "hidden 2xl:inline")}>
+                  <HouseLink href={item.href} label={item.label} />
+                </span>
               ))}
           </nav>
 
@@ -160,13 +167,16 @@ export function HeaderShell({
           <motion.nav
             id="house-menu"
             aria-label="Main"
-            className="fixed inset-0 z-40 flex flex-col justify-center bg-velvet/97 px-8 backdrop-blur-xl lg:hidden"
+            className="fixed inset-0 z-40 flex flex-col overflow-y-auto overscroll-contain bg-velvet/97 px-6 pt-28 pb-12 backdrop-blur-xl sm:px-8 lg:hidden"
             initial={reduce ? false : { clipPath: "circle(0% at 92% 6%)" }}
             animate={{ clipPath: "circle(150% at 92% 6%)" }}
             exit={reduce ? undefined : { clipPath: "circle(0% at 92% 6%)" }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <ul className="space-y-5">
+            <div className="mb-8" onClick={() => setMenuOpen(false)}>
+              <BuySellCards />
+            </div>
+            <ul className="space-y-4">
               {nav.map((item, i) => (
                 <motion.li
                   key={item.href}
@@ -174,7 +184,7 @@ export function HeaderShell({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.18 + i * 0.07, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <Link href={item.href} onClick={() => setMenuOpen(false)} className="font-display text-3xl text-gold-metal sm:text-4xl">
+                  <Link href={item.href} onClick={() => setMenuOpen(false)} className="font-display text-2xl text-gold-metal sm:text-3xl">
                     {item.label}
                   </Link>
                 </motion.li>

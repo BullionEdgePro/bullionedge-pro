@@ -53,8 +53,8 @@ export const brand = {
   domain: { value: "luxx4less.ph", confirm: true },
   social: {
     facebookUrl: "https://www.facebook.com/luxx4less.phgoldsanddiamonds",
-    // Followers as shown on the Facebook cover (Sep 2026).
-    facebookFollowers: { value: 796_000, confirm: false },
+    // From the Facebook page itself, 1 Oct 2026 ("818,060 followers"). Earlier: 796K on the cover (Sep 2026).
+    facebookFollowers: { value: 818_060, confirm: false },
     instagramHandle: "luxx4less.golds.and.diamonds",
     /** The handle printed on the paper bags for both Facebook and Instagram. */
     packagingHandle: { value: "luxx4less.ph8", confirm: true },

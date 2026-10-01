@@ -264,6 +264,52 @@ body {
   to { transform: translateX(-50%); }
 }
 
+/* Buy / Sell switch in the header (owner, 1 Oct 2026). A ring of gold light travels round
+   the pill's border, and the panel carries a soft light that follows the cursor
+   (--lx-x/--lx-y, set from the pointer). Both are still under reduced motion. */
+@property --lx-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes lx-gilt {
+  to { --lx-angle: 360deg; }
+}
+.lx-gilt-ring {
+  background: conic-gradient(
+    from var(--lx-angle),
+    rgb(214 178 110 / 0.18),
+    rgb(247 231 187 / 0.95) 8%,
+    rgb(214 178 110 / 0.18) 20%,
+    rgb(214 178 110 / 0.18) 55%,
+    rgb(168 130 63 / 0.7) 63%,
+    rgb(214 178 110 / 0.18) 75%
+  );
+  animation: lx-gilt 7s linear infinite;
+}
+.lx-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(260px circle at var(--lx-x, 30%) var(--lx-y, 0%), rgb(214 178 110 / 0.13), transparent 70%);
+}
+
+/* "Get the app" in the header: a glint catches the phone every few seconds, and the
+   panel settles into place. Still under reduced motion (rule at the end of this file). */
+@keyframes lx-app-glint {
+  0%, 78%, 100% { opacity: 0; transform: scale(0.4); box-shadow: 0 0 0 0 rgb(247 231 187 / 0); }
+  86% { opacity: 1; transform: scale(1.25); box-shadow: 0 0 10px 2px rgb(247 231 187 / 0.75); }
+}
+.lx-app-glint {
+  opacity: 0;
+  animation: lx-app-glint 5.2s ease-in-out 1.2s infinite;
+}
+@keyframes lx-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
 /* Molten shimmer moving through the hero numerals: one full tile per loop. */
 @keyframes molten {
   from { background-position: 200% 50%; }

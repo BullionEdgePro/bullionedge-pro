@@ -206,3 +206,15 @@ fails, the alert goes by email.
 **One hydration lesson.** A `<style href precedence>` tag in the header ticker silently stopped every
 page from hydrating. Keyframes now live in globals.css, and `@/hooks/use-reduced-motion` replaces
 motion's hook, which answered differently on the server and the first client render.
+
+## Header: Buy / Sell, Get the app, no test-email banner (1 Oct 2026)
+
+**Test-email banner removed (owner's choice).** Until SMTP_PASSWORD is set in Vercel, email still runs in
+test mode: confirmation and alert emails go to the private on-site mailbox, so new customers can't confirm
+their sign-up. The banner said so on every page; the owner preferred a clean header. Real email (Gmail SMTP
+from info.luxx4lessph@gmail.com) is wired and switches on with that one setting.
+
+**Buy / Sell switch** leads the desktop header: an engraved pill with a sliding gold half and a light that
+circles its border; each half opens a panel of what buyers or sellers can do. On phones the menu opens with
+the same two choices as cards. **Get the app** sits on the right with a QR code for desktop visitors, and
+hides inside the installed app. **Facebook followers** updated to 818,060 from the page itself.

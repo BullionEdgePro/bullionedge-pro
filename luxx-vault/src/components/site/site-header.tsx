@@ -1,16 +1,20 @@
 import Link from "next/link";
+import QRCode from "qrcode";
+import { ANDROID_APP } from "@/config/app-release";
+import { env } from "@/lib/server/env";
+import { GetAppButton } from "./get-app-button";
 import { PriceTicker } from "@/components/prices/price-ticker";
 import { Button } from "@/components/ui/button";
 import { HeaderShell, type NavItem } from "./header-shell";
 import { MobileTabBar } from "./mobile-tab-bar";
-import { MockEmailBanner } from "./mock-email-banner";
 import { SignOutButton } from "./sign-out-button";
 
+// The Buy / Sell switch leads the desktop bar; these follow as the screen allows.
 const NAV: readonly NavItem[] = [
-  { href: "/marketplace", label: "Marketplace" },
+  { href: "/marketplace", label: "Marketplace", desktopHidden: true },
   { href: "/prices", label: "Prices" },
-  { href: "/tools", label: "Tools" },
-  { href: "/about", label: "Our story" },
+  { href: "/tools", label: "Tools", from: "xl" },
+  { href: "/about", label: "Our story", from: "2xl" },
   { href: "/sell", label: "Sell to Luxx4less", desktopHidden: true },
   { href: "/install", label: "Get the app", desktopHidden: true },
 ];
@@ -23,24 +27,35 @@ const quietLink =
  * `overlay` lets a page with a full-bleed opening photo sit under it.
  * The live price ticker rides above it on every page (brief §5 micro-interactions).
  */
-export function SiteHeader({
+/** The QR on the "Get the app" panel: this site's own download section, made once per server process. */
+let qrCache: { base: string; svg: string } | null = null;
+async function appQr(): Promise<string> {
+  const base = env().BETTER_AUTH_URL.replace(/\/$/, "");
+  if (qrCache?.base === base) return qrCache.svg;
+  const svg = await QRCode.toString(`${base}/install#download`, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: "#17101F", light: "#EEF0F3" } });
+  qrCache = { base, svg };
+  return svg;
+}
+
+export async function SiteHeader({
   signedIn,
   overlay = false,
 }: {
   signedIn: boolean;
   overlay?: boolean;
 }) {
+  const getApp = <GetAppButton qrSvg={await appQr()} androidHref={ANDROID_APP.href} androidVersion={ANDROID_APP.version} />;
   return (
     <>
       <HeaderShell
         overlay={overlay}
-        banner={<MockEmailBanner />}
         ticker={<PriceTicker />}
         nav={NAV}
         actions={
           signedIn ? (
             // On phones these live in the menu instead, so the crest and menu button keep their room.
             <div className="hidden items-center gap-3 sm:flex">
+              {getApp}
               <Link href="/account" className={quietLink}>
                 My account
               </Link>
@@ -48,6 +63,7 @@ export function SiteHeader({
             </div>
           ) : (
             <>
+              {getApp}
               <Link href="/sign-in" className={quietLink}>
                 Sign in
               </Link>

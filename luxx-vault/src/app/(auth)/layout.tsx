@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Emblem, Lockup } from "@/components/brand/logo";
-import { MockEmailBanner } from "@/components/site/mock-email-banner";
 import { RotatingLines } from "@/components/site/rotating-lines";
 import { brand } from "@/config/brand";
 import { LUXURY_LINES } from "@/content/lines";
@@ -9,7 +8,6 @@ import { LUXURY_LINES } from "@/content/lines";
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
-      <MockEmailBanner />
       <div className="grid flex-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <aside className="surface-velvet relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
           <div
