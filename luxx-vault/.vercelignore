@@ -1,0 +1,23 @@
+# What the Vercel CLI must never upload. (With this file present the CLI ignores .gitignore.)
+
+# Local settings and secrets: production values live in Vercel's environment variables.
+# A stray .env would also override them at build time (e.g. a localhost BETTER_AUTH_URL).
+.env
+.env.*
+!.env.example
+
+# Raw brand photos, including guest photos still waiting for consent. The site only ships
+# the processed copies in public/images (npm run images).
+brand-assets
+
+# Development material the site doesn't need.
+audit
+docs
+e2e
+preview
+playwright-report
+test-results
+.agents
+.claude
+skills-lock.json
+tsconfig.tsbuildinfo
