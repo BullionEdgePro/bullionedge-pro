@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
 import { AccountNav } from "@/components/site/account-nav";
+import { STAFF_ROLES } from "@/config/roles";
 import { SiteHeader } from "@/components/site/site-header";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/server/db";
@@ -18,7 +19,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
       <SiteHeader signedIn />
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
         <aside className="min-w-0 lg:sticky lg:top-28 lg:self-start">
-          <AccountNav counts={{ "/account/notifications": unreadNotes, "/account/offers": pendingOffers }} />
+          <AccountNav counts={{ "/account/notifications": unreadNotes, "/account/offers": pendingOffers }} staff={viewer.roles.some((r) => STAFF_ROLES.includes(r))} />
         </aside>
         <main className="grid min-w-0 content-start gap-6">
           {viewer.tier < 3 && (

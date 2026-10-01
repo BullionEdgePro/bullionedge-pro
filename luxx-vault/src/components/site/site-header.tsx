@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PriceTicker } from "@/components/prices/price-ticker";
 import { Button } from "@/components/ui/button";
 import { HeaderShell, type NavItem } from "./header-shell";
+import { MobileTabBar } from "./mobile-tab-bar";
 import { MockEmailBanner } from "./mock-email-banner";
 import { SignOutButton } from "./sign-out-button";
 
@@ -22,47 +23,60 @@ const quietLink =
  * `overlay` lets a page with a full-bleed opening photo sit under it.
  * The live price ticker rides above it on every page (brief §5 micro-interactions).
  */
-export function SiteHeader({ signedIn, overlay = false }: { signedIn: boolean; overlay?: boolean }) {
+export function SiteHeader({
+  signedIn,
+  overlay = false,
+}: {
+  signedIn: boolean;
+  overlay?: boolean;
+}) {
   return (
-    <HeaderShell
-      overlay={overlay}
-      banner={<MockEmailBanner />}
-      ticker={<PriceTicker />}
-      nav={NAV}
-      actions={
-        signedIn ? (
-          // On phones these live in the menu instead, so the crest and menu button keep their room.
-          <div className="hidden items-center gap-3 sm:flex">
-            <Link href="/account" className={quietLink}>
-              My account
-            </Link>
-            <SignOutButton />
-          </div>
-        ) : (
-          <>
-            <Link href="/sign-in" className={quietLink}>
-              Sign in
-            </Link>
-            <Button asChild size="sm" className="hidden rounded-full px-5 sm:inline-flex">
-              <Link href="/sign-up">Join</Link>
-            </Button>
-          </>
-        )
-      }
-      menuFooter={
-        signedIn ? (
-          <>
+    <>
+      <HeaderShell
+        overlay={overlay}
+        banner={<MockEmailBanner />}
+        ticker={<PriceTicker />}
+        nav={NAV}
+        actions={
+          signedIn ? (
+            // On phones these live in the menu instead, so the crest and menu button keep their room.
+            <div className="hidden items-center gap-3 sm:flex">
+              <Link href="/account" className={quietLink}>
+                My account
+              </Link>
+              <SignOutButton />
+            </div>
+          ) : (
+            <>
+              <Link href="/sign-in" className={quietLink}>
+                Sign in
+              </Link>
+              <Button
+                asChild
+                size="sm"
+                className="hidden rounded-full px-5 sm:inline-flex"
+              >
+                <Link href="/sign-up">Join</Link>
+              </Button>
+            </>
+          )
+        }
+        menuFooter={
+          signedIn ? (
+            <>
+              <Button asChild size="sm" className="rounded-full px-5">
+                <Link href="/account">My account</Link>
+              </Button>
+              <SignOutButton />
+            </>
+          ) : (
             <Button asChild size="sm" className="rounded-full px-5">
-              <Link href="/account">My account</Link>
+              <Link href="/sign-up">Create an account</Link>
             </Button>
-            <SignOutButton />
-          </>
-        ) : (
-          <Button asChild size="sm" className="rounded-full px-5">
-            <Link href="/sign-up">Create an account</Link>
-          </Button>
-        )
-      }
-    />
+          )
+        }
+      />
+      <MobileTabBar signedIn={signedIn} />
+    </>
   );
 }

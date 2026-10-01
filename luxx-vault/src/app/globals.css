@@ -165,6 +165,14 @@
   select {
     color-scheme: dark;
   }
+
+  /* Room for the phone tab bar (components/site/mobile-tab-bar.tsx) so the last
+     content and the footer never sit underneath it. */
+  @media (width < 64rem) {
+    body:has(#lx-tabbar) {
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    }
+  }
   select option,
   select optgroup {
     background-color: var(--surface);

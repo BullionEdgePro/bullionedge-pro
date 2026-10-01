@@ -12,9 +12,15 @@ const schema = z
     DATABASE_URL: z.string().url(),
     BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
     BETTER_AUTH_URL: z.string().url(),
-    EMAIL_PROVIDER: z.enum(["resend", "mock"]).default("mock"),
+    EMAIL_PROVIDER: z.enum(["resend", "smtp", "mock"]).default("mock"),
     EMAIL_FROM: z.string().default("Luxx4less <no-reply@luxx4less.ph>"),
     RESEND_API_KEY: z.string().optional(),
+    /** EMAIL_PROVIDER=smtp: any SMTP account. Defaults suit Gmail with an app password (owner's choice, 1 Oct 2026). */
+    SMTP_HOST: z.string().default("smtp.gmail.com"),
+    SMTP_PORT: z.coerce.number().int().default(465),
+    SMTP_USER: z.string().optional(),
+    /** For Gmail: a 16-character app password (Google Account > Security > App passwords), never the account password. */
+    SMTP_PASSWORD: z.string().optional(),
     /** Mock email on a public deployment (demos): the mailbox then needs this key. */
     ALLOW_MOCK_EMAIL_IN_PRODUCTION: z.enum(["true", "false"]).default("false"),
     MAILBOX_KEY: z.string().min(16).optional(),
@@ -30,6 +36,9 @@ const schema = z
     CRON_SECRET: z.string().min(16).optional(),
   })
   .superRefine((env, ctx) => {
+    if (env.EMAIL_PROVIDER === "smtp" && (!env.SMTP_USER || !env.SMTP_PASSWORD)) {
+      ctx.addIssue({ code: "custom", path: ["SMTP_PASSWORD"], message: "SMTP_USER and SMTP_PASSWORD are required when EMAIL_PROVIDER=smtp" });
+    }
     if (env.EMAIL_PROVIDER === "resend" && !env.RESEND_API_KEY) {
       ctx.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "Required when EMAIL_PROVIDER=resend" });
     }

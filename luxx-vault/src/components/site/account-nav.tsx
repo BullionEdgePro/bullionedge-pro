@@ -2,6 +2,7 @@
 
 import {
   Bell,
+  Building2,
   BadgeCheck,
   Gavel,
   Handshake,
@@ -34,11 +35,12 @@ export const ACCOUNT_LINKS = [
 ] as const;
 
 /** Account sidebar on desktop, a swipeable strip on phones. Counts show as gold pips. */
-export function AccountNav({ counts = {} }: { counts?: Partial<Record<string, number>> }) {
+export function AccountNav({ counts = {}, staff = false }: { counts?: Partial<Record<string, number>>; staff?: boolean }) {
   const pathname = usePathname();
+  const links = staff ? [...ACCOUNT_LINKS, { href: "/admin", label: "Staff area", icon: Building2 } as const] : ACCOUNT_LINKS;
   return (
     <nav aria-label="Account" className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-2 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
-      {ACCOUNT_LINKS.map(({ href, label, icon: Icon }) => {
+      {links.map(({ href, label, icon: Icon }) => {
         const active = href === "/account" ? pathname === href : pathname.startsWith(href);
         const count = counts[href];
         return (

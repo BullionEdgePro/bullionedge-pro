@@ -7,6 +7,8 @@ import { requireRole } from "@/lib/server/session";
 export const metadata: Metadata = { title: "Staff", robots: { index: false, follow: false } };
 
 const LINKS = [
+  { href: "/admin", label: "Overview", roles: ["support", "kyc_reviewer", "admin", "super_admin"] },
+  { href: "/admin/customers", label: "Customers", roles: ["support", "kyc_reviewer", "admin", "super_admin"] },
   { href: "/admin/kyc", label: "Verification queue", roles: ["kyc_reviewer", "admin", "super_admin"] },
   { href: "/admin/reports", label: "Reports", roles: ["support", "admin", "super_admin"] },
   { href: "/admin/disputes", label: "Disputes", roles: ["support", "admin", "super_admin"] },
