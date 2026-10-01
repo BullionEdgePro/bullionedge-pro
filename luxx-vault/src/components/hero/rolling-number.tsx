@@ -7,17 +7,23 @@ const DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
  * to its new value. Screen readers get the plain value; the reels are hidden.
  * Motion is disabled globally under prefers-reduced-motion.
  *
- * Reels move with a negative margin — no transform and no positioning. Chrome
- * leaves transformed or positioned descendants out of the parent's
- * `background-clip: text`, which would hide the gold digits.
+ * Gold text goes on each glyph (`glyphClassName`), never on the whole number:
+ * Chrome paints a parent's `background-clip: text` from stale glyph shapes
+ * once the reels below it slide and change width, leaving ghost digits behind
+ * (seen when switching karats, 1 Oct 2026). Per-glyph clipping has nothing
+ * moving underneath it. Pair it with a fixed background attachment so one
+ * gradient still sweeps across all the digits.
  */
 export function RollingNumber({
   value,
   className,
+  glyphClassName,
   digitWidths,
 }: {
   value: string;
   className?: string;
+  /** Applied to every visible glyph, e.g. the gold gradient. */
+  glyphClassName?: string;
   /** Advance width of each digit in em, for proportional-figure fonts. Omit for tabular figures. */
   digitWidths?: Readonly<Record<string, number>>;
 }) {
@@ -32,7 +38,7 @@ export function RollingNumber({
         const key = `${chars.length - i}`; // keyed from the right so reels stay put as the number grows
         if (!/\d/.test(ch)) {
           return (
-            <span key={key + ch} aria-hidden className="inline-block">
+            <span key={key + ch} aria-hidden className={cn("inline-block", glyphClassName)}>
               {ch}
             </span>
           );
@@ -47,7 +53,7 @@ export function RollingNumber({
           >
             <span className="block transition-[margin] duration-700 ease-(--ease-vault)" style={{ marginTop: `${-d}em` }}>
               {DIGITS.map((n) => (
-                <span key={n} className="block h-[1em] text-center">
+                <span key={n} className={cn("block h-[1em] text-center", glyphClassName)}>
                   {n}
                 </span>
               ))}

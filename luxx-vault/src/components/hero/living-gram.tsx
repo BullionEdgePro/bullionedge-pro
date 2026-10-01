@@ -148,7 +148,8 @@ function LivingGramStage({
               <RollingNumber
                 value={perGram ? whole.format(perGram) : "—"}
                 digitWidths={CINZEL_DIGITS}
-                className="text-gold-metal animate-molten text-[clamp(4.25rem,18vw,12rem)]"
+                className="text-[clamp(4.25rem,18vw,12rem)]"
+                glyphClassName="text-gold-metal animate-molten bg-fixed"
               />
             </p>
           </div>
