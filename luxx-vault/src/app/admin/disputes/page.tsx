@@ -116,7 +116,7 @@ export default async function DisputesPage({ searchParams }: { searchParams: Pro
                     <ol className="mt-3 grid gap-2">
                       {[...t.conversation.messages].reverse().map((m) => (
                         <li key={m.id} className="text-xs">
-                          <span className="font-semibold">{m.kind === "system" ? "Luxx4less" : m.senderId === t.buyerId ? "Buyer" : "Seller"}</span> · {m.createdAt.toLocaleString("en-PH")}
+                          <span className="font-semibold">{m.kind === "system" ? "Luxx4less" : m.senderId === t.buyerId ? "Buyer" : "Seller"}</span> · {m.createdAt.toLocaleString("en-PH", { timeZone: "Asia/Manila" })}
                           {m.flags.length > 0 && <span className="ml-1 text-warning">[{m.flags.join(", ")}]</span>}
                           <p className="text-fg/85">{m.body}</p>
                         </li>

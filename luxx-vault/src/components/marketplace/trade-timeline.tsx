@@ -45,7 +45,7 @@ export function TradeTimeline({
                 {s.label}
                 <span className="sr-only">{done ? " (done)" : current ? " (current step)" : " (to come)"}</span>
               </p>
-              {s.at && <p className="text-xs text-muted">{s.at.toLocaleString("en-PH", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</p>}
+              {s.at && <p className="text-xs text-muted">{s.at.toLocaleString("en-PH", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" })}</p>}
               {s.detail && <p className="mt-0.5 text-xs text-muted">{s.detail}</p>}
             </div>
           </li>

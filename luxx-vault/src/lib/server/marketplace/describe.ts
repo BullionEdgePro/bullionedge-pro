@@ -65,7 +65,7 @@ export function timeAgo(date: Date | string, now: Date = new Date()): string {
   if (h < 24) return `${h} h ago`;
   const d = Math.round(h / 24);
   if (d < 14) return `${d} d ago`;
-  return t.toLocaleDateString("en-PH", { day: "numeric", month: "short", year: t.getFullYear() === now.getFullYear() ? undefined : "numeric" });
+  return t.toLocaleDateString("en-PH", { day: "numeric", month: "short", year: t.getFullYear() === now.getFullYear() ? undefined : "numeric", timeZone: "Asia/Manila" });
 }
 
 /** Rounded to the nearest ₱10, so a public per-gram figure never reveals an exact total. */
@@ -75,7 +75,7 @@ export function roundToTen(value: number): number {
 
 /** "Member since Sep 2026". */
 export function monthYear(date: Date): string {
-  return date.toLocaleDateString("en-PH", { month: "short", year: "numeric" });
+  return date.toLocaleDateString("en-PH", { month: "short", year: "numeric", timeZone: "Asia/Manila" });
 }
 
 /** "about 2 hours", "under an hour", "within a day" — typical response time. */

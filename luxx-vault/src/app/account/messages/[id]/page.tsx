@@ -27,7 +27,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   const otherName = other?.user.profile?.displayName ?? other?.user.name ?? "Member";
   const blocked = convo.participants.some((p) => p.blockedAt);
   const context = convo.listing
-    ? { href: `/marketplace/${convo.listing.code}`, code: convo.listing.code, title: convo.listing.title, image: convo.listing.images[0] ? mediaUrl(convo.listing.images[0].mediaId) : null }
+    ? { href: `/marketplace/${convo.listing.code}`, code: convo.listing.code, title: convo.listing.title, image: convo.listing.images[0] && convo.listing.status !== "removed" ? mediaUrl(convo.listing.images[0].mediaId) : null }
     : convo.buyRequest
       ? { href: `/marketplace/wanted/${convo.buyRequest.code}`, code: convo.buyRequest.code, title: convo.buyRequest.title, image: null }
       : null;
@@ -39,7 +39,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
       </Link>
 
       <section className="flex min-w-0 flex-col rounded-2xl border border-line bg-surface-sunk/40 p-4 sm:p-5">
-        <header className="grid gap-3 border-b border-line pb-4">
+        <header className="grid grid-cols-[minmax(0,1fr)] gap-3 border-b border-line pb-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               {context && (

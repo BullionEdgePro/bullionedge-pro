@@ -171,7 +171,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         </ul>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         {/* ------------------------------------------ recent notifications */}
         <section aria-labelledby="recent-title" className="rounded-2xl border border-line bg-surface p-5">
           <div className="flex items-center justify-between gap-3">

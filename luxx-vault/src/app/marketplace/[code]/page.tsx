@@ -130,7 +130,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
 
           <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-14">
             <div className="lg:sticky lg:top-28 lg:self-start">
-              <Gallery photos={photos} title={listing.title} />
+              <Gallery photos={photos} title={listing.title} isPrivate={listing.status === "removed"} />
             </div>
 
             <div className="grid content-start gap-6">
@@ -266,7 +266,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
                   <div>
                     <p className="font-semibold text-fg">Luxx-Tested</p>
                     <p className="text-sm text-muted">
-                      {listing.luxxTestResult} · tested at Luxx4less on {listing.luxxTestedAt.toLocaleDateString("en-PH", { day: "numeric", month: "long", year: "numeric" })}
+                      {listing.luxxTestResult} · tested at Luxx4less on {listing.luxxTestedAt.toLocaleDateString("en-PH", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Manila" })}
                     </p>
                   </div>
                 </section>

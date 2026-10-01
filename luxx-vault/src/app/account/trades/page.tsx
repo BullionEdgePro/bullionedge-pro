@@ -79,7 +79,7 @@ export default async function TradesPage() {
   };
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl">Trades</h1>
@@ -99,18 +99,18 @@ export default async function TradesPage() {
         />
       ) : (
         <>
-          <section aria-labelledby="active-trades" className="grid gap-3">
+          <section aria-labelledby="active-trades" className="grid grid-cols-[minmax(0,1fr)] gap-3">
             <h2 id="active-trades" className="font-display text-sm tracking-[0.2em] text-champagne uppercase">
               In progress
             </h2>
-            {active.length ? <ul className="grid gap-3">{active.map(row)}</ul> : <p className="text-sm text-muted">Nothing in progress.</p>}
+            {active.length ? <ul className="grid grid-cols-[minmax(0,1fr)] gap-3">{active.map(row)}</ul> : <p className="text-sm text-muted">Nothing in progress.</p>}
           </section>
           {past.length > 0 && (
-            <section aria-labelledby="past-trades" className="grid gap-3">
+            <section aria-labelledby="past-trades" className="grid grid-cols-[minmax(0,1fr)] gap-3">
               <h2 id="past-trades" className="font-display text-sm tracking-[0.2em] text-muted uppercase">
                 Completed and closed
               </h2>
-              <ul className="grid gap-3">{past.map(row)}</ul>
+              <ul className="grid grid-cols-[minmax(0,1fr)] gap-3">{past.map(row)}</ul>
             </section>
           )}
         </>

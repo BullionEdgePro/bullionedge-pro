@@ -1,23 +1,35 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { startTransition, useActionState, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/field";
 import { LocationPicker } from "@/components/ui/location-picker";
 import { CATEGORIES, FORMS, GOLD_KARATS, GOLD_TYPES } from "@/config/catalog";
 import { cn } from "@/lib/cn";
 import { createWanted } from "@/lib/server/marketplace/actions/wanted";
-import { SubmitButton } from "./action-form";
 
 /** Post what you're looking for. Sellers with matching active listings are told at once. */
 export function WantedForm({ defaults }: { defaults: { regionCode: string; provinceCode: string; cityCode: string } }) {
-  const [state, action] = useActionState(createWanted, null);
+  const [state, action, posting] = useActionState(createWanted, null);
   const [category, setCategory] = useState("gold_jewelry");
   const [karat, setKarat] = useState("");
   const e = state?.fieldErrors ?? {};
   const isGold = CATEGORIES.find((c) => c.value === category)?.metal === "gold";
 
   return (
-    <form action={action} noValidate className="grid gap-6">
+    <form
+      // Through a transition, not `action=`: React resets a form after its action, which would wipe
+      // what the buyer typed whenever the server sends back a correction.
+      onSubmit={(ev) => {
+        ev.preventDefault();
+        if (posting) return;
+        const data = new FormData(ev.currentTarget);
+        startTransition(() => action(data));
+      }}
+      noValidate
+      className="grid gap-6"
+    >
       <Field label="What are you looking for?" hint="e.g. 18K Saudi rope chain, 10 to 15 g" error={e.title}>
         {(p) => <Input {...p} name="title" maxLength={90} required />}
       </Field>
@@ -101,9 +113,10 @@ export function WantedForm({ defaults }: { defaults: { regionCode: string; provi
         <LocationPicker defaultRegion={defaults.regionCode} defaultProvince={defaults.provinceCode} defaultCity={defaults.cityCode} requireCity={false} errors={{ region: e.regionCode, city: e.cityCode }} />
       </div>
       {state?.error && <FormAlert>{state.error}</FormAlert>}
-      <SubmitButton size="lg" className="w-full sm:w-fit" pendingLabel="Posting…">
-        Post wanted request
-      </SubmitButton>
+      <Button type="submit" size="lg" className="w-full sm:w-fit" disabled={posting} aria-busy={posting || undefined}>
+        {posting ? <Loader2 className="animate-spin" aria-hidden /> : null}
+        {posting ? "Posting…" : "Post wanted request"}
+      </Button>
     </form>
   );
 }

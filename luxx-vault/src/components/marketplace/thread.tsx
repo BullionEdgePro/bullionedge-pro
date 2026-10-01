@@ -12,15 +12,18 @@ import { ScamWarning } from "./scam-warning";
 const POLL_MS = 5000;
 const MAX = 2000;
 
+// Philippine time on the server and in the browser alike: formatting in each side's own zone made the
+// server-rendered times differ from the browser's and broke hydration wherever the server isn't in Manila.
+const PH = "Asia/Manila";
+const phDay = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: PH });
+
 function dayLabel(iso: string): string {
   const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date(Date.now() - 86_400_000);
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return d.toLocaleDateString("en-PH", { weekday: "short", day: "numeric", month: "short" });
+  if (phDay(d) === phDay(new Date())) return "Today";
+  if (phDay(d) === phDay(new Date(Date.now() - 86_400_000))) return "Yesterday";
+  return d.toLocaleDateString("en-PH", { weekday: "short", day: "numeric", month: "short", timeZone: PH });
 }
-const timeLabel = (iso: string) => new Date(iso).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" });
+const timeLabel = (iso: string) => new Date(iso).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", timeZone: PH });
 
 /**
  * One conversation. New messages arrive by polling every five seconds while

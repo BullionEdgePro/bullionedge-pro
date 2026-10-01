@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { audit } from "@/lib/server/audit";
 import { db } from "@/lib/server/db";
@@ -283,7 +284,8 @@ export async function acceptOffer(_prev: ActionState, form: FormData): Promise<A
     const href = `/account/trades/${trade.code}`;
     await notify(offer.fromUserId, { kind: "offer_accepted", title: `Offer accepted · ${trade.code}`, body: `${formatPeso(amount)} for ${offerSubject(offer)}. Next: ${offer.fromUserId === buyerId ? "pay into the protected hold" : "wait for the buyer's payment"}.`, href, channels: ["email"] });
     await notify(viewer.userId, { kind: "trade_update", title: `Trade ${trade.code} opened`, body: `You accepted ${formatPeso(amount)} for ${offerSubject(offer)}.`, href });
-    refresh();
-    return { ok: true, message: "Offer accepted. The trade is open.", href };
+    // Straight to the trade. (Returning `href` for the client to follow doesn't work here: the accepted
+    // offer leaves the list on refresh, so the form that would follow the link unmounts first.)
+    redirect(href);
   });
 }

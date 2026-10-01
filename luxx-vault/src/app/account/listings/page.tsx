@@ -122,7 +122,7 @@ export default async function MyListingsPage() {
                     <span className="inline-flex items-center gap-1">
                       <Gavel className="size-3.5" aria-hidden /> {l._count.offers} offers
                     </span>
-                    <span>{l.status === "active" ? `Up until ${l.expiresAt.toLocaleDateString("en-PH", { day: "numeric", month: "short" })}` : `Listed ${timeAgo(l.createdAt)}`}</span>
+                    <span>{l.status === "active" ? `Up until ${l.expiresAt.toLocaleDateString("en-PH", { day: "numeric", month: "short", timeZone: "Asia/Manila" })}` : `Listed ${timeAgo(l.createdAt)}`}</span>
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-1">
                     {["active", "expired"].includes(l.status) && canSell && (

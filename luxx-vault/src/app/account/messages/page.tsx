@@ -23,7 +23,7 @@ export default async function MessagesPage() {
       take: 100,
       include: {
         participants: { include: { user: { select: { id: true, name: true, profile: { select: { displayName: true } } } } } },
-        listing: { select: { code: true, title: true, images: { orderBy: { position: "asc" }, take: 1, select: { mediaId: true } } } },
+        listing: { select: { code: true, title: true, status: true, images: { orderBy: { position: "asc" }, take: 1, select: { mediaId: true } } } },
         buyRequest: { select: { code: true, title: true } },
         trade: { select: { code: true } },
         messages: { orderBy: { createdAt: "desc" }, take: 1, select: { body: true, flags: true, senderId: true, kind: true } },
@@ -60,7 +60,7 @@ export default async function MessagesPage() {
             return (
               <li key={c.id}>
                 <Link href={`/account/messages/${c.id}`} className={cn("flex items-center gap-4 p-4 transition-colors hover:bg-surface-sunk/60", n > 0 && "bg-gold-tint/20")}>
-                  <MediaImage src={c.listing?.images[0] ? mediaUrl(c.listing.images[0].mediaId) : null} alt="" sizes="56px" className="size-14 shrink-0 rounded-xl" />
+                  <MediaImage src={c.listing?.images[0] && c.listing.status !== "removed" ? mediaUrl(c.listing.images[0].mediaId) : null} alt="" sizes="56px" className="size-14 shrink-0 rounded-xl" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-3">
                       <p className={cn("truncate", n > 0 ? "font-semibold text-fg" : "text-fg/90")}>{otherName}</p>

@@ -1,9 +1,9 @@
 "use client";
 
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Radio, Tag } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Loader2, Radio, Tag } from "lucide-react";
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { useActionState, useMemo, useRef, useState } from "react";
+import { startTransition, useActionState, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, FormAlert, Input, Select, Textarea } from "@/components/ui/field";
 import { LocationPicker } from "@/components/ui/location-picker";
@@ -14,7 +14,6 @@ import { saveListing } from "@/lib/server/marketplace/actions/listings";
 import { itemLabel } from "@/lib/server/marketplace/describe";
 import { DESCRIPTION_MAX, MAX_PHOTOS, TITLE_MAX } from "@/lib/server/marketplace/listing-input";
 import { premiumLabel, suggestedPremiumRange, valueItem, type SpotTable } from "@/lib/server/marketplace/valuation";
-import { SubmitButton } from "./action-form";
 import { PhotoUploader, type UploadedPhoto } from "./photo-uploader";
 
 export type WizardDefaults = {
@@ -72,7 +71,7 @@ export function SellWizard({
   limits: { newSeller: boolean; maxListingValuePhp: number; activeCount: number; maxActive: number; tradesToGraduate: number; sales: number };
 }) {
   const editing = Boolean(defaults.code);
-  const [state, formAction] = useActionState(saveListing, null);
+  const [state, formAction, publishing] = useActionState(saveListing, null);
   const [step, setStep] = useState(0);
   const [photos, setPhotos] = useState<UploadedPhoto[]>(defaults.photos);
   const [category, setCategory] = useState(defaults.category);
@@ -195,7 +194,15 @@ export function SellWizard({
       </ol>
 
       <form
-        action={formAction}
+        // Submitted through a transition rather than `action=`: React resets a form after its action
+        // runs, and a server-side error (e.g. the below-melt check) would then wipe the description,
+        // the checkboxes and the location the seller already filled in.
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (publishing) return;
+          const data = new FormData(e.currentTarget);
+          startTransition(() => formAction(data));
+        }}
         noValidate
         className="grid gap-8"
         onKeyDown={(e) => {
@@ -459,9 +466,10 @@ export function SellWizard({
             </div>
           )}
           {state?.error && <FormAlert>{state.error}</FormAlert>}
-          <SubmitButton size="lg" className="w-full sm:w-auto" pendingLabel={editing ? "Saving…" : "Publishing…"}>
-            {editing ? "Save changes" : "Publish listing"}
-          </SubmitButton>
+          <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={publishing} aria-busy={publishing || undefined}>
+            {publishing ? <Loader2 className="animate-spin" aria-hidden /> : null}
+            {publishing ? (editing ? "Saving…" : "Publishing…") : editing ? "Save changes" : "Publish listing"}
+          </Button>
         </Step>
 
         <div className="flex items-center justify-between gap-3 border-t border-line pt-5">

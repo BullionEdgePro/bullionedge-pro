@@ -101,7 +101,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                   {message && (
                     <div>
                       <p className="text-xs text-muted">
-                        {message.sender?.name ?? "System"} · {message.createdAt.toLocaleString("en-PH")}
+                        {message.sender?.name ?? "System"} · {message.createdAt.toLocaleString("en-PH", { timeZone: "Asia/Manila" })}
                       </p>
                       <p className="mt-1 whitespace-pre-wrap">{message.body}</p>
                       <ScamWarning flags={message.flags} />

@@ -8,9 +8,11 @@ import { cn } from "@/lib/cn";
 /**
  * Listing photos: one large view and a strip of thumbnails. Arrow keys move
  * between photos. Every photo carries the Luxx4less watermark and listing
- * code, stamped at upload.
+ * code, stamped at upload. `isPrivate` (a removed listing, whose photos only
+ * its seller and staff may load) skips the image optimiser, which fetches
+ * without the viewer's session.
  */
-export function Gallery({ photos, title }: { photos: { id: string; url: string }[]; title: string }) {
+export function Gallery({ photos, title, isPrivate = false }: { photos: { id: string; url: string }[]; title: string; isPrivate?: boolean }) {
   const [index, setIndex] = useState(0);
   const current = photos[index];
 
@@ -40,6 +42,7 @@ export function Gallery({ photos, title }: { photos: { id: string; url: string }
           alt={`${title}, photo ${index + 1} of ${photos.length}`}
           fill
           priority={index === 0}
+          unoptimized={isPrivate}
           sizes="(min-width: 1024px) 50vw, 100vw"
           className="object-cover"
         />
@@ -64,7 +67,7 @@ export function Gallery({ photos, title }: { photos: { id: string; url: string }
                   i === index ? "border-champagne" : "border-line opacity-70 hover:opacity-100",
                 )}
               >
-                <Image src={p.url} alt="" fill sizes="80px" className="object-cover" />
+                <Image src={p.url} alt="" fill sizes="80px" unoptimized={isPrivate} className="object-cover" />
               </button>
             </li>
           ))}

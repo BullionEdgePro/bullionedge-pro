@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { db } from "@/lib/server/db";
 import { gramsLabel, itemLabel, roundToTen, timeAgo } from "@/lib/server/marketplace/describe";
 import { placeLabel } from "@/lib/locations";
+import { cn } from "@/lib/cn";
 import { formatPeso } from "@/lib/pricing";
 import styles from "./trade-tape.module.css";
 
@@ -44,9 +45,10 @@ async function loadTape(): Promise<TapeEntry[]> {
   });
 }
 
-function Entry({ e }: { e: TapeEntry }) {
+/** One entry. On the moving tape it stays on one line; in the still list (reduced motion) it may wrap, so a phone never scrolls sideways. */
+function Entry({ e, wrap = false }: { e: TapeEntry; wrap?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-3 whitespace-nowrap px-6 text-sm">
+    <span className={cn("inline-flex items-center gap-3 text-sm", wrap ? "flex-wrap gap-y-1" : "whitespace-nowrap px-6")}>
       <span aria-hidden className="size-1.5 rotate-45 bg-champagne/70" />
       <span className="font-semibold text-fg">{e.item}</span>
       <span className="tabular text-muted">{e.weight}</span>
@@ -102,10 +104,10 @@ export async function TradeTape() {
                 ))}
               </div>
             </div>
-            <ul aria-hidden className={`${styles.static} -mx-6 gap-y-2`}>
+            <ul aria-hidden className={`${styles.static} gap-x-8 gap-y-2`}>
               {entries.slice(0, 8).map((e) => (
-                <li key={e.id}>
-                  <Entry e={e} />
+                <li key={e.id} className="min-w-0">
+                  <Entry e={e} wrap />
                 </li>
               ))}
             </ul>

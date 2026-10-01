@@ -41,7 +41,7 @@ export default async function OffersPage({ searchParams }: { searchParams: Promi
       orderBy: [{ createdAt: "desc" }],
       take: 100,
       include: {
-        listing: { select: { code: true, title: true, sellerId: true, images: { orderBy: { position: "asc" }, take: 1, select: { mediaId: true } } } },
+        listing: { select: { code: true, title: true, sellerId: true, status: true, images: { orderBy: { position: "asc" }, take: 1, select: { mediaId: true } } } },
         buyRequest: { select: { code: true, title: true, buyerId: true } },
         fromUser: { select: { name: true, profile: { select: { displayName: true, handle: true } } } },
         toUser: { select: { name: true, profile: { select: { displayName: true, handle: true } } } },
@@ -105,7 +105,7 @@ export default async function OffersPage({ searchParams }: { searchParams: Promi
             return (
               <li key={o.id} className={cn("grid gap-4 rounded-2xl border bg-surface p-4 sm:grid-cols-[5rem_minmax(0,1fr)] sm:p-5", o.status === "pending" ? "border-champagne/40" : "border-line")}>
                 <Link href={subject.href} className="block overflow-hidden rounded-xl">
-                  <MediaImage src={o.listing?.images[0] ? mediaUrl(o.listing.images[0].mediaId) : null} alt={subject.title} sizes="80px" className="aspect-square" />
+                  <MediaImage src={o.listing?.images[0] && o.listing.status !== "removed" ? mediaUrl(o.listing.images[0].mediaId) : null} alt={subject.title} sizes="80px" className="aspect-square" />
                 </Link>
                 <div className="grid min-w-0 gap-2">
                   <div className="flex flex-wrap items-center gap-2">

@@ -35,7 +35,7 @@ export default async function TradePage({ params }: { params: Promise<{ code: st
   const t = await db.trade.findUnique({
     where: { code },
     include: {
-      listing: { select: { code: true, title: true, images: { orderBy: { position: "asc" }, take: 1, select: { mediaId: true } } } },
+      listing: { select: { code: true, title: true, status: true, images: { orderBy: { position: "asc" }, take: 1, select: { mediaId: true } } } },
       buyRequest: { select: { code: true, title: true } },
       buyer: { select: { id: true, name: true, profile: { select: { displayName: true, handle: true } } } },
       seller: { select: { id: true, name: true, profile: { select: { displayName: true, handle: true } } } },
@@ -88,7 +88,7 @@ export default async function TradePage({ params }: { params: Promise<{ code: st
       </Link>
 
       <header className="grid gap-4 rounded-2xl border border-champagne/25 bg-[linear-gradient(135deg,rgb(214_178_110/0.08),transparent_55%)] p-5 sm:grid-cols-[6rem_minmax(0,1fr)] sm:p-6">
-        <MediaImage src={t.listing?.images[0] ? mediaUrl(t.listing.images[0].mediaId) : null} alt={title} sizes="96px" className="aspect-square rounded-xl" />
+        <MediaImage src={t.listing?.images[0] && t.listing.status !== "removed" ? mediaUrl(t.listing.images[0].mediaId) : null} alt={title} sizes="96px" className="aspect-square rounded-xl" />
         <div className="grid min-w-0 gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-display text-xs tracking-[0.24em] text-champagne tabular">{t.code}</span>
@@ -174,7 +174,7 @@ export default async function TradePage({ params }: { params: Promise<{ code: st
                 {FULFILMENT[t.fulfilment]}
                 {t.courier ? `: ${t.courier}, tracking ${t.trackingNumber}` : ""}.
                 {t.fulfilment === "luxx_meetup" && branch ? ` ${branch.address}.` : ""}
-                {t.autoReleaseAt ? ` If nothing is reported, the payment is released on ${t.autoReleaseAt.toLocaleDateString("en-PH", { day: "numeric", month: "long" })}.` : ""}
+                {t.autoReleaseAt ? ` If nothing is reported, the payment is released on ${t.autoReleaseAt.toLocaleDateString("en-PH", { day: "numeric", month: "long", timeZone: "Asia/Manila" })}.` : ""}
               </p>
               {role === "buyer" && <ReceiveForm code={t.code} />}
             </div>
@@ -205,7 +205,7 @@ export default async function TradePage({ params }: { params: Promise<{ code: st
           {t.status === "released" && (
             <div className="grid gap-5">
               <p className="flex items-center gap-2 text-sm text-success">
-                <ShieldCheck className="size-4" aria-hidden /> Completed {t.releasedAt?.toLocaleDateString("en-PH", { day: "numeric", month: "long", year: "numeric" })}.
+                <ShieldCheck className="size-4" aria-hidden /> Completed {t.releasedAt?.toLocaleDateString("en-PH", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Manila" })}.
               </p>
               {myReview ? (
                 <div className="text-sm">

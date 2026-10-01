@@ -139,7 +139,7 @@ export default async function AdminListingsPage({ searchParams }: { searchParams
                   )}
                   {l.luxxTestedAt && (
                     <p className="text-sm text-muted">
-                      Luxx-Tested {l.luxxTestedAt.toLocaleDateString("en-PH")}: {l.luxxTestResult}
+                      Luxx-Tested {l.luxxTestedAt.toLocaleDateString("en-PH", { timeZone: "Asia/Manila" })}: {l.luxxTestResult}
                     </p>
                   )}
                   <div className="flex flex-wrap gap-1">

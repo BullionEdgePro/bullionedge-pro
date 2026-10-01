@@ -25,7 +25,7 @@ function SectionCard({ title, description, children }: { title: string; descript
   );
 }
 
-const when = (d: Date | string) => new Date(d).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" });
+const when = (d: Date | string) => new Date(d).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" });
 
 // ------------------------------------------------------------ two-step sign-in
 
@@ -243,7 +243,7 @@ export function SessionsSection({ currentToken, items }: { currentToken: string;
                     <span className="block truncate font-semibold">
                       {d.name} {current && <Badge tone="success" className="ml-1">This device</Badge>}
                     </span>
-                    <span className="text-xs text-muted">
+                    <span className="text-xs text-muted wrap-anywhere">
                       Last active {when(s.updatedAt)}
                       {s.ipAddress ? ` · ${s.ipAddress}` : ""}
                     </span>
