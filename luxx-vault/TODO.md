@@ -11,7 +11,7 @@ Nothing is pushed or deployed yet. All work is in local commits on `claude/hopef
 - **Then:** full browser run (sign-up → verify → list → offer → chat → trade → review) at 390px and
   desktop; update PARITY.md; deploy with the Vercel CLI (project `luxx4less`, Neon `luxx4less-db`
   already connected, env secrets set; add CRON_SECRET); open the live site in Edge; push.
-- **Owner to answer:** keep college ID (18+) in the accepted-ID list? (`src/config/kyc.ts`)
+- Accepted IDs: government-issued only (owner, 1 Oct 2026); school ID removed.
 - **Owner accounts later:** free gold-api.com key (20-year history), Semaphore (SMS), Viber bot /
   Facebook Page app (alerts), a KYC vendor and PayMongo/Xendit before real trading.
 - Local: Postgres runs in docker `luxx-pg`; `npm run dev:users` recreates test accounts.

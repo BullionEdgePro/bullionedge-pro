@@ -34,7 +34,6 @@ export const ID_TYPES = [
   { value: "pwd", label: "PWD ID", issuer: "PDAO / your city or municipality", hasBack: true, hasExpiry: true, numberHint: "PWD ID number" },
   { value: "voters", label: "Voter's ID or voter's certification", issuer: "Commission on Elections", hasBack: true, hasExpiry: false, numberHint: "VIN or precinct reference" },
   { value: "ofw", label: "OFW / OWWA ID", issuer: "DMW / OWWA", hasBack: true, hasExpiry: true, numberHint: "OFW ID number" },
-  { value: "school", label: "School ID (college, 18 and over only)", issuer: "Your school", hasBack: true, hasExpiry: true, numberHint: "Student number" },
 ] as const satisfies readonly IdType[];
 
 export type IdTypeValue = (typeof ID_TYPES)[number]["value"];
