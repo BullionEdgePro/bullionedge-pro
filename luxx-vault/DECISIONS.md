@@ -164,3 +164,45 @@ opens as a widening circle from the button. `/about` floats the header over its 
 at the top of the page, a single band of light across gold buttons on hover, and photos that lean
 in slowly with a mat line appearing on hover. All of it is decoration only: no layout shift, and
 reduced motion turns the moving parts off.
+
+## The full build before launch (30 Sep – 1 Oct 2026)
+
+The owner chose to build everything before going live: prices, verification and the marketplace,
+plus four new ideas (trade tape, Viber/Messenger alerts, seller showrooms, hallmark scanner).
+
+**Prices.** gold-api.com (no key) for spot, open.er-api.com and Frankfurter (ECB) for USD/PHP, with a
+divergence note when they disagree by more than 1.5%. No always-on timer: a request refreshes prices
+when they are over a minute old, plus a daily Vercel cron (Hobby allows one a day). A move over 8%
+within two hours is held back as a bad tick. "Prices delayed" after 10 minutes without a check;
+"Markets closed" at the weekend, when Friday's close is the right price. Stooq was rejected (it sits
+behind a bot challenge). History needs a free gold-api.com key; until then the charts say how far back
+our own readings go instead of drawing anything we don't have.
+
+**No invented shop prices.** "We buy at / We sell at" appear only after the owner sets spreads in
+/admin/prices. Until then pages say shop prices are confirmed in store.
+
+**Verification runs on labelled test providers.** SMS codes show on screen ("no SMS was sent"); ID
+photos are checked on the device and never uploaded; every application waits for a staff decision.
+Real providers plug into `SmsProvider` (Semaphore adapter written, untested) and `KycProvider`. A
+public deployment refuses the mocks unless ALLOW_MOCK_SMS/KYC_IN_PRODUCTION=true, which the test
+deployment sets on purpose, like mock email.
+
+**Marketplace.** One account for everyone (the reference makes people choose buyer or seller forever).
+Buying, offers and chat need Tier 3; selling needs Tier 4 and two-step sign-in. Every money step is a
+compare-and-set update, so two clicks can't both accept or both pay. The payment hold is a mock
+provider ("Test mode: no money moves") behind a `PaymentProvider` interface for PayMongo or Xendit
+split payments; Luxx4less never holds funds itself (brief §9). Messages are scanned for phone
+numbers, account numbers, off-platform payment phrases and outside links, and both sides see the
+warning. Photos are re-encoded, stripped of metadata, watermarked with the emblem and listing code,
+and compared by perceptual hash against other sellers' photos.
+
+**Trade tape** shows only released trades, anonymised (item, karat, weight, city, ₱/g rounded to ₱10),
+and either side can hide theirs. It starts empty: no sample trades are ever shown.
+
+**Alerts** fire on a crossing with a 12-hour rest. Messenger is used only inside Meta's 24-hour
+window (price alerts fit none of Meta's message tags); outside it, and whenever Viber or Messenger
+fails, the alert goes by email.
+
+**One hydration lesson.** A `<style href precedence>` tag in the header ticker silently stopped every
+page from hydrating. Keyframes now live in globals.css, and `@/hooks/use-reduced-motion` replaces
+motion's hook, which answered differently on the server and the first client render.
