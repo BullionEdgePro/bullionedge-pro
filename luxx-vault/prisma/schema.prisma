@@ -55,6 +55,8 @@ model User {
   media            MediaObject[]
   sellQuotes       SellQuote[]
   faceChecks       FaceCheck[]
+  cartItems        CartItem[]
+  shopOrders       ShopOrder[]
 
   @@unique([email])
   @@map("user")
@@ -383,7 +385,7 @@ model MediaObject {
   id        String   @id @default(cuid())
   ownerId   String
   owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  /// listing | showroom_cover | dispute_evidence
+  /// listing | showroom_cover | dispute_evidence | product | payment_proof
   purpose   String
   mime      String
   bytes     Bytes?
@@ -792,4 +794,207 @@ model FaceCheck {
 
   @@index([userId, createdAt])
   @@map("face_check")
+}
+
+// ============================================================ official shop
+
+/// Something Luxx4less sells itself (the Official Shop, brief §9). Added and edited by admins
+/// in /admin/shop. No seller limits apply: this is the shop's own stock.
+model Product {
+  id               String          @id @default(cuid())
+  /// Short public number shown on watermarks and orders, e.g. LP-4F7K2.
+  code             String          @unique
+  title            String
+  category         String
+  metal            String?
+  karat            Int?
+  /// Parts per thousand (916, 750, 925).
+  finenessPermille Int?
+  goldType         String?
+  form             String?
+  weightGrams      Decimal         @db.Decimal(10, 3)
+  /// fixed | spot_premium
+  pricingMode      String          @default("fixed")
+  pricePhp         Decimal?        @db.Decimal(14, 2)
+  /// spot_premium: price = melt value x (1 + premiumPct / 100), locked when an order is placed.
+  premiumPct       Decimal?        @db.Decimal(6, 2)
+  description      String
+  hasCertificate   Boolean         @default(false)
+  pawnable         Boolean?
+  /// Pieces on hand. Placing an order holds them; a cancelled order puts them back.
+  stock            Int             @default(1)
+  layawayAllowed   Boolean         @default(true)
+  /// Shown first in the shop and on the home page.
+  featured         Boolean         @default(false)
+  /// draft | active | archived. Sold out is simply stock = 0.
+  status           String          @default("draft")
+  createdById      String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  images           ProductImage[]
+  cartItems        CartItem[]
+  orderItems       ShopOrderItem[]
+
+  @@index([status, featured, createdAt])
+  @@map("product")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mediaId   String
+  position  Int     @default(0)
+
+  @@index([productId, position])
+  @@index([mediaId])
+  @@map("product_image")
+}
+
+/// The shopping bag (Tier 1). Prices are never stored here: they are worked out live.
+model CartItem {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@id([userId, productId])
+  @@map("cart_item")
+}
+
+/// An Official Shop order. Prices are locked when it is placed.
+model ShopOrder {
+  id             String            @id @default(cuid())
+  /// Short public number, e.g. OR-4F7K2.
+  code           String            @unique
+  buyerId        String
+  buyer          User              @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  /// pending_payment | payment_review | awaiting_confirmation | layaway | preparing | ready | shipped | completed | cancelled
+  status         String            @default("pending_payment")
+  /// full | layaway
+  plan           String            @default("full")
+  /// in_store | transfer | cod
+  paymentMethod  String
+  /// pickup | delivery | meetup
+  fulfilment     String
+  /// Pickup branch name (brand.branches).
+  branch         String?
+  contactName    String
+  /// E.164. Shown to the buyer and staff only.
+  contactPhone   String
+  addressLine    String?
+  regionCode     String?
+  provinceCode   String?
+  cityCode       String?
+  buyerNote      String?
+  subtotalPhp    Decimal           @db.Decimal(14, 2)
+  deliveryFeePhp Decimal           @default(0) @db.Decimal(14, 2)
+  totalPhp       Decimal           @db.Decimal(14, 2)
+  /// Sum of confirmed payments.
+  paidPhp        Decimal           @default(0) @db.Decimal(14, 2)
+  /// Layaway: what must be paid first to reserve the items.
+  downPaymentPhp Decimal?          @db.Decimal(14, 2)
+  /// An order with nothing paid is cancelled after this and its items go back on sale.
+  payBy          DateTime?
+  courier        String?
+  trackingNumber String?
+  cancelReason   String?
+  cancelledAt    DateTime?
+  paidAt         DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  items          ShopOrderItem[]
+  payments       ShopPayment[]
+  installments   ShopInstallment[]
+
+  @@index([status, createdAt])
+  @@index([buyerId, createdAt])
+  @@map("shop_order")
+}
+
+/// What was bought, as it was when ordered (the product may change or be archived later).
+model ShopOrderItem {
+  id           String    @id @default(cuid())
+  orderId      String
+  order        ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  code         String
+  title        String
+  metal        String?
+  karat        Int?
+  weightGrams  Decimal   @db.Decimal(10, 3)
+  quantity     Int
+  unitPricePhp Decimal   @db.Decimal(14, 2)
+  coverMediaId String?
+
+  @@index([orderId])
+  @@map("shop_order_item")
+}
+
+/// A payment toward an order: a receipt the buyer uploaded (GCash or bank transfer), or one
+/// staff recorded (cash in store, cash on delivery). Only confirmed payments count.
+model ShopPayment {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// transfer | in_store | cod
+  method        String
+  amountPhp     Decimal   @db.Decimal(14, 2)
+  /// The GCash or bank reference number the buyer typed.
+  reference     String?
+  proofMediaId  String?
+  /// submitted | confirmed | rejected
+  status        String    @default("submitted")
+  submittedById String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+  reviewNote    String?
+  createdAt     DateTime  @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([status, createdAt])
+  @@map("shop_payment")
+}
+
+/// Layaway (hulugan) schedule: the down payment is seq 0, then monthly payments.
+model ShopInstallment {
+  id         String    @id @default(cuid())
+  orderId    String
+  order      ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seq        Int
+  dueAt      DateTime
+  amountPhp  Decimal   @db.Decimal(14, 2)
+  paidAt     DateTime?
+  remindedAt DateTime?
+
+  @@unique([orderId, seq])
+  @@index([paidAt, dueAt])
+  @@map("shop_installment")
+}
+
+/// The Official Shop's settings, one row, edited by admins in /admin/shop/settings.
+/// Payment details live here and never in code (brief: no account numbers in the UI). They are
+/// shown only to a buyer on their own order page, after the order is placed.
+model ShopSettings {
+  id                  String   @id @default("shop")
+  paymentInstructions String?
+  /// Days an unpaid order holds its items.
+  reserveDays         Int      @default(3)
+  layawayEnabled      Boolean  @default(true)
+  layawayDownPct      Int      @default(30)
+  layawayMonths       Int      @default(3)
+  layawayMinPhp       Decimal  @default(5000) @db.Decimal(14, 2)
+  codEnabled          Boolean  @default(true)
+  /// Cash on delivery only up to this total. Null = no limit.
+  codMaxPhp           Decimal? @db.Decimal(14, 2)
+  /// Null = quoted after ordering, not added to the total.
+  deliveryFeePhp      Decimal? @db.Decimal(14, 2)
+  updatedById         String?
+  updatedAt           DateTime @updatedAt
+
+  @@map("shop_settings")
 }

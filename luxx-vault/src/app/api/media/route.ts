@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { ADMIN_ROLES } from "@/config/roles";
 import { ImageRejected, MEDIA_PURPOSES, storeUpload } from "@/lib/server/media";
 import { rateLimit } from "@/lib/server/rate-limit";
 import { getViewer } from "@/lib/server/viewer";
@@ -27,6 +28,13 @@ export async function POST(request: Request) {
   if (purpose.data === "listing") {
     if (viewer.tier < 4) return NextResponse.json({ error: "Only verified sellers can upload listing photos." }, { status: 403 });
     if (!viewer.twoFactorEnabled) return NextResponse.json({ error: "Turn on two-step sign-in to sell." }, { status: 403 });
+  }
+  if (purpose.data === "product") {
+    if (!viewer.roles.some((r) => ADMIN_ROLES.includes(r))) return NextResponse.json({ error: "Only shop admins can upload product photos." }, { status: 403 });
+    if (!viewer.twoFactorEnabled) return NextResponse.json({ error: "Turn on two-step sign-in first." }, { status: 403 });
+  }
+  if (purpose.data === "payment_proof" && viewer.tier < 2) {
+    return NextResponse.json({ error: "Verify your mobile number first." }, { status: 403 });
   }
   if (purpose.data === "dispute_evidence" && viewer.tier < 3) {
     return NextResponse.json({ error: "Verify your identity first." }, { status: 403 });

@@ -12,6 +12,8 @@ const LINKS = [
   { href: "/admin/kyc", label: "Verification queue", roles: ["kyc_reviewer", "admin", "super_admin"] },
   { href: "/admin/reports", label: "Reports", roles: ["support", "admin", "super_admin"] },
   { href: "/admin/disputes", label: "Disputes", roles: ["support", "admin", "super_admin"] },
+  { href: "/admin/orders", label: "Shop orders", roles: ["support", "admin", "super_admin"] },
+  { href: "/admin/shop", label: "Official shop", roles: ["admin", "super_admin"] },
   { href: "/admin/listings", label: "Listings", roles: ["support", "admin", "super_admin"] },
   { href: "/admin/prices", label: "Prices and quotes", roles: ["admin", "super_admin"] },
 ] as const;

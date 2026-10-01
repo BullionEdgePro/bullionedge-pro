@@ -11,6 +11,7 @@ import { SignOutButton } from "./sign-out-button";
 
 // The Buy / Sell switch leads the desktop bar; these follow as the screen allows.
 const NAV: readonly NavItem[] = [
+  { href: "/shop", label: "Shop" },
   { href: "/marketplace", label: "Marketplace", desktopHidden: true },
   { href: "/prices", label: "Prices" },
   { href: "/tools", label: "Tools", from: "xl" },

@@ -12,6 +12,7 @@ import {
   PackageSearch,
   ScrollText,
   Shield,
+  ShoppingBag,
   Store,
   UserRound,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/cn";
 
 export const ACCOUNT_LINKS = [
   { href: "/account", label: "Overview", icon: LayoutDashboard },
+  { href: "/account/orders", label: "Shop orders", icon: ShoppingBag },
   { href: "/account/listings", label: "My listings", icon: Store },
   { href: "/account/wanted", label: "My wanted posts", icon: PackageSearch },
   { href: "/account/offers", label: "Offers", icon: Gavel },

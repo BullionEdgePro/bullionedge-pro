@@ -218,3 +218,37 @@ from info.luxx4lessph@gmail.com) is wired and switches on with that one setting.
 circles its border; each half opens a panel of what buyers or sellers can do. On phones the menu opens with
 the same two choices as cards. **Get the app** sits on the right with a QR code for desktop visitors, and
 hides inside the installed app. **Facebook followers** updated to 818,060 from the page itself.
+
+## Official Shop (1 Oct 2026)
+
+The owner wants to sell the shop's own jewellery on the site. It is built as the **Official Shop** (brief §9,
+Phase 4), separate from the marketplace: `/shop`, product pages, a bag, checkout, orders and layaway, run by
+admins from `/admin/shop` and `/admin/orders`. The shop's own pieces have no seller limits and need no seller
+verification. The marketplace keeps its rules.
+
+**How buyers pay (owner's choice): in store, GCash/bank transfer with a receipt upload, and cash on delivery
+or meet-up.** No payment company is involved, so there are no fees and nothing is in test mode. Money still
+moves outside the website: staff confirm each receipt against the real account before an order moves on.
+PayMongo or Xendit can be added later as a fourth method.
+
+**Payment details are never in code or on public pages.** The brief forbids account numbers in the UI. The
+owner types them in `/admin/shop/settings`. They are stored in the database and shown only to a buyer on
+their own order page, after they order, with a warning that Luxx4less never sends other details by chat. A
+change to them is the classic way to divert a shop's money, so every admin is emailed when they change.
+The audit log records that they changed, never the text itself.
+
+**Stock is held when an order is placed** (in the same database transaction, so two people can't buy the
+last piece). Unpaid orders cancel themselves after the hold (3 days by default) and the pieces go back on
+sale. A receipt waiting for staff stops that clock. One person can have at most three unpaid orders at a
+time.
+
+**Prices lock when the order is placed.** Spot-pegged pieces move with the market until then. If the price
+moves while someone is on the checkout page, they are told the new total and asked to place the order
+again.
+
+**Tiers:** the bag needs a confirmed email (Tier 1) and checkout a verified mobile number (Tier 2). Orders
+over ₱100,000 need an ID-verified account (Tier 3), per the brief's "Tier 2: small amounts".
+
+**Defaults the owner should confirm** (all editable in shop settings): hold unpaid orders 3 days; layaway
+30% down then 3 monthly payments, from ₱5,000; cash on delivery on with no limit; delivery fee quoted per
+order. Layaway reminders go out by email three days before each payment is due (daily cron).

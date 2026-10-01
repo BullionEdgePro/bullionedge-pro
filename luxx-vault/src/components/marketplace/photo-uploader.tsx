@@ -54,7 +54,7 @@ export function PhotoUploader({
   label = "Photos",
 }: {
   name: string;
-  purpose: "listing" | "showroom_cover" | "dispute_evidence";
+  purpose: "listing" | "showroom_cover" | "dispute_evidence" | "product" | "payment_proof";
   max?: number;
   initial?: UploadedPhoto[];
   onChange?: (photos: UploadedPhoto[]) => void;

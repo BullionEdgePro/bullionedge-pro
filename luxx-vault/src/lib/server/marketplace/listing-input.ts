@@ -65,6 +65,31 @@ export function parseListingForm(form: FormData, opts: { requireDeclaration: boo
     return { errors };
   }
   const d = parsed.data;
+  normaliseItem(d, errors);
+  if (opts.requireDeclaration && !d.declaration) errors.declaration = "Please confirm you own this item and may sell it.";
+  if (Object.keys(errors).length) return { errors };
+  return { data: d };
+}
+
+/** The item fields a listing and an Official Shop product share. */
+export type ItemFields = {
+  category: string;
+  metal?: string;
+  karat?: number;
+  finenessPermille?: number;
+  goldType?: string;
+  form?: string;
+  pricingMode: "fixed" | "spot_premium";
+  pricePhp?: number;
+  premiumPct?: number;
+};
+
+/**
+ * Metal, purity and price rules shared by listings and shop products: a metal
+ * category fixes the metal, gold needs a karat, other metals a fineness, and
+ * a spot-pegged price needs both. Fills `errors` and tidies `d` in place.
+ */
+export function normaliseItem(d: ItemFields, errors: FieldErrors): void {
   const cat = CATEGORIES.find((c) => c.value === d.category)!;
   // A metal category fixes the metal; stones and lots may name one optionally.
   const metal = cat.metal ?? (d.metal && ["gold", "silver", "platinum", "palladium"].includes(d.metal) ? d.metal : undefined);
@@ -92,7 +117,4 @@ export function parseListingForm(form: FormData, opts: { requireDeclaration: boo
     if (d.premiumPct === undefined || d.premiumPct < -50 || d.premiumPct > 300) errors.premiumPct = "Enter a premium between −50% and 300%.";
     d.pricePhp = undefined;
   }
-  if (opts.requireDeclaration && !d.declaration) errors.declaration = "Please confirm you own this item and may sell it.";
-  if (Object.keys(errors).length) return { errors };
-  return { data: d };
 }

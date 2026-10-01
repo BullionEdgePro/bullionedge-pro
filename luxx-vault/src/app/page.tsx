@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight, ChartLine, HandCoins, MapPin, Megaphone, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ChartLine, Crown, HandCoins, MapPin, ShieldCheck } from "lucide-react";
 import { LiveLivingGram } from "@/components/hero/living-gram";
 import { CountUp } from "@/components/home/count-up";
 import { HomeFaq } from "@/components/home/faq";
@@ -13,10 +13,12 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { JsonLd } from "@/components/tools/tool-page";
 import { QuickValue } from "@/components/tools/quick-value";
+import { ProductCard } from "@/components/shop/product-card";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import { env } from "@/lib/server/env";
 import { getMarket } from "@/lib/server/prices/engine";
+import { featuredProducts } from "@/lib/server/shop/products";
 import { getViewer } from "@/lib/server/viewer";
 
 export const dynamic = "force-dynamic";
@@ -37,11 +39,11 @@ const DOORS = [
     cta: "Browse the marketplace",
   },
   {
-    href: "/marketplace",
-    icon: Megaphone,
-    title: "Post what you want",
-    body: "Looking for a 21K bangle or a 10 g bar? Post a request and let verified sellers come to you.",
-    cta: "Post a request",
+    href: "/shop",
+    icon: Crown,
+    title: "Shop Luxx4less",
+    body: "Our own pieces, priced from today's gold. Layaway, pickup in store, delivery or cash on delivery.",
+    cta: "Visit the shop",
   },
   {
     href: "/sell",
@@ -60,7 +62,7 @@ const DOORS = [
 ] as const;
 
 export default async function Home() {
-  const [viewer, market] = await Promise.all([getViewer(), getMarket()]);
+  const [viewer, market, vault] = await Promise.all([getViewer(), getMarket(), featuredProducts(4)]);
   const branches = brand.branches.filter((b) => !("confirm" in b && b.confirm));
   const fb = brand.social.facebookFollowers;
   const base = env().BETTER_AUTH_URL.replace(/\/$/, "");
@@ -153,6 +155,32 @@ export default async function Home() {
             })}
           </ul>
         </section>
+
+        {/* ----------------------------------------------------------- official shop */}
+        {vault.length > 0 && (
+          <section aria-labelledby="vault-title" className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:pb-28">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <Reveal>
+                <p className="flex items-center gap-2 font-display text-xs tracking-[0.32em] text-champagne uppercase">
+                  <Crown className="size-4" aria-hidden /> Official shop
+                </p>
+                <h2 id="vault-title" className="mt-3 text-3xl text-pearl sm:text-4xl">
+                  From our vault
+                </h2>
+              </Reveal>
+              <Link href="/shop" className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold hover:underline">
+                See every piece <ArrowUpRight className="size-4" aria-hidden />
+              </Link>
+            </div>
+            <ul className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {vault.map((c) => (
+                <li key={c.id}>
+                  <ProductCard card={c} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* ----------------------------------------------------------- verification */}
         <div className="border-y border-line bg-surface-sunk">

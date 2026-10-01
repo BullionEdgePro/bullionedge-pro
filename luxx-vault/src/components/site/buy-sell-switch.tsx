@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { BadgeCheck, Coins, Gem, LineChart, MessageSquarePlus, PackageSearch, Scale, Store, type LucideIcon } from "lucide-react";
+import { BadgeCheck, Coins, Crown, Gem, MessageSquarePlus, PackageSearch, Scale, Store, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -19,9 +19,9 @@ export const BUY_SELL: Record<Side, { label: string; kicker: string; promise: st
     kicker: "For buyers",
     promise: "Every seller ID-verified. Your payment is held until the piece is in your hands.",
     entries: [
+      { href: "/shop", title: "Official Luxx4less shop", body: "Our own pieces, with layaway and pickup in store", icon: Crown },
       { href: "/marketplace", title: "Browse gold for sale", body: "Jewellery, bars and coins from verified sellers", icon: Gem },
       { href: "/marketplace/wanted/new", title: "Post what you want", body: "Matching sellers are told straight away", icon: MessageSquarePlus },
-      { href: "/prices", title: "Today's prices", body: "Live per-gram value for every karat", icon: LineChart },
       { href: "/tools/price-check", title: "Check an offer is fair", body: "Spot a price that's too good to be true", icon: Scale },
     ],
   },
@@ -57,7 +57,7 @@ export function BuySellSwitch() {
   const panelId = useId();
 
   // Which half is "home" for the current page, so the slide rests there.
-  const current: Side | null = pathname.startsWith("/marketplace/sell") || pathname === "/sell" ? "sell" : pathname.startsWith("/marketplace") ? "buy" : null;
+  const current: Side | null = pathname.startsWith("/marketplace/sell") || pathname === "/sell" ? "sell" : pathname.startsWith("/marketplace") || pathname.startsWith("/shop") ? "buy" : null;
   const lit = hover ?? open ?? current;
 
   useEffect(() => {

@@ -6,7 +6,8 @@ import { processUpload, watermarkListingPhoto, ImageRejected } from "./marketpla
 import { STAFF_ROLES, hasAnyRole } from "@/config/roles";
 
 /**
- * Uploaded images (listing photos, showroom covers, dispute evidence).
+ * Uploaded images (listing photos, showroom covers, dispute evidence, Official
+ * Shop product photos and payment receipts).
  * Bytes live in MediaObject.bytes for now; a blob store (R2/S3) can take over
  * by filling `url` instead — nothing outside this module reads `bytes`.
  *
@@ -15,7 +16,7 @@ import { STAFF_ROLES, hasAnyRole } from "@/config/roles";
  * Until attached, a photo is visible to its owner only.
  */
 
-export const MEDIA_PURPOSES = ["listing", "showroom_cover", "dispute_evidence"] as const;
+export const MEDIA_PURPOSES = ["listing", "showroom_cover", "dispute_evidence", "product", "payment_proof"] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
 
 export { ImageRejected };
@@ -48,7 +49,9 @@ type Access = { status: 200; body: Uint8Array; mime: string; cache: string } | {
  * Who may see a media object:
  * - listing photos attached to a listing, and showroom covers in use: everyone;
  * - unattached listing photos: their owner (the sell wizard shows them);
- * - dispute evidence: the two parties to the trade, and staff.
+ * - dispute evidence: the two parties to the trade, and staff;
+ * - shop product photos: everyone once the product is published, staff before;
+ * - payment receipts: the buyer who uploaded them, and staff.
  */
 export async function readMedia(id: string, viewer: { userId: string; role: string | null } | null): Promise<Access> {
   if (!/^[a-z0-9]{20,32}$/i.test(id)) return { status: 404 };
@@ -70,6 +73,14 @@ export async function readMedia(id: string, viewer: { userId: string; role: stri
     const inUse = await db.profile.findFirst({ where: { coverMediaId: id }, select: { userId: true } });
     if (inUse) return ok(PUBLIC);
     return isOwner || isStaff ? ok(PRIVATE) : { status: 404 };
+  }
+  if (m.purpose === "product") {
+    const attached = await db.productImage.findFirst({ where: { mediaId: id }, select: { product: { select: { status: true } } } });
+    if (attached && attached.product.status !== "draft") return ok(PUBLIC);
+    return isOwner || isStaff ? ok(PRIVATE) : { status: attached ? 403 : 404 };
+  }
+  if (m.purpose === "payment_proof") {
+    return isOwner || isStaff ? ok(PRIVATE) : { status: 403 };
   }
   if (m.purpose === "dispute_evidence") {
     if (isOwner || isStaff) return ok(PRIVATE);
@@ -150,4 +161,34 @@ async function findDuplicateListing(phash: string, sellerId: string): Promise<st
     ORDER BY l."createdAt" ASC
     LIMIT 1`;
   return rows[0]?.listingId ?? null;
+}
+
+/**
+ * Attach photos to an Official Shop product: staff uploads only, stamped with
+ * the product code, first photo is the cover. No duplicate check: these are
+ * the shop's own photos.
+ */
+export async function attachProductPhotos(product: { id: string; code: string }, mediaIds: string[]) {
+  const unique = [...new Set(mediaIds)].slice(0, 8);
+  const media = await db.mediaObject.findMany({ where: { id: { in: unique }, purpose: "product" }, select: { id: true, bytes: true } });
+  if (media.length !== unique.length) throw new Error("One of those photos no longer exists. Please upload it again.");
+  const elsewhere = await db.productImage.findMany({ where: { mediaId: { in: unique }, productId: { not: product.id } }, select: { mediaId: true } });
+  if (elsewhere.length) throw new Error("A photo is already used on another product. Please upload it again for this one.");
+
+  const existing = await db.productImage.findMany({ where: { productId: product.id }, select: { mediaId: true } });
+  const already = new Set(existing.map((e) => e.mediaId));
+  for (const m of media) {
+    if (!already.has(m.id) && m.bytes) {
+      const wm = await watermarkListingPhoto(Buffer.from(m.bytes), product.code);
+      await db.mediaObject.update({ where: { id: m.id }, data: { bytes: new Uint8Array(wm.bytes) } });
+    }
+  }
+  await db.$transaction([
+    db.productImage.deleteMany({ where: { productId: product.id, mediaId: { notIn: unique } } }),
+    ...unique.map((mediaId, position) =>
+      already.has(mediaId)
+        ? db.productImage.updateMany({ where: { productId: product.id, mediaId }, data: { position } })
+        : db.productImage.create({ data: { productId: product.id, mediaId, position } }),
+    ),
+  ]);
 }

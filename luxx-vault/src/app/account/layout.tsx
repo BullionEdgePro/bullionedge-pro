@@ -9,9 +9,10 @@ import { requireViewer } from "@/lib/server/viewer";
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   const viewer = await requireViewer("/account");
-  const [unreadNotes, pendingOffers] = await Promise.all([
+  const [unreadNotes, pendingOffers, ordersToPay] = await Promise.all([
     db.notification.count({ where: { userId: viewer.userId, readAt: null } }),
     db.offer.count({ where: { toUserId: viewer.userId, status: "pending" } }),
+    db.shopOrder.count({ where: { buyerId: viewer.userId, status: { in: ["pending_payment", "layaway"] } } }),
   ]);
 
   return (
@@ -19,7 +20,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
       <SiteHeader signedIn />
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
         <aside className="min-w-0 lg:sticky lg:top-28 lg:self-start">
-          <AccountNav counts={{ "/account/notifications": unreadNotes, "/account/offers": pendingOffers }} staff={viewer.roles.some((r) => STAFF_ROLES.includes(r))} />
+          <AccountNav counts={{ "/account/notifications": unreadNotes, "/account/offers": pendingOffers, "/account/orders": ordersToPay }} staff={viewer.roles.some((r) => STAFF_ROLES.includes(r))} />
         </aside>
         <main className="grid min-w-0 content-start gap-6">
           {viewer.tier < 3 && (

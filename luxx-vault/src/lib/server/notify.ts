@@ -12,7 +12,8 @@ export type NotificationKind =
   | "kyc_update"
   | "review"
   | "request_match"
-  | "sell_quote";
+  | "sell_quote"
+  | "order_update";
 
 export type NotifyInput = {
   kind: NotificationKind;
