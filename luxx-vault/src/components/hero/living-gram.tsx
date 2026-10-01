@@ -81,8 +81,9 @@ function LivingGramStage({
   // Desktop 3D waits until the browser is idle, so the price and buttons are ready first.
   const [sceneWanted, setSceneWanted] = useState(false);
   const [sceneShown, setSceneShown] = useState(false);
-  // Phones wait longer: until the page has fully loaded, then a quiet moment, so the 1 MB
-  // engine never competes with the price, the buttons or the first scroll.
+  // Phones wait longer: until the page has fully loaded plus four seconds and an idle moment,
+  // so the 1 MB engine starts while the visitor reads the price, not while they first tap or
+  // scroll. The still render is on screen the whole time, so nothing looks unfinished.
   useEffect(() => {
     if (tier !== "full") return;
     const touch = window.matchMedia("(pointer: coarse)").matches;
@@ -95,7 +96,7 @@ function LivingGramStage({
           if (w.requestIdleCallback) idle = w.requestIdleCallback(() => setSceneWanted(true), { timeout: 3000 });
           else setSceneWanted(true);
         },
-        touch ? 1800 : 0,
+        touch ? 4000 : 0,
       );
     };
     if (document.readyState === "complete") schedule();
