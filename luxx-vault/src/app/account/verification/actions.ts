@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { refresh } from "next/cache";
 import { submitIdentity, submitSeller, type SubmitResult } from "@/lib/server/kyc/submissions";
 import { sendPhoneCode, verifyPhoneCode, type SendResult, type VerifyResult } from "@/lib/server/sms/phone-verification";
+import { faceStatus } from "@/lib/server/face/gate";
 import { getViewer } from "@/lib/server/viewer";
 
 /**
@@ -59,6 +60,9 @@ export async function submitIdentityAction(input: unknown): Promise<SubmitResult
 export async function submitSellerAction(input: unknown): Promise<SubmitResult> {
   const viewer = await getViewer();
   if (!viewer) return { ok: false, error: "Please sign in again." };
+  // Payout details: a face check from the last 15 minutes, enforced here as well as on the page.
+  const face = await faceStatus("account_change", "/account/verification?step=seller");
+  if (face.state === "locked" || face.state === "required") return { ok: false, error: face.message };
   const result = await guard(async () => submitSeller(viewer, input, await requestMeta()));
   if (result.ok) refresh();
   return result;

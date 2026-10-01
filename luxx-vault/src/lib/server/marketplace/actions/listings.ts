@@ -1,5 +1,6 @@
 "use server";
 
+import { requireFaceForAction } from "@/lib/server/face/gate";
 import { refresh, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -41,6 +42,7 @@ async function checkNewSellerLimits(sellerId: string, pricePhp: number | null, e
 export async function saveListing(_prev: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async (): Promise<ActionState | void> => {
     const viewer = await assertSeller();
+    await requireFaceForAction("session");
     const editCode = typeof form.get("code") === "string" ? String(form.get("code")) : "";
     const existing = editCode
       ? await db.listing.findUnique({ where: { code: editCode }, select: { id: true, code: true, sellerId: true, status: true } })

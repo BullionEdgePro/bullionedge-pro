@@ -4,6 +4,8 @@ import { SellWizard } from "@/components/marketplace/sell-wizard";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { FormAlert } from "@/components/ui/field";
+import { FaceCheckPrompt } from "@/components/verification/face-check-prompt";
+import { requireFaceForPage } from "@/lib/server/face/gate";
 import { formatPeso } from "@/lib/pricing";
 import { requireSeller } from "@/lib/server/marketplace/context";
 import { wizardProps } from "@/lib/server/marketplace/wizard";
@@ -12,6 +14,7 @@ export const metadata: Metadata = { title: "List an item", robots: { index: fals
 
 export default async function SellPage() {
   const viewer = await requireSeller("/marketplace/sell");
+  const faceLock = await requireFaceForPage("session", "/marketplace/sell");
   const props = await wizardProps(viewer);
   const atLimit = props.limits.newSeller && props.limits.activeCount >= props.limits.maxActive;
 
@@ -26,7 +29,9 @@ export default async function SellPage() {
             Five short steps. Buyers see your price beside today&rsquo;s melt value, your verified-seller badge and your trust score.
           </p>
           <div className="mt-8">
-            {atLimit ? (
+            {faceLock ? (
+              <FaceCheckPrompt status={faceLock} />
+            ) : atLimit ? (
               <FormAlert tone="info">
                 New sellers can have {props.limits.maxActive} listings up at a time until they complete {props.limits.tradesToGraduate} trades (up to{" "}
                 {formatPeso(props.limits.maxListingValuePhp)} each). Mark one sold or take one down in{" "}

@@ -1,5 +1,7 @@
 "use server";
 
+import { requireFaceForAction } from "@/lib/server/face/gate";
+import { purposeForAmount } from "@/lib/face-policy";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -38,6 +40,7 @@ async function offerRate(viewer: Viewer) {
 export async function makeListingOffer(_prev: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async (): Promise<ActionState | void> => {
     const viewer = await assertTier(3);
+    await requireFaceForAction("session");
     const listingId = Id.parse(form.get("listingId"));
     const mode = form.get("mode") === "asking" ? "asking" : "offer";
     const note = Message.parse(form.get("message"));
@@ -85,6 +88,7 @@ export async function makeListingOffer(_prev: ActionState, form: FormData): Prom
 export async function makeWantedOffer(_prev: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async (): Promise<ActionState | void> => {
     const viewer = await assertSeller();
+    await requireFaceForAction("session");
     const requestId = Id.parse(form.get("buyRequestId"));
     const note = Message.parse(form.get("message"));
     checkNote(note);
@@ -184,6 +188,7 @@ export async function counterOffer(_prev: ActionState, form: FormData): Promise<
     if (offer.toUserId !== viewer.userId || offer.status !== "pending") throw new UserError("You can't counter this offer.");
     const { sellerId } = sides(offer);
     if (viewer.userId === sellerId) await assertSeller();
+    await requireFaceForAction("session");
     const amount = Amount.safeParse(form.get("amount"));
     if (!amount.success) return { ok: false, fieldErrors: { amount: "Enter your counter in pesos." } };
     const note = Message.parse(form.get("message"));
@@ -235,6 +240,8 @@ export async function acceptOffer(_prev: ActionState, form: FormData): Promise<A
     if (offer.toUserId !== viewer.userId || offer.status !== "pending") throw new UserError("You can't accept this offer.");
     const { buyerId, sellerId } = sides(offer);
     if (viewer.userId === sellerId) await assertSeller();
+    // Accepting commits to the deal: a fresh check for high-value trades.
+    await requireFaceForAction(purposeForAmount(Number(offer.amountPhp)));
 
     const code = await uniqueCode("TR", async (c) => Boolean(await db.trade.findUnique({ where: { code: c }, select: { id: true } })));
     const sellerProfile = await db.profile.findUnique({ where: { userId: sellerId }, select: { regionCode: true, cityCode: true } });

@@ -1,5 +1,7 @@
 "use server";
 
+import { requireFaceForAction } from "@/lib/server/face/gate";
+import { purposeForAmount } from "@/lib/face-policy";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { brand } from "@/config/brand";
@@ -35,6 +37,7 @@ export async function payIntoHold(_prev: ActionState, form: FormData): Promise<A
     const { viewer, trade, role, href } = await loadTrade(form);
     if (role !== "buyer") throw new UserError("Only the buyer pays into the hold.");
     if (trade.status !== "awaiting_payment") throw new UserError("This trade isn't waiting for payment.");
+    await requireFaceForAction(purposeForAmount(Number(trade.amountPhp)));
     const provider = payments();
     const hold = await provider.createHold({ tradeId: trade.id, tradeCode: trade.code, amountPhp: Number(trade.amountPhp), buyerId: trade.buyerId, sellerId: trade.sellerId });
     if (hold.status === "redirect") {
@@ -67,6 +70,7 @@ export async function markShipped(_prev: ActionState, form: FormData): Promise<A
     const { viewer, trade, role, href } = await loadTrade(form);
     if (role !== "seller") throw new UserError("Only the seller can mark the item as sent.");
     await assertSeller();
+    await requireFaceForAction("session");
     if (trade.status !== "payment_held") throw new UserError("Ship only after the payment is held.");
     const parsed = ShipSchema.safeParse({ fulfilment: form.get("fulfilment"), courier: form.get("courier"), trackingNumber: form.get("trackingNumber") });
     if (!parsed.success) {
@@ -108,6 +112,8 @@ export async function confirmReceived(_prev: ActionState, form: FormData): Promi
     const { viewer, trade, role } = await loadTrade(form);
     if (role !== "buyer") throw new UserError("Only the buyer can confirm receipt.");
     if (trade.status !== "shipped") throw new UserError("Confirm only once the item has been sent.");
+    // Confirming releases the money to the seller.
+    await requireFaceForAction("session");
     if (form.get("confirm") !== "on") return { ok: false, fieldErrors: { confirm: "Please tick the box to confirm." } };
     await releaseTrade(trade.id, viewer.userId, "buyer_confirmed");
     refresh();

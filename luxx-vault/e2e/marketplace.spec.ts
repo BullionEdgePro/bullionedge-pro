@@ -83,6 +83,23 @@ async function signIn(page: Page, email: string, password: string, secret?: stri
     await cont.click();
   }
   await expect(page).toHaveURL(/\/account$/);
+  await passFaceCheck(email);
+}
+
+/**
+ * ID-verified people now confirm their face before trading on each new sign-in
+ * (owner, 1 Oct 2026). That flow has its own spec (face-check.spec.ts); here a
+ * passed check is recorded for this sign-in so the trading journey runs
+ * uninterrupted. Local test database only, like everything in this file.
+ */
+async function passFaceCheck(email: string) {
+  await db.query(
+    `INSERT INTO face_check (id, "userId", "sessionId", purpose, provider, passed, flags, "createdAt")
+     SELECT 'e2e_' || md5(random()::text), u.id, s.id, 'session', 'e2e', true, '{}', now()
+     FROM "user" u JOIN session s ON s."userId" = u.id
+     WHERE u.email = $1 ORDER BY s."createdAt" DESC LIMIT 1`,
+    [email],
+  );
 }
 
 /** No horizontal scrolling at 390 px (iPhone 12–15 width), then back to desktop. */

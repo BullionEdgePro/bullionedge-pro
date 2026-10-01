@@ -158,6 +158,21 @@
   ::selection {
     background: color-mix(in srgb, #d6b26e 45%, transparent);
   }
+
+  /* Native dropdown lists are drawn by the OS: on Windows they open white unless told
+     the page is dark, which left light option text on a white list. Every select gets
+     the dark scheme and explicit option colours. */
+  select {
+    color-scheme: dark;
+  }
+  select option,
+  select optgroup {
+    background-color: var(--surface);
+    color: var(--fg);
+  }
+  select option:disabled {
+    color: var(--muted);
+  }
 }
 
 /* ------------------------------------------------------------------ atmosphere */

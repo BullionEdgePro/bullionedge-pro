@@ -1,5 +1,6 @@
 "use server";
 
+import { requireFaceForAction } from "@/lib/server/face/gate";
 import { refresh, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -38,6 +39,7 @@ const WantedSchema = z.object({
 export async function createWanted(_prev: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async (): Promise<ActionState | void> => {
     const viewer = await assertTier(3);
+    await requireFaceForAction("session");
     const parsed = WantedSchema.safeParse(Object.fromEntries(form.entries()));
     if (!parsed.success) {
       const fieldErrors: Record<string, string> = {};

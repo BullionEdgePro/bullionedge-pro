@@ -28,10 +28,10 @@ const config: NextConfig = {
           { key: "Content-Type", value: "application/javascript; charset=utf-8" },
         ],
       },
-      // Brief §11: the camera opens only where identity is verified (ID photos and the selfie check),
+      // Brief §11: the camera opens only where identity is verified (ID photos, the selfie and the face re-check),
       // and on the hallmark reader, where the camera is how a stamp gets photographed.
       {
-        source: "/(account/verification|tools/hallmark)(.*)",
+        source: "/(account/verification|account/face-check|tools/hallmark)(.*)",
         headers: [{ key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=()" }],
       },
     ];

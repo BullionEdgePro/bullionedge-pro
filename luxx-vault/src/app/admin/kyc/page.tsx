@@ -10,6 +10,7 @@ import { KYC_STATUSES, idTypeLabel, maskIdNumber, type KycStatus } from "@/confi
 import { kycProvider } from "@/lib/server/kyc/provider";
 import { REVIEWER_ROLES, recentDecisions, reviewQueue } from "@/lib/server/kyc/review";
 import { requireRole } from "@/lib/server/session";
+import { FaceLocks } from "./face-locks";
 
 export const metadata: Metadata = { title: "Verification queue" };
 
@@ -107,6 +108,7 @@ export default async function KycQueuePage({ searchParams }: { searchParams: Pro
           </Card>
         </section>
       )}
+      <FaceLocks />
     </div>
   );
 }

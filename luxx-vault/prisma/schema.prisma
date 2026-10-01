@@ -54,6 +54,7 @@ model User {
   notifications    Notification[]
   media            MediaObject[]
   sellQuotes       SellQuote[]
+  faceChecks       FaceCheck[]
 
   @@unique([email])
   @@map("user")
@@ -229,6 +230,8 @@ model Profile {
   identityVerifiedAt DateTime?
   /// Tier 4: proof of address + payout account in own name approved.
   sellerVerifiedAt   DateTime?
+  /// Set after three failed face checks in a row; trading pauses until staff lift it.
+  faceLockedAt       DateTime?
   /// Seller showroom extras.
   showroomTagline    String?
   coverMediaId       String?
@@ -764,4 +767,29 @@ model DevOutbox {
 
   @@index([channel, createdAt])
   @@map("dev_outbox")
+}
+
+/// A face re-verification for an ID-verified person (owner, 1 Oct 2026): before trading on a new
+/// sign-in, before high-value trades and before payout changes. Tied to the session it was done in.
+/// No images are stored here; a live vendor keeps the capture in its own vault.
+model FaceCheck {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Better Auth session id: a check on one device or sign-in never counts for another.
+  sessionId      String?
+  /// session | high_value | account_change
+  purpose        String
+  /// mock | sumsub | veriff | persona | rekognition
+  provider       String
+  providerRef    String?
+  passed         Boolean
+  livenessScore  Float?
+  faceMatchScore Float?
+  flags          String[] @default([])
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("face_check")
 }

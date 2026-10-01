@@ -1,5 +1,6 @@
 "use server";
 
+import { requireFaceForAction } from "@/lib/server/face/gate";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -16,6 +17,7 @@ const Id = z.string().regex(/^[a-z0-9]{20,32}$/i);
 export async function startConversation(form: FormData): Promise<void> {
   const back = String(form.get("returnTo") ?? "");
   const viewer = await requireTier(3, /^\/marketplace\/[A-Za-z0-9/-]+$/.test(back) ? back : "/marketplace");
+  await requireFaceForAction("session");
   const listingId = form.get("listingId");
   const buyRequestId = form.get("buyRequestId");
   let other: string;
@@ -44,6 +46,7 @@ export type SentMessage = { id: string; body: string; flags: string[]; createdAt
 export async function sendMessage(conversationId: string, body: string): Promise<{ ok: true; message: SentMessage } | { ok: false; error: string }> {
   const res = await runAction(async (): Promise<ActionState | void> => {
     const viewer = await assertTier(3);
+    await requireFaceForAction("session");
     const id = Id.parse(conversationId);
     const text = z.string().trim().min(1, "Write a message first.").max(MESSAGE_MAX, `Keep messages under ${MESSAGE_MAX} characters.`).parse(body);
     const parts = await db.conversationParticipant.findMany({ where: { conversationId: id }, select: { userId: true, blockedAt: true } });

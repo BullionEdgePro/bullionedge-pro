@@ -4,11 +4,14 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { REQUEST_LIFETIME_DAYS } from "@/config/catalog";
 import { requireTier } from "@/lib/server/viewer";
+import { FaceCheckPrompt } from "@/components/verification/face-check-prompt";
+import { requireFaceForPage } from "@/lib/server/face/gate";
 
 export const metadata: Metadata = { title: "Post a wanted request", robots: { index: false } };
 
 export default async function NewWantedPage() {
   const viewer = await requireTier(3, "/marketplace/wanted/new");
+  const faceLock = await requireFaceForPage("session", "/marketplace/wanted/new");
   const p = viewer.profile;
   return (
     <>
@@ -21,7 +24,7 @@ export default async function NewWantedPage() {
             Verified sellers with matching pieces are notified straight away and can answer with an offer. Your post stays up for {REQUEST_LIFETIME_DAYS} days.
           </p>
           <div className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-8">
-            <WantedForm defaults={{ regionCode: p?.regionCode ?? "", provinceCode: p?.provinceCode ?? "", cityCode: p?.cityCode ?? "" }} />
+            {faceLock ? <FaceCheckPrompt status={faceLock} /> : <WantedForm defaults={{ regionCode: p?.regionCode ?? "", provinceCode: p?.provinceCode ?? "", cityCode: p?.cityCode ?? "" }} />}
           </div>
         </div>
       </main>

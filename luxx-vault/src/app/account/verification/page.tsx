@@ -5,7 +5,9 @@ import { Card, CardBody } from "@/components/ui/card";
 import { FormAlert } from "@/components/ui/field";
 import { IdentityWizard } from "@/components/verification/identity-wizard";
 import { PhoneStep } from "@/components/verification/phone-step";
+import { FaceCheckPrompt } from "@/components/verification/face-check-prompt";
 import { SellerForm } from "@/components/verification/seller-form";
+import { faceStatus } from "@/lib/server/face/gate";
 import { StatusCard } from "@/components/verification/status-card";
 import { TierLadder, type Rung } from "@/components/verification/tier-ladder";
 import { idTypeLabel, maskIdNumber } from "@/config/kyc";
@@ -95,7 +97,14 @@ export default async function VerificationPage({ searchParams }: { searchParams:
         orderBy: { reviewedAt: "desc" },
         select: { nameOnId: true },
       });
-      panel = <SellerForm idName={approvedId?.nameOnId ?? viewer.name} twoFactorEnabled={viewer.twoFactorEnabled} testMode={kyc.isTest} />;
+      // Payout details are about to be given: a fresh face check first (owner, 1 Oct 2026).
+      const face = await faceStatus("account_change", qs("seller"));
+      panel =
+        face.state === "required" || face.state === "locked" ? (
+          <FaceCheckPrompt status={face} />
+        ) : (
+          <SellerForm idName={approvedId?.nameOnId ?? viewer.name} twoFactorEnabled={viewer.twoFactorEnabled} testMode={kyc.isTest} />
+        );
     }
   }
 

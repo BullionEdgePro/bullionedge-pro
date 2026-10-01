@@ -65,7 +65,36 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                 <CheckCircle2 className="size-4" aria-hidden /> Email confirmed
               </p>
               <h1 className="mt-1 text-3xl">Welcome to Luxx4less, {firstName}</h1>
-              <p className="mt-2 text-muted">Your account is ready. Real gold, verified people.</p>
+              {params.as === "seller" ? (
+                <>
+                  <p className="mt-2 text-muted">
+                    You joined to sell. Three short checks come first (mobile number, ID with a selfie, then proof of address and a payout
+                    account in your name) so buyers can trust every listing. Then your first listing.
+                  </p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-3 sm:justify-start">
+                    <Button asChild className="rounded-full px-6">
+                      <Link href="/account/verification?step=phone&next=%2Fmarketplace%2Fsell">Start seller verification</Link>
+                    </Button>
+                    <Button asChild variant="secondary" className="rounded-full px-6">
+                      <Link href="/marketplace">Look around first</Link>
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="mt-2 text-muted">Your account is ready. Real gold, verified people.</p>
+                  {params.as === "buyer" && (
+                    <div className="mt-5 flex flex-wrap justify-center gap-3 sm:justify-start">
+                      <Button asChild className="rounded-full px-6">
+                        <Link href="/marketplace">Browse the marketplace</Link>
+                      </Button>
+                      <Button asChild variant="secondary" className="rounded-full px-6">
+                        <Link href="/account/verification?step=phone&next=%2Fmarketplace">Verify to make offers</Link>
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </CardBody>
         </Card>
