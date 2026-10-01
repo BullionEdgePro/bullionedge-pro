@@ -186,22 +186,30 @@
 /* ------------------------------------------------------------------ atmosphere */
 
 /* Velvet has a nap. A whisper of grain over the whole page stops the dark from
-   reading as a flat screen colour. Fixed, non-interactive, below every dialog. */
-body::before {
+   reading as a flat screen colour. Desktop only: on phones a full-screen blend layer
+   costs a repaint on every scroll frame (performance pass, 1 Oct 2026). */
+@media (hover: hover) and (pointer: fine) {
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+/* A soft lamp glow at the top of every page, so the velvet has a light source. Its own
+   fixed layer (not background-attachment: fixed, which repaints the page on scroll). */
+body::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: -1;
   pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* A soft lamp glow at the top of every page, so the velvet has a light source. */
-body {
-  background-image: radial-gradient(120% 60% at 50% -10%, rgb(214 178 110 / 0.09), transparent 60%);
-  background-attachment: fixed;
+  background: radial-gradient(120% 60% at 50% -10%, rgb(214 178 110 / 0.09), transparent 60%);
 }
 
 /* Primary buttons: a band of light crosses the gold on hover, once. */
@@ -318,6 +326,14 @@ body {
 
 @utility animate-molten {
   animation: molten 7s linear infinite;
+}
+
+/* Touch screens keep the gold but not the endless shimmer: it repaints large text
+   every frame, which mid-range phones feel while scrolling. */
+@media (hover: none), (pointer: coarse) {
+  .animate-molten {
+    animation: none;
+  }
 }
 
 /* Living emblem: the frame draws itself in, then the stones catch the light

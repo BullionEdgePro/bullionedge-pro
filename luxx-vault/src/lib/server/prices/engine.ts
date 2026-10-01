@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { METALS, type Metal } from "@/config/catalog";
 import { STALE_AFTER_MS, isMetalsMarketClosed, type Market, type MetalPrice } from "@/lib/market";
 import { phpPerGram } from "@/lib/pricing";
@@ -161,11 +162,23 @@ async function change24h(metal: Metal, current: number): Promise<number | null> 
 }
 
 /** The current market, refreshing from the sources when the stored prices are over a minute old. */
-export async function getMarket(options: { refresh?: boolean } = {}): Promise<Market> {
+export async function getMarket(options: { refresh?: boolean; wait?: boolean } = {}): Promise<Market> {
   let latest = await latestSnapshots();
   const newest = Math.max(0, ...latest.map((s) => s?.createdAt.getTime() ?? 0));
   let notes: string[] = [];
-  if (options.refresh !== false && (Date.now() - newest > FRESH_MS || latest.some((s) => !s))) {
+  const due = Date.now() - newest > FRESH_MS || latest.some((s) => !s);
+  // Stale-while-revalidate (performance pass, 1 Oct 2026): prices up to 10 minutes old are
+  // served at once and refreshed after the response, so no page waits on the price APIs.
+  // Older or missing prices (or `wait`, for the cron) still refresh before answering.
+  const serveNow = !options.wait && latest.every(Boolean) && Date.now() - newest < STALE_AFTER_MS;
+  if (options.refresh !== false && due && serveNow) {
+    const work = () => refreshOnce().then(() => undefined, () => undefined);
+    try {
+      after(work);
+    } catch {
+      void work(); // outside a request (scripts): just start it
+    }
+  } else if (options.refresh !== false && due) {
     try {
       notes = await refreshOnce();
       latest = await latestSnapshots();

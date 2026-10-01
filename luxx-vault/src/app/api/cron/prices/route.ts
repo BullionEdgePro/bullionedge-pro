@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const market = await getMarket();
+  const market = await getMarket({ wait: true });
   let backfill: unknown = "skipped (no GOLD_API_KEY)";
   if (env().GOLD_API_KEY) {
     const coverage = await historyCoverage();

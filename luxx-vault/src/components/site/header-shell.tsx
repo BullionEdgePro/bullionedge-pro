@@ -82,13 +82,14 @@ export function HeaderShell({
     <div className={cn("inset-x-0 top-0 z-40", overlay ? "fixed" : "sticky")}>
       <div ref={topStrip}>
         {banner}
-        {ticker && <div className="relative z-10 border-b border-line/70 bg-velvet/75 backdrop-blur-md">{ticker}</div>}
+        {ticker && <div className="relative z-10 border-b border-line/70 bg-velvet lg:bg-velvet/75 lg:backdrop-blur-md">{ticker}</div>}
       </div>
       <header
         className={cn(
           "relative transition-[background-color,backdrop-filter,box-shadow] duration-500 ease-(--ease-vault)",
           settled
-            ? "bg-velvet/80 shadow-[0_18px_40px_-28px_rgb(0_0_0/0.9)] backdrop-blur-xl backdrop-saturate-150"
+            ? // Phones get solid velvet: a live blur under a sticky bar re-renders on every scroll frame.
+              "bg-velvet/97 shadow-[0_18px_40px_-28px_rgb(0_0_0/0.9)] lg:bg-velvet/80 lg:backdrop-blur-xl lg:backdrop-saturate-150"
             : overlay
               ? "bg-gradient-to-b from-velvet/80 via-velvet/35 to-transparent"
               : "bg-transparent",

@@ -78,28 +78,33 @@ function LivingGramStage({
     return () => ro.disconnect();
   }, [tier]);
   const [inView, setInView] = useState(true);
+  // Desktop 3D waits until the browser is idle, so the price and buttons are ready first.
+  const [sceneWanted, setSceneWanted] = useState(false);
+  const [sceneShown, setSceneShown] = useState(false);
+  useEffect(() => {
+    if (tier !== "full") return;
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => setSceneWanted(true), { timeout: 2500 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(() => setSceneWanted(true), 1200);
+    return () => window.clearTimeout(t);
+  }, [tier]);
 
   const perGram = purePerGram ? purePerGram * purityFromKarat(karat) : null;
   const note = caption(karat);
 
-  // Scroll choreography: Lenis smooth scroll + one ScrollTrigger scrubbing progress.
+  // Scroll choreography: one ScrollTrigger scrubbing progress on native scrolling. (Lenis
+  // smooth scroll was removed, 1 Oct 2026: it delayed every wheel and touch scroll.)
   useEffect(() => {
-    if (tier !== "full" || !section.current) return;
+    if (tier !== "full" || !sceneWanted || !section.current) return;
     let cleanup = () => {};
     let cancelled = false;
     (async () => {
-      const [{ gsap }, { ScrollTrigger }, { default: Lenis }] = await Promise.all([
-        import("gsap"),
-        import("gsap/ScrollTrigger"),
-        import("lenis"),
-      ]);
+      const [{ gsap }, { ScrollTrigger }] = await Promise.all([import("gsap"), import("gsap/ScrollTrigger")]);
       if (cancelled || !section.current) return;
       gsap.registerPlugin(ScrollTrigger);
-      const lenis = new Lenis({ lerp: 0.1 });
-      lenis.on("scroll", ScrollTrigger.update);
-      const raf = (time: number) => lenis.raf(time * 1000);
-      gsap.ticker.add(raf);
-      gsap.ticker.lagSmoothing(0);
       const st = ScrollTrigger.create({
         trigger: section.current,
         start: "top top",
@@ -119,15 +124,13 @@ function LivingGramStage({
       });
       cleanup = () => {
         st.kill();
-        gsap.ticker.remove(raf);
-        lenis.destroy();
       };
     })();
     return () => {
       cancelled = true;
       cleanup();
     };
-  }, [tier]);
+  }, [tier, sceneWanted]);
 
   return (
     <>
@@ -155,24 +158,23 @@ function LivingGramStage({
           </div>
 
           {/* WebGL stage covers the whole pinned screen; the scene fits the bar into the zone below */}
-          {tier === "full" && (
-            <div aria-hidden className="absolute inset-0">
-              <GoldBarCanvas progress={progress} active={inView} layout={layout} />
+          {tier === "full" && sceneWanted && (
+            <div aria-hidden className={cn("absolute inset-0 transition-opacity duration-700", sceneShown ? "opacity-100" : "opacity-0")}>
+              <GoldBarCanvas progress={progress} active={inView} layout={layout} onReady={() => requestAnimationFrame(() => setSceneShown(true))} />
             </div>
           )}
 
           {/* The free zone under the numerals where the bar rests, tucked slightly behind them */}
           <div ref={zone} aria-hidden className="relative -mt-[3svh] min-h-0 w-full max-w-4xl flex-1">
-            {tier === "full" ? null : tier ? (
-              <Image
-                src="/brand/gold-bar-poster.webp"
-                alt=""
-                fill
-                priority
-                sizes="(min-width: 1024px) 60vw, 90vw"
-                className="object-contain p-2 sm:p-6"
-              />
-            ) : null}
+            {/* The still render shows at once on every device; on desktop it hands over to the 3D bar. */}
+            <Image
+              src="/brand/gold-bar-poster.webp"
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 1024px) 60vw, 90vw"
+              className={cn("object-contain p-2 transition-opacity duration-700 sm:p-6", sceneShown && "opacity-0")}
+            />
           </div>
 
           <div ref={controls} className="relative z-10 flex flex-col items-center text-center">
