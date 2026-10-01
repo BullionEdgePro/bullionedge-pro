@@ -252,3 +252,19 @@ over ₱100,000 need an ID-verified account (Tier 3), per the brief's "Tier 2: s
 **Defaults the owner should confirm** (all editable in shop settings): hold unpaid orders 3 days; layaway
 30% down then 3 monthly payments, from ₱5,000; cash on delivery on with no limit; delivery fee quoted per
 order. Layaway reminders go out by email three days before each payment is due (daily cron).
+
+## Buy / Sell on phones, and a phone audit (1 Oct 2026)
+
+**Buy and Sell live in the bottom bar on phones** (owner asked for the switch on mobile). Buy and the
+raised gold Sell button each open a sheet that rises from the bottom, with the same sliding Buy / Sell
+toggle and the same choices as the desktop panel. The bar stays usable above the dimmed page; tapping
+outside, Escape or navigating closes it. "Market" in the bar became "Buy".
+
+**Header:** "Get the app" no longer wraps when signed in (label only from 2xl, never wraps), and "Our
+story" left the desktop bar (still in the phone menu and footer): with Shop added, at 1536 px and wider
+the left menu reached under the logo.
+
+**Phone audit** (`e2e/mobile-audit.spec.ts`): 46 pages at 390 × 844 on a touch phone, as a guest, a
+customer and an admin, with no page errors, no sideways scroll, no broken images and WCAG 2.2 target
+sizes (24 px, or spaced so a 24 px circle touches nothing else), plus the menu, both sheets and the bar.
+

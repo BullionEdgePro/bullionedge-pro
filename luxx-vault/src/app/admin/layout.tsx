@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { AdminNav } from "@/components/site/admin-nav";
 import { SiteHeader } from "@/components/site/site-header";
 import { STAFF_ROLES, parseRoles } from "@/config/roles";
 import { requireRole } from "@/lib/server/session";
@@ -28,18 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-svh">
       <SiteHeader signedIn />
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
-        <nav aria-label="Staff" className="flex min-w-0 gap-1 overflow-x-auto lg:flex-col">
-          <p className="mb-2 hidden font-display text-xs tracking-[0.22em] text-champagne uppercase lg:block">Staff</p>
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="rounded-xl px-3.5 py-2.5 text-sm font-semibold whitespace-nowrap text-muted transition-colors hover:bg-surface hover:text-fg"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        <AdminNav links={links.map((l) => ({ href: l.href, label: l.label }))} />
         <main className="grid min-w-0 content-start gap-6">{children}</main>
       </div>
     </div>

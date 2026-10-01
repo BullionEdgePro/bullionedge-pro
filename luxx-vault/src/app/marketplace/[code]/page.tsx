@@ -118,7 +118,7 @@ export default async function ListingPage({ params, searchParams }: Props) {
       <main className="surface-velvet">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8 lg:py-12">
           <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-muted">
-            <Link href="/marketplace" className="hover:text-champagne">
+            <Link href="/marketplace" className="inline-block py-1.5 hover:text-champagne">
               Marketplace
             </Link>
             <ChevronRight className="size-3.5" aria-hidden />

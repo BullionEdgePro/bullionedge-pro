@@ -9,7 +9,7 @@ export function ToolIntro({ title, children, crumb }: { title: string; children:
       <nav aria-label="Breadcrumb" className="text-xs text-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link href="/tools" className="hover:text-gold">
+            <Link href="/tools" className="inline-block py-1.5 hover:text-gold">
               Tools
             </Link>
           </li>

@@ -15,13 +15,13 @@ const NAV: readonly NavItem[] = [
   { href: "/marketplace", label: "Marketplace", desktopHidden: true },
   { href: "/prices", label: "Prices" },
   { href: "/tools", label: "Tools", from: "xl" },
-  { href: "/about", label: "Our story", from: "2xl" },
+  { href: "/about", label: "Our story", desktopHidden: true },
   { href: "/sell", label: "Sell to Luxx4less", desktopHidden: true },
   { href: "/install", label: "Get the app", desktopHidden: true },
 ];
 
 const quietLink =
-  "rounded-md px-2 py-2 font-display text-[0.8rem] tracking-[0.22em] uppercase text-pearl/80 transition-colors hover:text-champagne";
+  "shrink-0 whitespace-nowrap rounded-md px-2 py-2 font-display text-[0.8rem] tracking-[0.22em] uppercase text-pearl/80 transition-colors hover:text-champagne";
 
 /**
  * The site header. Dark only: there is no theme switch (owner, 30 Sep 2026).
@@ -55,7 +55,7 @@ export async function SiteHeader({
         actions={
           signedIn ? (
             // On phones these live in the menu instead, so the crest and menu button keep their room.
-            <div className="hidden items-center gap-3 sm:flex">
+            <div className="hidden items-center gap-3 sm:flex xl:gap-4">
               {getApp}
               <Link href="/account" className={quietLink}>
                 My account

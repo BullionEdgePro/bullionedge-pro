@@ -76,7 +76,7 @@ export function GetAppButton({ qrSvg, androidHref, androidVersion }: { qrSvg: st
         aria-label="Get the Luxx4less app"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "lx-sheen group flex h-10 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition-[border-color,background-color,color] duration-300 xl:px-4",
+          "lx-sheen group flex h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-sm font-semibold whitespace-nowrap transition-[border-color,background-color,color] duration-300 2xl:px-4",
           open ? "border-champagne bg-gold-tint text-champagne" : "border-champagne/45 text-champagne/90 hover:border-champagne hover:bg-gold-tint",
         )}
       >
@@ -85,7 +85,7 @@ export function GetAppButton({ qrSvg, androidHref, androidVersion }: { qrSvg: st
           {/* A gold glint that catches the phone every few seconds. */}
           <span aria-hidden className="lx-app-glint absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-champagne" />
         </span>
-        <span className="hidden xl:inline">Get the app</span>
+        <span className="hidden 2xl:inline">Get the app</span>
       </button>
 
       <div

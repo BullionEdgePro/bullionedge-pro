@@ -29,7 +29,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">Identity verification required to trade</p>
                 <p className="text-sm text-muted">
-                  Verify your mobile number and ID to post listings, send offers and message other traders. It takes about three minutes.
+                  {viewer.tier < 2 ? "Verify your mobile number and ID" : "Verify your ID"} to post listings, send offers and message other traders. It takes about three minutes.
                 </p>
               </div>
               <Button asChild size="sm" className="rounded-full px-5">

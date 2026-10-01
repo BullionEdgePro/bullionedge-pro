@@ -6,7 +6,7 @@
   the Vercel account has no GitHub login, so pushes don't deploy by themselves yet.
 - Test modes on the live site, each labelled on screen: email (mailbox at /dev/mailbox?key=MAILBOX_KEY),
   SMS codes, ID checks, face checks, payments, Viber/Messenger alerts.
-- Tests: `npx vitest run` (383), `e2e/marketplace.spec.ts` (12), `e2e/face-check.spec.ts` (2) and `e2e/shop.spec.ts` (7) —
+- Tests: `npx vitest run` (383), `e2e/marketplace.spec.ts` (12), `e2e/face-check.spec.ts` (2), `e2e/shop.spec.ts` (7) and the phone audit `e2e/mobile-audit.spec.ts` (46 pages) —
   see the headers of those files for the env vars they need. Local databases only.
 - Owner to set up when ready: free gold-api.com key (GOLD_API_KEY, 20-year charts), SMS (free: SMSGate app on a shop Android phone; paid: Semaphore),
   a KYC vendor with face re-verification, PayMongo or Xendit, Resend + domain email, Viber bot / FB Page

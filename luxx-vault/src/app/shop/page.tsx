@@ -142,7 +142,7 @@ export default async function ShopPage({ searchParams }: Props) {
               </nav>
               <nav aria-label="Sort" className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
                 {SHOP_SORTS.map((s) => (
-                  <Link key={s.key} href={href({ category, sort: s.key })} aria-current={sort === s.key ? "true" : undefined} className={cn("font-semibold", sort === s.key ? "text-champagne" : "text-muted hover:text-fg")}>
+                  <Link key={s.key} href={href({ category, sort: s.key })} aria-current={sort === s.key ? "true" : undefined} className={cn("inline-block py-1.5 font-semibold", sort === s.key ? "text-champagne" : "text-muted hover:text-fg")}>
                     {s.label}
                   </Link>
                 ))}
