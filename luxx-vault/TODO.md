@@ -1,20 +1,17 @@
 # TODO
 
-## ▶ Resume here (paused 1 Oct 2026, ~02:40 Manila)
-Nothing is pushed or deployed yet. All work is in local commits on `claude/hopeful-gates-06x3c8`.
-- **Done and reviewed:** prices engine, /prices, /tools (calculator, price check, hallmark reader), /sell,
-  /admin/prices, home page, header ticker; verification (phone, ID, seller, /admin/kyc); price alerts
-  with email/Viber/Messenger; installable app + /install + /offline.
-- **Marketplace: built but UNREVIEWED** (last commit "WIP marketplace"). Stopped while writing the
-  listing edit page. Typecheck was clean. Next: finish listing edit, review security (tiers, ownership,
-  2FA for sellers), switch its files to `@/hooks/use-reduced-motion`, check no `<style precedence>`.
-- **Then:** full browser run (sign-up → verify → list → offer → chat → trade → review) at 390px and
-  desktop; update PARITY.md; deploy with the Vercel CLI (project `luxx4less`, Neon `luxx4less-db`
-  already connected, env secrets set; add CRON_SECRET); open the live site in Edge; push.
-- Accepted IDs: government-issued only (owner, 1 Oct 2026); school ID removed.
-- **Owner accounts later:** free gold-api.com key (20-year history), Semaphore (SMS), Viber bot /
-  Facebook Page app (alerts), a KYC vendor and PayMongo/Xendit before real trading.
-- Local: Postgres runs in docker `luxx-pg`; `npm run dev:users` recreates test accounts.
+## Live (1 Oct 2026)
+- **https://luxx4less.vercel.app** — Vercel project `luxx4less` (team LUXX4LESS, dezekielshop), Neon
+  `luxx4less-db` (Singapore). Deployed with the Vercel CLI (`npx vercel deploy --prod` from `luxx-vault/`):
+  the Vercel account has no GitHub login, so pushes don't deploy by themselves yet.
+- Test modes on the live site, each labelled on screen: email (mailbox at /dev/mailbox?key=MAILBOX_KEY),
+  SMS codes, ID checks, face checks, payments, Viber/Messenger alerts.
+- Tests: `npx vitest run` (365), `e2e/marketplace.spec.ts` (12) and `e2e/face-check.spec.ts` (2) —
+  see the headers of those files for the env vars they need. Local databases only.
+- Owner to set up when ready: free gold-api.com key (GOLD_API_KEY, 20-year charts), Semaphore (SMS),
+  a KYC vendor with face re-verification, PayMongo or Xendit, Resend + domain email, Viber bot / FB Page
+  app, and a GitHub login on the Vercel account for automatic deploys.
+- Accepted IDs: government-issued only (owner, 1 Oct 2026).
 
 ## Phase 0 — checkpoint
 - [x] Crawl metalmarketph.com (12 routes, 1440 + 390 screenshots)
