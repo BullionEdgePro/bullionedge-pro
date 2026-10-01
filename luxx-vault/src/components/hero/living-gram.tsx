@@ -132,7 +132,7 @@ function LivingGramStage({
   return (
     <>
       <section ref={section} className="surface-velvet relative h-[190svh]" aria-labelledby={headingId}>
-        <div ref={stage} className="sticky top-0 flex h-svh flex-col items-center overflow-hidden px-4 pt-[calc(var(--header-top,5.5rem)+6.5rem)] pb-8 sm:pb-10 lg:pt-[calc(var(--header-top,4.5rem)+8.5rem)]">
+        <div ref={stage} className="sticky top-0 flex h-svh flex-col items-center overflow-hidden px-4 pt-[calc(var(--header-top,2.3rem)+6.5rem)] pb-8 sm:pb-10 lg:pt-[calc(var(--header-top,2.3rem)+8.5rem)]">
           {/* Warm vignette — the vault after hours */}
           <div
             aria-hidden
