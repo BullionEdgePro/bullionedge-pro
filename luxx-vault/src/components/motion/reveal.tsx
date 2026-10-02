@@ -27,7 +27,12 @@ export function Reveal({
 }) {
   const reduce = useReducedMotion();
   const Tag = motion[as];
-  if (reduce) return <Tag className={className}>{children}</Tag>;
+  // A plain element, not a motion one: the server drew this hidden (ready to rise in), and
+  // switching element type makes React draw a fresh node instead of keeping that hidden style.
+  if (reduce) {
+    const Plain = as;
+    return <Plain className={className}>{children}</Plain>;
+  }
   return (
     <Tag
       className={className}
@@ -99,17 +104,20 @@ export function RisingWords({
  */
 export function GoldRule({ className }: { className?: string }) {
   const reduce = useReducedMotion();
+  const ruleStyle = {
+    height: 1,
+    transformOrigin: "left",
+    backgroundImage: "linear-gradient(90deg, transparent, #a8823f 12%, #f0dba6 50%, #a8823f 88%, transparent)",
+  } as const;
+  // Plain element under reduced motion, so the server's collapsed starting state isn't kept.
+  if (reduce) return <div aria-hidden="true" className={className} style={ruleStyle} />;
   return (
     <motion.div
       aria-hidden="true"
       className={className}
-      style={{
-        height: 1,
-        transformOrigin: "left",
-        backgroundImage: "linear-gradient(90deg, transparent, #a8823f 12%, #f0dba6 50%, #a8823f 88%, transparent)",
-      }}
-      initial={reduce ? undefined : { scaleX: 0, opacity: 0 }}
-      whileInView={reduce ? undefined : { scaleX: 1, opacity: 1 }}
+      style={ruleStyle}
+      initial={{ scaleX: 0, opacity: 0 }}
+      whileInView={{ scaleX: 1, opacity: 1 }}
       viewport={{ once: true }}
       transition={{ duration: 1.4, ease: EASE_VAULT }}
     />

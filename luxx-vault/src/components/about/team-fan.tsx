@@ -63,7 +63,8 @@ export function TeamFan({ frames }: { frames: readonly Frame[] }) {
               transition={{ duration: 1, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
               animate={
                 reduce
-                  ? undefined
+                  ? // Settle straight into the fan: the server drew these hidden, ready to rise in.
+                    { opacity: 1, y: rest.y, rotate: rest.rotate, x: rest.x, transition: { duration: 0 } }
                   : isActive
                     ? { rotate: 0, x: 0, y: rest.y - 22, scale: 1.05, zIndex: 10 }
                     : { rotate: rest.rotate, x: rest.x, y: rest.y, scale: dimmed ? 0.97 : 1, zIndex: 1 }

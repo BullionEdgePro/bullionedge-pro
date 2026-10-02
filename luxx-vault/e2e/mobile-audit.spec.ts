@@ -122,12 +122,22 @@ async function audit(p: Phone, path: string) {
     const bar = document.getElementById("lx-tabbar");
     const pad = bar ? parseFloat(getComputedStyle(document.body).paddingBottom) : 0;
     const barH = bar ? bar.getBoundingClientRect().height : 0;
-    return { sw: document.documentElement.scrollWidth, iw, wide, broken, small, barCovers: bar ? pad + 1 < barH : false };
+    // Headings and text must never be left invisible (a reveal stuck at opacity 0 under reduced motion).
+    const invisible = [...document.querySelectorAll("main h1, main h2, main p")]
+      .filter((el) => {
+        if (el.getBoundingClientRect().width === 0 || el.closest(".sr-only")) return false;
+        for (let x: Element | null = el; x; x = x.parentElement) if (Number(getComputedStyle(x).opacity) < 0.05) return true;
+        return false;
+      })
+      .slice(0, 3)
+      .map((el) => (el.textContent ?? "").trim().slice(0, 40));
+    return { sw: document.documentElement.scrollWidth, iw, wide, broken, small, invisible, barCovers: bar ? pad + 1 < barH : false };
   });
   if (r.sw > r.iw) add(`sideways scroll: page is ${r.sw}px on a ${r.iw}px screen (${r.wide.join(" | ")})`);
   for (const b of r.broken) add(`broken image ${b}`);
   for (const s of r.small) add(`small tap target ${s}`);
   if (r.barCovers) add("bottom bar covers the end of the page");
+  for (const t of r.invisible) add(`text left invisible: "${t}"`);
   save();
   const file = `${OUT}/${p.who}${path.replace(/[/?=&]+/g, "_") || "_home"}.png`;
   await p.page.screenshot({ path: file });
