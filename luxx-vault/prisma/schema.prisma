@@ -57,6 +57,7 @@ model User {
   faceChecks       FaceCheck[]
   cartItems        CartItem[]
   shopOrders       ShopOrder[]
+  feePayments      FeePayment[]
 
   @@unique([email])
   @@map("user")
@@ -616,6 +617,14 @@ model Trade {
   releasedAt      DateTime?
   /// Either side can keep a completed trade off the public trade tape.
   hideFromTape    Boolean       @default(false)
+  /// Luxx4less commission, charged to the seller when the trade completes (listing is free).
+  feePct          Decimal?      @db.Decimal(5, 2)
+  feePhp          Decimal?      @db.Decimal(14, 2)
+  feeDueAt        DateTime?
+  feePaidAt       DateTime?
+  /// Staff waived it (with a reason in the audit log).
+  feeWaivedAt     DateTime?
+  feeRemindedAt   DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   conversation    Conversation?
@@ -625,6 +634,7 @@ model Trade {
   @@index([status, releasedAt])
   @@index([buyerId])
   @@index([sellerId])
+  @@index([sellerId, feePaidAt])
   @@map("trade")
 }
 
@@ -997,4 +1007,45 @@ model ShopSettings {
   updatedAt           DateTime @updatedAt
 
   @@map("shop_settings")
+}
+
+// ============================================================ marketplace fees
+
+/// A seller paying their Luxx4less fees: a GCash or bank receipt they uploaded, or a payment staff
+/// recorded. Confirmed payments settle the oldest unpaid fees first.
+model FeePayment {
+  id           String    @id @default(cuid())
+  sellerId     String
+  seller       User      @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  amountPhp    Decimal   @db.Decimal(14, 2)
+  /// transfer | in_store
+  method       String    @default("transfer")
+  reference    String?
+  proofMediaId String?
+  /// submitted | confirmed | rejected
+  status       String    @default("submitted")
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNote   String?
+  createdAt    DateTime  @default(now())
+
+  @@index([sellerId, createdAt])
+  @@index([status, createdAt])
+  @@map("fee_payment")
+}
+
+/// Marketplace fee settings, one row, edited by admins in /admin/fees. Changes apply to trades
+/// completed afterwards; each trade keeps the rate it was charged at.
+model MarketSettings {
+  id          String   @id @default("market")
+  /// Commission on each completed trade, paid by the seller.
+  feePct      Decimal  @default(3) @db.Decimal(5, 2)
+  feeMinPhp   Decimal? @db.Decimal(14, 2)
+  feeMaxPhp   Decimal? @db.Decimal(14, 2)
+  /// Days a seller has to pay a fee before their new selling pauses.
+  feePayDays  Int      @default(7)
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("market_settings")
 }

@@ -8,6 +8,7 @@ import { LISTING_LIFETIME_DAYS, NEW_SELLER_LIMITS } from "@/config/catalog";
 import { audit } from "@/lib/server/audit";
 import { db } from "@/lib/server/db";
 import { attachListingPhotos } from "@/lib/server/media";
+import { assertNoOverdueFees } from "@/lib/server/fees";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { getViewer } from "@/lib/server/viewer";
 import { isValidLocation } from "@/lib/locations";
@@ -42,6 +43,7 @@ async function checkNewSellerLimits(sellerId: string, pricePhp: number | null, e
 export async function saveListing(_prev: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async (): Promise<ActionState | void> => {
     const viewer = await assertSeller();
+    await assertNoOverdueFees(viewer.userId);
     await requireFaceForAction("session");
     const editCode = typeof form.get("code") === "string" ? String(form.get("code")) : "";
     const existing = editCode
@@ -142,6 +144,7 @@ export async function renewListing(_prev: ActionState, form: FormData): Promise<
   return runAction(async (): Promise<ActionState | void> => {
     await assertSeller();
     const { viewer, listing } = await ownListing(form);
+    await assertNoOverdueFees(viewer.userId);
     if (!["active", "expired"].includes(listing.status)) throw new UserError("Only active or expired listings can be renewed.");
     if (listing.status === "expired") await checkNewSellerLimits(viewer.userId, null, listing.id);
     await db.listing.update({ where: { id: listing.id }, data: { status: "active", expiresAt: new Date(Date.now() + LISTING_LIFETIME_DAYS * DAY) } });

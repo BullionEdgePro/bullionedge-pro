@@ -10,11 +10,13 @@ import {
   LayoutDashboard,
   MessagesSquare,
   PackageSearch,
+  Receipt,
   ScrollText,
   Shield,
   ShoppingBag,
   Store,
   UserRound,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,9 +39,13 @@ export const ACCOUNT_LINKS = [
 ] as const;
 
 /** Account sidebar on desktop, a swipeable strip on phones. Counts show as gold pips. */
-export function AccountNav({ counts = {}, staff = false }: { counts?: Partial<Record<string, number>>; staff?: boolean }) {
+export function AccountNav({ counts = {}, staff = false, seller = false }: { counts?: Partial<Record<string, number>>; staff?: boolean; seller?: boolean }) {
   const pathname = usePathname();
-  const links = staff ? [...ACCOUNT_LINKS, { href: "/admin", label: "Staff area", icon: Building2 } as const] : ACCOUNT_LINKS;
+  // Sellers get their Luxx4less fees right after their trades.
+  type NavLink = { href: string; label: string; icon: LucideIcon };
+  const all: NavLink[] = [...ACCOUNT_LINKS];
+  const base: NavLink[] = seller ? all.flatMap((l) => (l.href === "/account/trades" ? [l, { href: "/account/fees", label: "Fees", icon: Receipt }] : [l])) : all;
+  const links: NavLink[] = staff ? [...base, { href: "/admin", label: "Staff area", icon: Building2 }] : base;
   return (
     <nav aria-label="Account" className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-2 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
       {links.map(({ href, label, icon: Icon }) => {

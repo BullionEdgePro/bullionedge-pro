@@ -29,6 +29,11 @@ export default function TermsPage() {
         Buying and selling between members is open only to identity-verified accounts. Listings must be honest about metal, purity and weight, and
         payment must stay on the platform. Scams, stolen goods and fake items are banned and reported to the authorities.
       </p>
+      <p>
+        Listing is free. When a sale between members completes on Luxx4less, the seller pays Luxx4less a fee on the sale price, at the rate shown when listing
+        and on the trade page, within the days stated there. While a fee is past due, the seller can&rsquo;t list, renew or make offers; trades already under way
+        carry on. Finishing a deal outside the platform to avoid the fee breaks these terms.
+      </p>
 
       <h2>Changes</h2>
       <p>If these terms change, we&apos;ll tell you before the new version applies to you.</p>

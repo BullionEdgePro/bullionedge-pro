@@ -155,6 +155,8 @@ async function cleanUp() {
                   AND ("listingId" IN (SELECT id FROM listing WHERE title LIKE 'E2E %') OR "buyRequestId" IN (SELECT id FROM buy_request WHERE title LIKE 'E2E %'))`);
   await db.query(`UPDATE offer SET status = 'withdrawn' WHERE status = 'pending'
                   AND ("listingId" IN (SELECT id FROM listing WHERE title LIKE 'E2E %') OR "buyRequestId" IN (SELECT id FROM buy_request WHERE title LIKE 'E2E %'))`);
+  // Fees on test sales are settled, so the test seller never ends up with selling paused.
+  await db.query(`UPDATE trade SET "feeWaivedAt" = now(), "feePaidAt" = now() WHERE "feePhp" IS NOT NULL AND "feePaidAt" IS NULL AND "listingId" IN (SELECT id FROM listing WHERE title LIKE 'E2E %')`);
   await db.query(`UPDATE listing SET status = 'removed' WHERE title LIKE 'E2E %' AND status IN ('active','reserved','expired','draft')`);
   await db.query(`UPDATE buy_request SET status = 'closed' WHERE title LIKE 'E2E %' AND status IN ('open','fulfilled','expired')`);
   await db.query(`UPDATE report SET status = 'dismissed', "handledAt" = now() WHERE status = 'open' AND details LIKE 'E2E %'`);
@@ -491,6 +493,14 @@ test("trade: pay into the hold, ship, confirm, release, review; showroom and tra
   await expect(b.getByText(/Completed \w+ \d+, \d{4}\./)).toBeVisible();
   expect((await one<{ status: string }>(`SELECT status FROM trade WHERE code = $1`, [tradeA])).status).toBe("released");
   expect((await one<{ status: string }>(`SELECT status FROM listing WHERE code = $1`, [codeA])).status).toBe("sold");
+
+  // The Luxx4less fee: charged to the seller as the trade completes, at the rate in the fee settings.
+  const fee = await one<{ amountPhp: string; feePct: string; feePhp: string; feeDueAt: Date | null }>(`SELECT "amountPhp", "feePct", "feePhp", "feeDueAt" FROM trade WHERE code = $1`, [tradeA]);
+  expect(Number(fee.feePhp)).toBeCloseTo(Math.round(Number(fee.amountPhp) * Number(fee.feePct)) / 100, 2);
+  expect(fee.feeDueAt).not.toBeNull();
+  await visit(s, "/account/fees");
+  await expect(s.getByRole("link", { name: tradeA })).toBeVisible();
+  await visit(s, `/account/trades/${tradeA}`);
 
   // Reviews, both ways.
   await b.reload();

@@ -21,6 +21,8 @@ import { statsFor } from "@/lib/server/marketplace/stats";
 import { AUTO_RELEASE_DAYS, COURIERS, DISPUTE_REASONS, settleDueTrades, TRADE_STATUS_LABEL } from "@/lib/server/marketplace/trades";
 import { placeLabel } from "@/lib/locations";
 import { formatPeso } from "@/lib/pricing";
+import { feeFor, feeRateLabel, sellerNet } from "@/lib/fees";
+import { feeRulesOf, getMarketSettings } from "@/lib/server/fees";
 import { requireTier } from "@/lib/server/viewer";
 
 export const metadata: Metadata = { title: "Trade" };
@@ -51,6 +53,7 @@ export default async function TradePage({ params }: { params: Promise<{ code: st
   const otherName = other.profile?.displayName ?? other.name;
   const stats = await statsFor([other.id]);
   const amount = formatPeso(Number(t.amountPhp));
+  const feeRules = feeRulesOf(await getMarketSettings());
   const myReview = t.reviews.find((r) => r.authorId === viewer.userId);
   const openDispute = t.disputes.find((d) => d.status === "open");
   const lastDispute = t.disputes[0];
@@ -100,6 +103,22 @@ export default async function TradePage({ params }: { params: Promise<{ code: st
             {itemLabel(t)} · {gramsLabel(Number(t.weightGrams))} · {placeLabel(t.cityCode, t.regionCode)}
           </p>
           <p className="font-display text-3xl text-gold tabular">{amount}</p>
+          {role === "seller" && t.status !== "refunded" && t.status !== "cancelled" && (
+            <p className="text-sm text-muted tabular">
+              {t.feePhp !== null ? (
+                <>
+                  Luxx4less fee {Number(t.feePct)}%: {formatPeso(Number(t.feePhp), true)} · you keep {formatPeso(Number(t.amountPhp) - Number(t.feePhp), true)} ·{" "}
+                  <Link href="/account/fees" className="font-semibold text-champagne underline-offset-4 hover:underline">
+                    {t.feeWaivedAt ? "waived" : t.feePaidAt ? "paid" : `due ${t.feeDueAt?.toLocaleDateString("en-PH", { day: "numeric", month: "short", timeZone: "Asia/Manila" }) ?? ""}`}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  When it completes: Luxx4less fee {feeRateLabel(feeRules)} ({formatPeso(feeFor(Number(t.amountPhp), feeRules), true)}), you keep {formatPeso(sellerNet(Number(t.amountPhp), feeRules), true)}
+                </>
+              )}
+            </p>
+          )}
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted">
             You {role === "buyer" ? "buy from" : "sell to"}
             {other.profile?.handle ? (

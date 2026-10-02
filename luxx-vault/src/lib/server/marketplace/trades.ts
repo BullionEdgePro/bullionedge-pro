@@ -4,6 +4,7 @@ import { audit } from "@/lib/server/audit";
 import { notify } from "@/lib/server/notify";
 import { paymentsFor } from "@/lib/server/payments";
 import { systemMessage } from "./conversations";
+import { chargeTradeFee } from "../fees";
 
 export const AUTO_RELEASE_DAYS = 7;
 export const OFFER_HOURS = 48;
@@ -62,6 +63,8 @@ export async function releaseTrade(tradeId: string, actorId: string | null, reas
     throw err;
   }
   if (trade.listingId) await db.listing.update({ where: { id: trade.listingId }, data: { status: "sold" } });
+  // The Luxx4less fee is charged now, at the one point every successful trade passes through.
+  await chargeTradeFee(trade.id).catch((err) => console.error("[fees] could not charge", trade.code, err));
   await audit({ actorId, action: "trade.released", targetType: "trade", targetId: trade.id, meta: { code: trade.code, reason, amountPhp: Number(trade.amountPhp), provider: trade.paymentProvider } });
   const line =
     reason === "auto_release"

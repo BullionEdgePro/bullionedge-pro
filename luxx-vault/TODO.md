@@ -6,12 +6,15 @@
   the Vercel account has no GitHub login, so pushes don't deploy by themselves yet.
 - Test modes on the live site, each labelled on screen: email (mailbox at /dev/mailbox?key=MAILBOX_KEY),
   SMS codes, ID checks, face checks, payments, Viber/Messenger alerts.
-- Tests: `npx vitest run` (383), `e2e/marketplace.spec.ts` (12), `e2e/face-check.spec.ts` (2), `e2e/shop.spec.ts` (7) and the phone audit `e2e/mobile-audit.spec.ts` (46 pages) —
+- Tests: `npx vitest run` (383), `e2e/marketplace.spec.ts` (12), `e2e/face-check.spec.ts` (2), `e2e/shop.spec.ts` (7), `e2e/fees.spec.ts` (4) and the phone audit `e2e/mobile-audit.spec.ts` (46 pages) —
   see the headers of those files for the env vars they need. Local databases only.
 - Owner to set up when ready: free gold-api.com key (GOLD_API_KEY, 20-year charts), SMS (free: SMSGate app on a shop Android phone; paid: Semaphore),
   a KYC vendor with face re-verification, PayMongo or Xendit, Resend + domain email, Viber bot / FB Page
   app, and a GitHub login on the Vercel account for automatic deploys.
 - Accepted IDs: government-issued only (owner, 1 Oct 2026).
+- **Marketplace fees** (2 Oct 2026): sellers pay 3% of each completed sale (listing free). Owner to do:
+  confirm the rate and the 7 days to pay in Staff › Marketplace fees; sellers pay to the GCash/bank
+  details in Shop settings, so add those first.
 - **Official Shop** (1 Oct 2026): `/shop`, run from Staff › Official shop and Shop orders. Owner to do:
   add GCash/bank details in Official shop › Shop settings (transfer stays off until then), check the
   layaway and hold defaults there, then add the first pieces with photos. `e2e/shop.spec.ts` (7) is the

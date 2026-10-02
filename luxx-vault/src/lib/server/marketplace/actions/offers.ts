@@ -17,6 +17,7 @@ import { findOrCreateConversation, systemMessage } from "../conversations";
 import { assertSeller, getSpot, runAction, UserError, type ActionState } from "../context";
 import { REPORT_HIDE_THRESHOLD, valuationOf } from "../listings";
 import { OFFER_HOURS } from "../trades";
+import { assertNoOverdueFees } from "@/lib/server/fees";
 
 const HOUR = 3_600_000;
 const Amount = z.preprocess((v) => Number(String(v ?? "").replace(/[,₱\s]/g, "")), z.number("Enter an amount in pesos.").min(100, "Enter an amount in pesos.").max(1_000_000_000));
@@ -88,6 +89,7 @@ export async function makeListingOffer(_prev: ActionState, form: FormData): Prom
 export async function makeWantedOffer(_prev: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async (): Promise<ActionState | void> => {
     const viewer = await assertSeller();
+    await assertNoOverdueFees(viewer.userId);
     await requireFaceForAction("session");
     const requestId = Id.parse(form.get("buyRequestId"));
     const note = Message.parse(form.get("message"));
@@ -187,7 +189,10 @@ export async function counterOffer(_prev: ActionState, form: FormData): Promise<
     const offer = await loadOffer(form);
     if (offer.toUserId !== viewer.userId || offer.status !== "pending") throw new UserError("You can't counter this offer.");
     const { sellerId } = sides(offer);
-    if (viewer.userId === sellerId) await assertSeller();
+    if (viewer.userId === sellerId) {
+      await assertSeller();
+      await assertNoOverdueFees(viewer.userId);
+    }
     await requireFaceForAction("session");
     const amount = Amount.safeParse(form.get("amount"));
     if (!amount.success) return { ok: false, fieldErrors: { amount: "Enter your counter in pesos." } };
@@ -239,7 +244,10 @@ export async function acceptOffer(_prev: ActionState, form: FormData): Promise<A
     const offer = await loadOffer(form);
     if (offer.toUserId !== viewer.userId || offer.status !== "pending") throw new UserError("You can't accept this offer.");
     const { buyerId, sellerId } = sides(offer);
-    if (viewer.userId === sellerId) await assertSeller();
+    if (viewer.userId === sellerId) {
+      await assertSeller();
+      await assertNoOverdueFees(viewer.userId);
+    }
     // Accepting commits to the deal: a fresh check for high-value trades.
     await requireFaceForAction(purposeForAmount(Number(offer.amountPhp)));
 

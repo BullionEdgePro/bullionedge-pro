@@ -268,3 +268,25 @@ the left menu reached under the logo.
 customer and an admin, with no page errors, no sideways scroll, no broken images and WCAG 2.2 target
 sizes (24 px, or spaced so a 24 px circle touches nothing else), plus the menu, both sheets and the bar.
 
+## Marketplace fees (2 Oct 2026)
+
+**Listing stays free; Luxx4less earns on each completed sale (owner).** The seller pays a commission on the
+sale price, **3% by default**, editable in Staff › Marketplace fees (with an optional minimum and maximum).
+It is charged at the one moment every successful trade passes through: when the payment is released to
+the seller (buyer confirms, automatic release after seven days, or a dispute decided for the seller).
+Refunded and cancelled trades are never charged, and each trade keeps the rate it was charged at.
+
+**Collected without a payment company:** the seller pays by GCash or bank (the same details as the shop,
+shown only to them on their Fees page), uploads the receipt, and staff confirm it against the account.
+Payments settle the oldest fees first; overpaying leaves a credit. Staff can also record cash paid at a
+branch, and admins can waive a fee with a reason kept in the audit log.
+
+**Enforcement:** a fee unpaid past its due date (7 days by default) pauses that seller's new listings,
+renewals, offers and accepting offers, until it is paid; a receipt waiting for staff lifts the pause.
+Shipping a trade already paid for is never blocked, because that would hurt the buyer. The seller sees
+the fee before selling (sell page, trade page) and in the terms. Finishing a deal outside the platform to
+avoid the fee breaks the terms; the chat already warns about off-platform payment.
+
+**Later:** with a Xendit account (xenPlatform split payments) the fee can be taken automatically when the
+held payment is released, and this manual collection becomes the fallback.
+

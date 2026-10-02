@@ -208,6 +208,7 @@ test("every customer page holds up on a phone", async () => {
     "/account/offers",
     "/account/messages",
     "/account/trades",
+    "/account/fees",
     "/account/saved",
     "/account/alerts",
     "/account/profile",
@@ -219,7 +220,7 @@ test("every customer page holds up on a phone", async () => {
 });
 
 test("every staff page holds up on a phone", async () => {
-  const pages = ["/admin", "/admin/customers", "/admin/kyc", "/admin/orders", "/admin/shop", "/admin/shop/new", "/admin/shop/settings", "/admin/listings", "/admin/reports", "/admin/disputes", "/admin/prices"];
+  const pages = ["/admin", "/admin/customers", "/admin/kyc", "/admin/orders", "/admin/fees", "/admin/shop", "/admin/shop/new", "/admin/shop/settings", "/admin/listings", "/admin/reports", "/admin/disputes", "/admin/prices"];
   for (const path of pages) await audit(admin, path);
 });
 

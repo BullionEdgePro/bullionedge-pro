@@ -7,6 +7,8 @@ import { FormAlert } from "@/components/ui/field";
 import { FaceCheckPrompt } from "@/components/verification/face-check-prompt";
 import { requireFaceForPage } from "@/lib/server/face/gate";
 import { formatPeso } from "@/lib/pricing";
+import { feeRateLabel } from "@/lib/fees";
+import { feeRulesOf, getMarketSettings, overdueFees } from "@/lib/server/fees";
 import { requireSeller } from "@/lib/server/marketplace/context";
 import { wizardProps } from "@/lib/server/marketplace/wizard";
 
@@ -16,6 +18,7 @@ export default async function SellPage() {
   const viewer = await requireSeller("/marketplace/sell");
   const faceLock = await requireFaceForPage("session", "/marketplace/sell");
   const props = await wizardProps(viewer);
+  const [feeRules, fees] = await Promise.all([getMarketSettings().then(feeRulesOf), overdueFees(viewer.userId)]);
   const atLimit = props.limits.newSeller && props.limits.activeCount >= props.limits.maxActive;
 
   return (
@@ -28,9 +31,20 @@ export default async function SellPage() {
           <p className="measure mt-3 text-muted">
             Five short steps. Buyers see your price beside today&rsquo;s melt value, your verified-seller badge and your trust score.
           </p>
+          <p className="mt-3 inline-flex flex-wrap items-center gap-x-2 rounded-full border border-champagne/30 bg-gold-tint/50 px-4 py-1.5 text-sm text-fg/90">
+            <strong className="text-champagne">Listing is free.</strong> When it sells here, the Luxx4less fee is {feeRateLabel(feeRules)} of the price.
+          </p>
           <div className="mt-8">
             {faceLock ? (
               <FaceCheckPrompt status={faceLock} />
+            ) : fees.overdue ? (
+              <FormAlert tone="info">
+                You have {formatPeso(fees.overduePhp, true)} in Luxx4less fees past their due date, so new listings are paused.{" "}
+                <Link href="/account/fees" className="font-semibold underline underline-offset-4">
+                  Pay your fees
+                </Link>{" "}
+                and you can list again straight away.
+              </FormAlert>
             ) : atLimit ? (
               <FormAlert tone="info">
                 New sellers can have {props.limits.maxActive} listings up at a time until they complete {props.limits.tradesToGraduate} trades (up to{" "}

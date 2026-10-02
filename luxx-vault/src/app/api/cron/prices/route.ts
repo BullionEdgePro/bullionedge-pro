@@ -3,6 +3,7 @@ import { env } from "@/lib/server/env";
 import { getMarket } from "@/lib/server/prices/engine";
 import { backfillHistory, historyCoverage } from "@/lib/server/prices/history";
 import { remindDueInstallments, sweepUnpaidOrders } from "@/lib/server/shop/orders";
+import { remindOverdueFees } from "@/lib/server/fees";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -30,5 +31,6 @@ export async function GET(req: NextRequest) {
   const shop = await Promise.all([sweepUnpaidOrders(), remindDueInstallments()])
     .then(([cancelled, reminded]) => ({ cancelled, reminded }))
     .catch((e: unknown) => `failed: ${e instanceof Error ? e.message : e}`);
-  return Response.json({ checkedAt: market.checkedAt, delayed: market.delayed, notes: market.notes, backfill, shop });
+  const fees = await remindOverdueFees().catch((e: unknown) => `failed: ${e instanceof Error ? e.message : e}`);
+  return Response.json({ checkedAt: market.checkedAt, delayed: market.delayed, notes: market.notes, backfill, shop, feeReminders: fees });
 }
